@@ -1,5 +1,3 @@
-/build/
-/benchpress-build/
 .DS_Store
 gen_docs.disable
 test.disable
@@ -21,7 +19,4 @@ npm-debug.log
 /tmp/
 .vscode
 *.log
-*.stackdump
-scripts/code.angularjs.org-firebase/deploy
-scripts/docs.angularjs.org-firebase/deploy
-scripts/docs.angularjs.org-firebase/functions/content
+/dist
