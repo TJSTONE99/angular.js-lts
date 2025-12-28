@@ -16,7 +16,10 @@
     "grunt": "^1.2.0"
   },
   "scripts": {
-    "build": "node ./workspace-scripts/BuildDist.js"
+    "build": "node ./build-scripts/BuildDist.js",
+    "test": "npm run test:build && jest",
+    "test:log": "npm run test:build && jest 2>&1 | tee jest.log",
+    "test:build": "node ./build-scripts/BuildDist.js --test"
   },
   "devDependencies": {
     "@swc/core": "^1.7.26",

@@ -1,13 +1,13 @@
 'use strict';
 
-describe('ngClick', function() {
-  var element;
+describe('ngClick', () => {
+  let element;
 
-  afterEach(function() {
+  afterEach(() => {
     dealoc(element);
   });
 
-  it('should get called on a click', inject(function($rootScope, $compile) {
+  it('should get called on a click', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div ng-click="clicked = true"></div>')($rootScope);
     $rootScope.$digest();
     expect($rootScope.clicked).toBeFalsy();
@@ -16,7 +16,7 @@ describe('ngClick', function() {
     expect($rootScope.clicked).toEqual(true);
   }));
 
-  it('should pass event object', inject(function($rootScope, $compile) {
+  it('should pass event object', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div ng-click="event = $event"></div>')($rootScope);
     $rootScope.$digest();
 

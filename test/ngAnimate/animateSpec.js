@@ -1,75 +1,75 @@
 'use strict';
 
-describe('animations', function() {
+describe('animations', () => {
 
-  beforeEach(module('ngAnimate'));
-  beforeEach(module('ngAnimateMock'));
+  beforeEach(angular.mock.module('ngAnimate'));
+  beforeEach(angular.mock.module('ngAnimateMock'));
 
-  var element, applyAnimationClasses;
+  let element, applyAnimationClasses;
 
-  beforeEach(module(function() {
-    return function($$jqLite) {
-      applyAnimationClasses = applyAnimationClassesFactory($$jqLite);
+  beforeEach(angular.mock.module(() => {
+    return $$jqLite => {
+      applyAnimationClasses = ngInternals.applyAnimationClassesFactory($$jqLite);
     };
   }));
 
-  afterEach(inject(function() {
+  afterEach(() => {
     dealoc(element);
-  }));
+  });
 
 
-  it('should allow animations if the application is bootstrapped on the document node', function() {
-    var capturedAnimation;
+  it('should allow animations if the application is bootstrapped on the document node', () => {
+    let capturedAnimation;
 
-    module(function($provide) {
-      $provide.factory('$rootElement', function($document) {
+    angular.mock.module($provide => {
+      $provide.factory('$rootElement', $document => {
         return $document;
       });
-      $provide.factory('$$animation', function($$AnimateRunner) {
-        return function() {
+      $provide.factory('$$animation', $$AnimateRunner => {
+        return function () {
           capturedAnimation = arguments;
           return new $$AnimateRunner();
         };
       });
     });
 
-    inject(function($animate, $rootScope, $document) {
+    angular.mock.inject(($animate, $rootScope, $document) => {
       $animate.enabled(true);
 
-      element = jqLite('<div></div>');
+      element = angular.element('<div></div>');
 
-      $animate.enter(element, jqLite($document[0].body));
+      $animate.enter(element, angular.element($document[0].body));
       $rootScope.$digest();
 
       expect(capturedAnimation).toBeTruthy();
     });
   });
 
-  describe('during bootstrap', function() {
+  describe('during bootstrap', () => {
     it('should be enabled only after the first digest is fired and the postDigest queue is empty',
-      inject(function($animate, $rootScope) {
+      angular.mock.inject(($animate, $rootScope) => {
 
-      var capturedEnabledState;
-      $rootScope.$$postDigest(function() {
-        capturedEnabledState = $animate.enabled();
-      });
+        let capturedEnabledState;
+        $rootScope.$$postDigest(() => {
+          capturedEnabledState = $animate.enabled();
+        });
 
-      expect($animate.enabled()).toBe(false);
-      $rootScope.$digest();
+        expect($animate.enabled()).toBe(false);
+        $rootScope.$digest();
 
-      expect(capturedEnabledState).toBe(false);
-      expect($animate.enabled()).toBe(true);
-    }));
+        expect(capturedEnabledState).toBe(false);
+        expect($animate.enabled()).toBe(true);
+      }));
 
-    it('should be disabled until all pending template requests have been downloaded', function() {
-      var mockTemplateRequest = {
+    it('should be disabled until all pending template requests have been downloaded', () => {
+      const mockTemplateRequest = {
         totalPendingRequests: 2
       };
 
-      module(function($provide) {
+      angular.mock.module($provide => {
         $provide.value('$templateRequest', mockTemplateRequest);
       });
-      inject(function($animate, $rootScope) {
+      angular.mock.inject(($animate, $rootScope) => {
         expect($animate.enabled()).toBe(false);
 
         $rootScope.$digest();
@@ -81,15 +81,15 @@ describe('animations', function() {
       });
     });
 
-    it('should stay disabled if set to be disabled even after all templates have been fully downloaded', function() {
-      var mockTemplateRequest = {
+    it('should stay disabled if set to be disabled even after all templates have been fully downloaded', () => {
+      const mockTemplateRequest = {
         totalPendingRequests: 2
       };
 
-      module(function($provide) {
+      angular.mock.module($provide => {
         $provide.value('$templateRequest', mockTemplateRequest);
       });
-      inject(function($animate, $rootScope) {
+      angular.mock.inject(($animate, $rootScope) => {
         $animate.enabled(false);
         expect($animate.enabled()).toBe(false);
 
@@ -103,42 +103,48 @@ describe('animations', function() {
     });
   });
 
-  describe('$animate', function() {
-    var parent;
-    var parent2;
-    var options;
-    var capturedAnimation;
-    var capturedAnimationHistory;
-    var overriddenAnimationRunner;
-    var defaultFakeAnimationRunner;
+  describe('$animate', () => {
+    let parent;
+    let parent2;
+    let options;
+    let capturedAnimation;
+    let capturedAnimationHistory;
+    let overriddenAnimationRunner;
+    let defaultFakeAnimationRunner;
 
-    beforeEach(module(function($provide) {
+    afterEach(() => {
+      dealoc(parent);
+      dealoc(parent2);
+      dealoc(element);
+    })
+
+    beforeEach(angular.mock.module($provide => {
       overriddenAnimationRunner = null;
       capturedAnimation = null;
       capturedAnimationHistory = [];
 
       options = {};
-      $provide.value('$$animation', function() {
+      $provide.value('$$animation', function () {
         capturedAnimationHistory.push(capturedAnimation = arguments);
         return overriddenAnimationRunner || defaultFakeAnimationRunner;
       });
 
-      return function($rootElement, $q, $animate, $$AnimateRunner, $document) {
+      return ($rootElement, $q, $animate, $$AnimateRunner, $document) => {
         defaultFakeAnimationRunner = new $$AnimateRunner();
         $animate.enabled(true);
 
-        element = jqLite('<div class="element">element</div>');
-        parent = jqLite('<div class="parent1">parent</div>');
-        parent2 = jqLite('<div class="parent2">parent</div>');
+        element = angular.element('<div class="element">element</div>');
+        parent = angular.element('<div class="parent1">parent</div>');
+        parent2 = angular.element('<div class="parent2">parent</div>');
 
         $rootElement.append(parent);
         $rootElement.append(parent2);
-        jqLite($document[0].body).append($rootElement);
+        angular.element($document[0].body).append($rootElement);
       };
     }));
 
-    it('should not alter the provided options input in any way throughout the animation', inject(function($animate, $rootScope) {
-      var initialOptions = {
+    it('should not alter the provided options input in any way throughout the animation', angular.mock.inject(($animate, $rootScope) => {
+      const initialOptions = {
         from: { height: '50px' },
         to: { width: '50px' },
         addClass: 'one',
@@ -146,26 +152,26 @@ describe('animations', function() {
         domOperation: undefined
       };
 
-      var copiedOptions = copy(initialOptions);
+      const copiedOptions = angular.copy(initialOptions);
       expect(copiedOptions).toEqual(initialOptions);
 
-      var runner = $animate.enter(element, parent, null, copiedOptions);
+      const runner = $animate.enter(element, parent, null, copiedOptions);
       expect(copiedOptions).toEqual(initialOptions);
 
       $rootScope.$digest();
       expect(copiedOptions).toEqual(initialOptions);
     }));
 
-    it('should skip animations entirely if the document is hidden', function() {
-      var hidden = true;
+    it('should skip animations entirely if the document is hidden', () => {
+      let hidden = true;
 
-      module(function($provide) {
-        $provide.value('$$isDocumentHidden', function() {
+      angular.mock.module($provide => {
+        $provide.value('$$isDocumentHidden', () => {
           return hidden;
         });
       });
 
-      inject(function($animate, $rootScope) {
+      angular.mock.inject(($animate, $rootScope) => {
         $animate.enter(element, parent);
         $rootScope.$digest();
         expect(capturedAnimation).toBeNull();
@@ -179,11 +185,11 @@ describe('animations', function() {
       });
     });
 
-    it('should animate only the specified CSS className matched within $animateProvider.classNameFilter for div', function() {
-      module(function($animateProvider) {
+    it('should animate only the specified CSS className matched within $animateProvider.classNameFilter for div', () => {
+      angular.mock.module($animateProvider => {
         $animateProvider.classNameFilter(/only-allow-this-animation/);
       });
-      inject(function($animate, $rootScope) {
+      angular.mock.inject(($animate, $rootScope) => {
         expect(element).not.toHaveClass('only-allow-this-animation');
 
         $animate.enter(element, parent);
@@ -198,12 +204,15 @@ describe('animations', function() {
       });
     });
 
-    it('should animate only the specified CSS className matched within $animateProvider.classNameFilter for svg', function() {
-      module(function($animateProvider) {
+    it('should animate only the specified CSS className matched within $animateProvider.classNameFilter for svg', () => {
+      angular.mock.module($animateProvider => {
         $animateProvider.classNameFilter(/only-allow-this-animation-svg/);
       });
-      inject(function($animate, $rootScope, $compile) {
-        var svgElement = $compile('<svg class="element"></svg>')($rootScope);
+      angular.mock.inject(($animate, $rootScope, $compile) => {
+        const svgElement = $compile('<svg class="element"></svg>')($rootScope);
+
+        toDealoc.push(svgElement);
+
         expect(svgElement).not.toHaveClass('only-allow-this-animation-svg');
 
         $animate.enter(svgElement, parent);
@@ -218,19 +227,19 @@ describe('animations', function() {
       });
     });
 
-    they('should not apply the provided options.$prop value unless it\'s a string or string-based array', ['addClass', 'removeClass'], function(prop) {
-      inject(function($animate, $rootScope) {
-        var startingCssClasses = element.attr('class') || '';
+    they('should not apply the provided options.$prop value unless it\'s a string or string-based array', ['addClass', 'removeClass'], prop => {
+      angular.mock.inject(($animate, $rootScope) => {
+        let startingCssClasses = element.attr('class') || '';
 
-        var options1 = {};
-        options1[prop] = function() {};
+        const options1 = {};
+        options1[prop] = () => { };
         $animate.enter(element, parent, null, options1);
 
         expect(element.attr('class')).toEqual(startingCssClasses);
 
         $rootScope.$digest();
 
-        var options2 = {};
+        const options2 = {};
         options2[prop] = true;
         $animate.leave(element, options2);
 
@@ -240,7 +249,7 @@ describe('animations', function() {
 
         capturedAnimation = null;
 
-        var options3 = {};
+        const options3 = {};
         if (prop === 'removeClass') {
           element.addClass('fatias');
           startingCssClasses = element.attr('class');
@@ -256,7 +265,7 @@ describe('animations', function() {
     });
 
     it('should throw a minErr if a regex value is used which partially contains or fully matches the `ng-animate` CSS class',
-      module(function($animateProvider) {
+      angular.mock.module($animateProvider => {
         expect(setFilter(/ng-animate/)).toThrowMinErr('$animate', 'nongcls');
         expect(setFilter(/first ng-animate last/)).toThrowMinErr('$animate', 'nongcls');
         expect(setFilter(/first ng-animate ng-animate-special last/)).toThrowMinErr('$animate', 'nongcls');
@@ -270,7 +279,7 @@ describe('animations', function() {
         expect(setFilter(/first my-ng-animate last/)).not.toThrow();
 
         function setFilter(regex) {
-          return function() {
+          return () => {
             $animateProvider.classNameFilter(regex);
           };
         }
@@ -278,24 +287,24 @@ describe('animations', function() {
     );
 
     it('should clear the `classNameFilter` if a disallowed RegExp is passed',
-      module(function($animateProvider) {
-        var validRegex = /no-ng-animate/;
-        var invalidRegex = /no ng-animate/;
+      angular.mock.module($animateProvider => {
+        const validRegex = /no-ng-animate/;
+        const invalidRegex = /no ng-animate/;
 
         $animateProvider.classNameFilter(validRegex);
         expect($animateProvider.classNameFilter()).toEqual(validRegex);
 
         // eslint-disable-next-line no-empty
-        try { $animateProvider.classNameFilter(invalidRegex); } catch (err) {}
+        try { $animateProvider.classNameFilter(invalidRegex); } catch (err) { }
         expect($animateProvider.classNameFilter()).toBeNull();
       })
     );
 
-    it('should complete the leave DOM operation in case the classNameFilter fails', function() {
-      module(function($animateProvider) {
+    it('should complete the leave DOM operation in case the classNameFilter fails', () => {
+      angular.mock.module($animateProvider => {
         $animateProvider.classNameFilter(/memorable-animation/);
       });
-      inject(function($animate, $rootScope) {
+      angular.mock.inject(($animate, $rootScope) => {
         expect(element).not.toHaveClass('memorable-animation');
 
         parent.append(element);
@@ -308,24 +317,24 @@ describe('animations', function() {
     });
 
     it('should not try to match the `classNameFilter` RegExp if animations are globally disabled',
-      function() {
-        var regex = /foo/;
-        var regexTestSpy = spyOn(regex, 'test').and.callThrough();
+      () => {
+        const regex = /foo/;
+        const regexTestSpy = jest.spyOn(regex, 'test');
 
-        module(function($animateProvider) {
+        angular.mock.module($animateProvider => {
           $animateProvider.classNameFilter(regex);
         });
 
-        inject(function($animate) {
+        angular.mock.inject($animate => {
           $animate.addClass(element, 'foo');
           expect(regexTestSpy).toHaveBeenCalled();
 
-          regexTestSpy.calls.reset();
+          regexTestSpy.mockClear();
           $animate.enabled(false);
           $animate.addClass(element, 'bar');
           expect(regexTestSpy).not.toHaveBeenCalled();
 
-          regexTestSpy.calls.reset();
+          regexTestSpy.mockClear();
           $animate.enabled(true);
           $animate.addClass(element, 'baz');
           expect(regexTestSpy).toHaveBeenCalled();
@@ -333,21 +342,21 @@ describe('animations', function() {
       }
     );
 
-    describe('customFilter()', function() {
-      it('should be `null` by default', module(function($animateProvider) {
+    describe('customFilter()', () => {
+      it('should be `null` by default', angular.mock.module($animateProvider => {
         expect($animateProvider.customFilter()).toBeNull();
       }));
 
       it('should clear the `customFilter` if no function is passed',
-        module(function($animateProvider) {
+        angular.mock.module($animateProvider => {
           $animateProvider.customFilter(angular.noop);
-          expect($animateProvider.customFilter()).toEqual(jasmine.any(Function));
+          expect($animateProvider.customFilter()).toEqual(expect.any(Function));
 
           $animateProvider.customFilter(null);
           expect($animateProvider.customFilter()).toBeNull();
 
           $animateProvider.customFilter(angular.noop);
-          expect($animateProvider.customFilter()).toEqual(jasmine.any(Function));
+          expect($animateProvider.customFilter()).toEqual(expect.any(Function));
 
           $animateProvider.customFilter({});
           expect($animateProvider.customFilter()).toBeNull();
@@ -355,14 +364,14 @@ describe('animations', function() {
       );
 
       it('should only perform animations for which the function returns a truthy value',
-        function() {
-          var animationsAllowed = false;
+        () => {
+          let animationsAllowed = false;
 
-          module(function($animateProvider) {
-            $animateProvider.customFilter(function() { return animationsAllowed; });
+          angular.mock.module($animateProvider => {
+            $animateProvider.customFilter(() => { return animationsAllowed; });
           });
 
-          inject(function($animate, $rootScope) {
+          angular.mock.inject(($animate, $rootScope) => {
             $animate.enter(element, parent);
             $rootScope.$digest();
             expect(capturedAnimation).toBeNull();
@@ -387,15 +396,15 @@ describe('animations', function() {
       );
 
       it('should only perform animations for which the function returns a truthy value (SVG)',
-        function() {
-          var animationsAllowed = false;
+        () => {
+          let animationsAllowed = false;
 
-          module(function($animateProvider) {
-            $animateProvider.customFilter(function() { return animationsAllowed; });
+          angular.mock.module($animateProvider => {
+            $animateProvider.customFilter(() => { return animationsAllowed; });
           });
 
-          inject(function($animate, $compile, $rootScope) {
-            var svgElement = $compile('<svg class="element"></svg>')($rootScope);
+          angular.mock.inject(($animate, $compile, $rootScope) => {
+            const svgElement = $compile('<svg class="element"></svg>')($rootScope);
 
             $animate.enter(svgElement, parent);
             $rootScope.$digest();
@@ -420,31 +429,31 @@ describe('animations', function() {
         }
       );
 
-      it('should pass the DOM element, event name and options to the filter function', function() {
-        var filterFn = jasmine.createSpy('filterFn');
-        var options = {};
+      it('should pass the DOM element, event name and options to the filter function', () => {
+        const filterFn = jest.fn();
+        const options = {};
 
-        module(function($animateProvider) {
+        angular.mock.module($animateProvider => {
           $animateProvider.customFilter(filterFn);
         });
 
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
           $animate.enter(element, parent, null, options);
           expect(filterFn).toHaveBeenCalledOnceWith(element[0], 'enter', options);
 
-          filterFn.calls.reset();
+          filterFn.mockClear();
 
           $animate.leave(element);
-          expect(filterFn).toHaveBeenCalledOnceWith(element[0], 'leave', jasmine.any(Object));
+          expect(filterFn).toHaveBeenCalledOnceWith(element[0], 'leave', expect.any(Object));
         });
       });
 
-      it('should complete the DOM operation even if filtered out', function() {
-        module(function($animateProvider) {
-          $animateProvider.customFilter(function() { return false; });
+      it('should complete the DOM operation even if filtered out', () => {
+        angular.mock.module($animateProvider => {
+          $animateProvider.customFilter(() => { return false; });
         });
 
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
           expect(element.parent()[0]).toBeUndefined();
 
           $animate.enter(element, parent);
@@ -461,23 +470,23 @@ describe('animations', function() {
         });
       });
 
-      it('should not execute the function if animations are globally disabled', function() {
-        var customFilterSpy = jasmine.createSpy('customFilterFn');
+      it('should not execute the function if animations are globally disabled', () => {
+        const customFilterSpy = jest.fn();
 
-        module(function($animateProvider) {
+        angular.mock.module($animateProvider => {
           $animateProvider.customFilter(customFilterSpy);
         });
 
-        inject(function($animate) {
+        angular.mock.inject($animate => {
           $animate.addClass(element, 'foo');
           expect(customFilterSpy).toHaveBeenCalled();
 
-          customFilterSpy.calls.reset();
+          customFilterSpy.mockClear();
           $animate.enabled(false);
           $animate.addClass(element, 'bar');
           expect(customFilterSpy).not.toHaveBeenCalled();
 
-          customFilterSpy.calls.reset();
+          customFilterSpy.mockClear();
           $animate.enabled(true);
           $animate.addClass(element, 'baz');
           expect(customFilterSpy).toHaveBeenCalled();
@@ -485,8 +494,8 @@ describe('animations', function() {
       });
     });
 
-    describe('enabled()', function() {
-      it('should work for all animations', inject(function($animate) {
+    describe('enabled()', () => {
+      it('should work for all animations', angular.mock.inject($animate => {
 
         expect($animate.enabled()).toBe(true);
 
@@ -498,155 +507,155 @@ describe('animations', function() {
       }));
 
       it('should fully disable all animations in the application if false',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        $animate.enabled(false);
+          $animate.enabled(false);
 
-        $animate.enter(element, parent);
+          $animate.enter(element, parent);
 
-        expect(capturedAnimation).toBeNull();
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
-      }));
+          expect(capturedAnimation).toBeNull();
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
+        }));
 
       it('should disable all animations on the given element',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        parent.append(element);
+          parent.append(element);
 
-        $animate.enabled(element, false);
-        expect($animate.enabled(element)).toBeFalsy();
+          $animate.enabled(element, false);
+          expect($animate.enabled(element)).toBeFalsy();
 
-        $animate.addClass(element, 'red');
-        expect(capturedAnimation).toBeNull();
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
+          $animate.addClass(element, 'red');
+          expect(capturedAnimation).toBeNull();
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
 
-        $animate.enabled(element, true);
-        expect($animate.enabled(element)).toBeTruthy();
+          $animate.enabled(element, true);
+          expect($animate.enabled(element)).toBeTruthy();
 
-        $animate.addClass(element, 'blue');
-        expect(capturedAnimation).toBeNull();
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-      }));
+          $animate.addClass(element, 'blue');
+          expect(capturedAnimation).toBeNull();
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
+        }));
 
       it('should disable all animations for a given element\'s children',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        $animate.enabled(parent, false);
+          $animate.enabled(parent, false);
 
-        $animate.enter(element, parent);
-        expect(capturedAnimation).toBeNull();
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
+          $animate.enter(element, parent);
+          expect(capturedAnimation).toBeNull();
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
 
-        $animate.enabled(parent, true);
+          $animate.enabled(parent, true);
 
-        $animate.enter(element, parent);
-        expect(capturedAnimation).toBeNull();
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-      }));
+          $animate.enter(element, parent);
+          expect(capturedAnimation).toBeNull();
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
+        }));
 
       it('should run animations on an element and its children if explicitly enabled, even if animations are disabled on the parent',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        var child = jqLite('<div></div>');
-        element.append(child);
-        parent.append(element);
+          const child = angular.element('<div></div>');
+          element.append(child);
+          parent.append(element);
 
-        $animate.enabled(parent, false);
+          $animate.enabled(parent, false);
 
-        $animate.addClass(element, 'red');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
+          $animate.addClass(element, 'red');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
 
-        $animate.addClass(child, 'red');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
+          $animate.addClass(child, 'red');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
 
-        $animate.enabled(element, true);
+          $animate.enabled(element, true);
 
-        $animate.addClass(element, 'blue');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-        capturedAnimation = null;
+          $animate.addClass(element, 'blue');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
+          capturedAnimation = null;
 
-        $animate.addClass(child, 'blue');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-      }));
+          $animate.addClass(child, 'blue');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
+        }));
 
       it('should remove the element from the `disabledElementsLookup` map on `$destroy`',
-        inject(function($$Map, $animate, $rootScope) {
+        angular.mock.inject(($$Map, $animate, $rootScope) => {
 
-        var setSpy = spyOn($$Map.prototype, 'set').and.callThrough();
-        var deleteSpy = spyOn($$Map.prototype, 'delete').and.callThrough();
+          const setSpy = jest.spyOn($$Map.prototype, 'set');
+          const deleteSpy = jest.spyOn($$Map.prototype, 'delete');
 
-        parent.append(element);
+          parent.append(element);
 
-        $animate.enabled(element, false);
-        $animate.enabled(element, true);
-        $animate.enabled(element, false);
-        expect(setSpy).toHaveBeenCalledWith(element[0], jasmine.any(Boolean));
-        expect(deleteSpy).not.toHaveBeenCalledWith(element[0]);
-        expect($animate.enabled(element)).toBe(false);
+          $animate.enabled(element, false);
+          $animate.enabled(element, true);
+          $animate.enabled(element, false);
+          expect(setSpy).toHaveBeenCalledWith(element[0], expect.any(Boolean));
+          expect(deleteSpy).not.toHaveBeenCalledWith(element[0]);
+          expect($animate.enabled(element)).toBe(false);
 
-        // No clean-up on `detach` (no `$destroy` event).
-        element.detach();
-        expect(deleteSpy).not.toHaveBeenCalledWith(element[0]);
-        expect($animate.enabled(element)).toBe(false);
+          // No clean-up on `detach` (no `$destroy` event).
+          element.detach();
+          expect(deleteSpy).not.toHaveBeenCalledWith(element[0]);
+          expect($animate.enabled(element)).toBe(false);
 
-        // Clean-up on `remove` (causes `$destroy` event).
-        element.remove();
-        expect(deleteSpy).toHaveBeenCalledOnceWith(element[0]);
-        expect($animate.enabled(element)).toBe(true);
+          // Clean-up on `remove` (causes `$destroy` event).
+          element.remove();
+          expect(deleteSpy).toHaveBeenCalledOnceWith(element[0]);
+          expect($animate.enabled(element)).toBe(true);
 
-        deleteSpy.calls.reset();
+          deleteSpy.mockClear();
 
-        element.triggerHandler('$destroy');
-        expect(deleteSpy).not.toHaveBeenCalledWith(element[0]);
+          element.triggerHandler('$destroy');
+          expect(deleteSpy).not.toHaveBeenCalledWith(element[0]);
 
-        $animate.enabled(element, true);
-        element.triggerHandler('$destroy');
-        expect(deleteSpy).toHaveBeenCalledOnceWith(element[0]);
-      }));
+          $animate.enabled(element, true);
+          element.triggerHandler('$destroy');
+          expect(deleteSpy).toHaveBeenCalledOnceWith(element[0]);
+        }));
     });
 
     it('should strip all comment nodes from the animation and not issue an animation if not real elements are found',
-      inject(function($rootScope, $compile) {
+      angular.mock.inject(($rootScope, $compile) => {
 
-      // since the ng-if results to false then only comments will be fed into the animation
-      element = $compile(
-        '<div><div class="animated" ng-if="false" ng-repeat="item in items"></div></div>'
-      )($rootScope);
+        // since the ng-if results to false then only comments will be fed into the animation
+        element = $compile(
+          '<div><div class="animated" ng-if="false" ng-repeat="item in items"></div></div>'
+        )($rootScope);
 
-      parent.append(element);
+        parent.append(element);
 
-      $rootScope.items = [1,2,3,4,5];
-      $rootScope.$digest();
+        $rootScope.items = [1, 2, 3, 4, 5];
+        $rootScope.$digest();
 
-      expect(capturedAnimation).toBeNull();
-    }));
+        expect(capturedAnimation).toBeNull();
+      }));
 
     it('should not attempt to perform an animation on a text node element',
-      inject(function($rootScope, $animate) {
+      angular.mock.inject(($rootScope, $animate) => {
 
-      element.html('hello there');
-      var textNode = jqLite(element[0].firstChild);
+        element.html('hello there');
+        const textNode = angular.element(element[0].firstChild);
 
-      $animate.addClass(textNode, 'some-class');
-      $rootScope.$digest();
+        $animate.addClass(textNode, 'some-class');
+        $rootScope.$digest();
 
-      expect(capturedAnimation).toBeNull();
-    }));
+        expect(capturedAnimation).toBeNull();
+      }));
 
     it('should not attempt to perform an animation on an empty jqLite collection',
-      inject(function($rootScope, $animate) {
+      angular.mock.inject(($rootScope, $animate) => {
 
         element.html('');
-        var emptyNode = jqLite(element[0].firstChild);
+        const emptyNode = angular.element(element[0].firstChild);
 
         $animate.addClass(emptyNode, 'some-class');
         $rootScope.$digest();
@@ -656,45 +665,48 @@ describe('animations', function() {
     );
 
     it('should perform the leave domOperation if a text node is used',
-      inject(function($rootScope, $animate) {
+      angular.mock.inject(($rootScope, $animate) => {
 
-      element.html('hello there');
-      var textNode = jqLite(element[0].firstChild);
-      var parentNode = textNode[0].parentNode;
+        element.html('hello there');
+        const textNode = angular.element(element[0].firstChild);
+        const parentNode = textNode[0].parentNode;
 
-      $animate.leave(textNode);
-      $rootScope.$digest();
-      expect(capturedAnimation).toBeNull();
-      expect(textNode[0].parentNode).not.toBe(parentNode);
-    }));
+        $animate.leave(textNode);
+        $rootScope.$digest();
+        expect(capturedAnimation).toBeNull();
+        expect(textNode[0].parentNode).not.toBe(parentNode);
+      }));
 
     it('should perform the leave domOperation if a comment node is used',
-      inject(function($rootScope, $animate, $document) {
+      angular.mock.inject(($rootScope, $animate, $document) => {
 
-      var doc = $document[0];
+        const doc = $document[0];
 
-      element.html('hello there');
-      var commentNode = jqLite(doc.createComment('test comment'));
-      var parentNode = element[0];
-      parentNode.appendChild(commentNode[0]);
+        element.html('hello there');
+        const commentNode = angular.element(doc.createComment('test comment'));
+        const parentNode = element[0];
+        parentNode.appendChild(commentNode[0]);
 
-      $animate.leave(commentNode);
-      $rootScope.$digest();
-      expect(capturedAnimation).toBeNull();
-      expect(commentNode[0].parentNode).not.toBe(parentNode);
-    }));
+        $animate.leave(commentNode);
+        $rootScope.$digest();
+        expect(capturedAnimation).toBeNull();
+        expect(commentNode[0].parentNode).not.toBe(parentNode);
+      }));
 
-    it('enter() should animate a transcluded clone with `templateUrl`', function() {
-      module(function($compileProvider) {
-        $compileProvider.directive('foo', function() {
-          return {templateUrl: 'foo.html'};
+    it('enter() should animate a transcluded clone with `templateUrl`', () => {
+      angular.mock.module($compileProvider => {
+        $compileProvider.directive('foo', () => {
+          return { templateUrl: 'foo.html' };
         });
       });
 
-      inject(function($animate, $compile, $rootScope, $templateCache) {
-        parent.append(jqLite('<foo ng-if="showFoo"></foo>'));
+      angular.mock.inject(($animate, $compile, $rootScope, $templateCache) => {
+        const fooEl = angular.element('<foo ng-if="showFoo"></foo>');
+        parent.append(fooEl);
+        toDealoc.push(fooEl);
+
         $templateCache.put('foo.html', '<div>FOO</div>');
-        $compile(parent)($rootScope);
+        compileForTest(parent);
 
         expect(capturedAnimation).toBeNull();
 
@@ -706,7 +718,7 @@ describe('animations', function() {
       });
     });
 
-    it('enter() should issue an enter animation and fire the DOM operation right away before the animation kicks off', inject(function($animate, $rootScope) {
+    it('enter() should issue an enter animation and fire the DOM operation right away before the animation kicks off', angular.mock.inject(($animate, $rootScope) => {
       expect(parent.children().length).toBe(0);
 
       options.foo = 'bar';
@@ -721,7 +733,7 @@ describe('animations', function() {
       expect(capturedAnimation[2].foo).toEqual(options.foo);
     }));
 
-    it('move() should issue an enter animation and fire the DOM operation right away before the animation kicks off', inject(function($animate, $rootScope) {
+    it('move() should issue an enter animation and fire the DOM operation right away before the animation kicks off', angular.mock.inject(($animate, $rootScope) => {
       parent.append(element);
 
       expect(parent.children().length).toBe(1);
@@ -741,30 +753,30 @@ describe('animations', function() {
     }));
 
     they('$prop() should insert the element adjacent to the after element if provided',
-      ['enter', 'move'], function(event) {
+      ['enter', 'move'], event => {
 
-      inject(function($animate, $rootScope) {
-        parent.append(element);
-        assertCompareNodes(parent2.next(), element, true);
-        $animate[event](element, null, parent2, options);
-        assertCompareNodes(parent2.next(), element);
-        $rootScope.$digest();
-        expect(capturedAnimation[1]).toBe(event);
+        angular.mock.inject(($animate, $rootScope) => {
+          parent.append(element);
+          assertCompareNodes(parent2.next(), element, true);
+          $animate[event](element, null, parent2, options);
+          assertCompareNodes(parent2.next(), element);
+          $rootScope.$digest();
+          expect(capturedAnimation[1]).toBe(event);
+        });
       });
-    });
 
     they('$prop() should append to the parent incase the after element is destroyed before the DOM operation is issued',
-      ['enter', 'move'], function(event) {
-      inject(function($animate, $rootScope) {
-        parent2.remove();
-        $animate[event](element, parent, parent2, options);
-        expect(parent2.next()).not.toEqual(element);
-        $rootScope.$digest();
-        expect(capturedAnimation[1]).toBe(event);
+      ['enter', 'move'], event => {
+        angular.mock.inject(($animate, $rootScope) => {
+          parent2.remove();
+          $animate[event](element, parent, parent2, options);
+          expect(parent2.next()).not.toEqual(element);
+          $rootScope.$digest();
+          expect(capturedAnimation[1]).toBe(event);
+        });
       });
-    });
 
-    it('leave() should issue a leave animation with the correct DOM operation', inject(function($animate, $rootScope) {
+    it('leave() should issue a leave animation with the correct DOM operation', angular.mock.inject(($animate, $rootScope) => {
       parent.append(element);
       options.foo = 'bar';
       $animate.leave(element, options);
@@ -780,37 +792,37 @@ describe('animations', function() {
     }));
 
     it('should remove all element and comment nodes during leave animation',
-      inject(function($compile, $rootScope, $animate, $$AnimateRunner) {
+      angular.mock.inject(($compile, $rootScope, $animate, $$AnimateRunner) => {
 
-      element = $compile(
-        '<div>' +
-        '  <div class="animated" ng-repeat-start="item in items">start</div>' +
-        '  <div ng-repeat-end>end</div>' +
-        '</div>'
-      )($rootScope);
+        element = $compile(
+          '<div>' +
+          '  <div class="animated" ng-repeat-start="item in items">start</div>' +
+          '  <div ng-repeat-end>end</div>' +
+          '</div>'
+        )($rootScope);
 
-      parent.append(element);
+        parent.append(element);
 
-      $rootScope.items = [1,2,3,4,5];
-      $rootScope.$digest();
+        $rootScope.items = [1, 2, 3, 4, 5];
+        $rootScope.$digest();
 
-      // all the start/end repeat anchors + their adjacent comments
-      expect(element[0].childNodes.length).toBe(22);
+        // all the start/end repeat anchors + their adjacent comments
+        expect(element[0].childNodes.length).toBe(22);
 
-      var runner = new $$AnimateRunner();
-      overriddenAnimationRunner = runner;
+        const runner = new $$AnimateRunner();
+        overriddenAnimationRunner = runner;
 
-      $rootScope.items.length = 0;
-      $rootScope.$digest();
-      runner.end();
-      $animate.flush();
+        $rootScope.items.length = 0;
+        $rootScope.$digest();
+        runner.end();
+        $animate.flush();
 
-      // we're left with a text node and a comment node
-      expect(element[0].childNodes.length).toBeLessThan(3);
-    }));
+        // we're left with a text node and a comment node
+        expect(element[0].childNodes.length).toBeLessThan(3);
+      }));
 
 
-    it('addClass() should issue an addClass animation with the correct DOM operation', inject(function($animate, $rootScope) {
+    it('addClass() should issue an addClass animation with the correct DOM operation', angular.mock.inject(($animate, $rootScope) => {
       parent.append(element);
       options.foo = 'bar';
       $animate.addClass(element, 'red', options);
@@ -826,7 +838,7 @@ describe('animations', function() {
     }));
 
 
-    it('removeClass() should issue a removeClass animation with the correct DOM operation', inject(function($animate, $rootScope) {
+    it('removeClass() should issue a removeClass animation with the correct DOM operation', angular.mock.inject(($animate, $rootScope) => {
       parent.append(element);
       element.addClass('blue');
 
@@ -843,7 +855,7 @@ describe('animations', function() {
       expect(element).not.toHaveClass('blue');
     }));
 
-    it('setClass() should issue a setClass animation with the correct DOM operation', inject(function($animate, $rootScope) {
+    it('setClass() should issue a setClass animation with the correct DOM operation', angular.mock.inject(($animate, $rootScope) => {
       parent.append(element);
       element.addClass('green');
 
@@ -863,123 +875,125 @@ describe('animations', function() {
     }));
 
     they('$prop() should operate using a native DOM element',
-      ['enter', 'move', 'leave', 'addClass', 'removeClass', 'setClass', 'animate'], function(event) {
+      ['enter', 'move', 'leave', 'addClass', 'removeClass', 'setClass', 'animate'], event => {
 
-      inject(function($animate, $rootScope, $document) {
-        var element = $document[0].createElement('div');
-        element.setAttribute('id', 'crazy-man');
-        if (event !== 'enter' && event !== 'move') {
-          parent.append(element);
-        }
+        angular.mock.inject(($animate, $rootScope, $document) => {
+          const element = $document[0].createElement('div');
+          element.setAttribute('id', 'crazy-man');
+          if (event !== 'enter' && event !== 'move') {
+            parent.append(element);
+          }
 
-        switch (event) {
-          case 'enter':
-          case 'move':
-            $animate[event](element, parent, parent2, options);
-            break;
+          switch (event) {
+            case 'enter':
+            case 'move':
+              $animate[event](element, parent, parent2, options);
+              break;
 
-          case 'addClass':
-            $animate.addClass(element, 'klass', options);
-            break;
+            case 'addClass':
+              $animate.addClass(element, 'klass', options);
+              break;
 
-          case 'removeClass':
-            element.className = 'klass';
-            $animate.removeClass(element, 'klass', options);
-            break;
+            case 'removeClass':
+              element.className = 'klass';
+              $animate.removeClass(element, 'klass', options);
+              break;
 
-          case 'setClass':
-            element.className = 'two';
-            $animate.setClass(element, 'one', 'two', options);
-            break;
+            case 'setClass':
+              element.className = 'two';
+              $animate.setClass(element, 'one', 'two', options);
+              break;
 
-          case 'leave':
-            $animate.leave(element, options);
-            break;
+            case 'leave':
+              $animate.leave(element, options);
+              break;
 
-          case 'animate':
-            var toStyles = { color: 'red' };
-            $animate.animate(element, {}, toStyles, 'klass', options);
-            break;
-        }
+            case 'animate':
+              const toStyles = { color: 'red' };
+              $animate.animate(element, {}, toStyles, 'klass', options);
+              break;
+          }
 
-        $rootScope.$digest();
-        expect(capturedAnimation[0].attr('id')).toEqual(element.getAttribute('id'));
-      });
-    });
-
-    describe('addClass / removeClass', function() {
-      it('should not perform an animation if there are no valid CSS classes to add',
-        inject(function($animate, $rootScope) {
-
-        parent.append(element);
-
-        $animate.removeClass(element, 'something-to-remove');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
-
-        element.addClass('something-to-add');
-
-        $animate.addClass(element, 'something-to-add');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
-      }));
-    });
-
-    describe('animate()', function() {
-      they('should not perform an animation if $prop is provided as a `to` style',
-        { '{}': {},
-          'null': null,
-          'false': false,
-          '""': '',
-          '[]': [] }, function(toStyle) {
-
-        inject(function($animate, $rootScope) {
-          parent.append(element);
-          $animate.animate(element, null, toStyle);
           $rootScope.$digest();
-          expect(capturedAnimation).toBeNull();
+          expect(capturedAnimation[0].attr('id')).toEqual(element.getAttribute('id'));
         });
       });
 
-      it('should not perform an animation if only from styles are provided',
-        inject(function($animate, $rootScope) {
+    describe('addClass / removeClass', () => {
+      it('should not perform an animation if there are no valid CSS classes to add',
+        angular.mock.inject(($animate, $rootScope) => {
 
-        var fromStyle = { color: 'pink' };
-        parent.append(element);
-        $animate.animate(element, fromStyle);
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
-      }));
+          parent.append(element);
+
+          $animate.removeClass(element, 'something-to-remove');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
+
+          element.addClass('something-to-add');
+
+          $animate.addClass(element, 'something-to-add');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
+        }));
+    });
+
+    describe('animate()', () => {
+      they('should not perform an animation if $prop is provided as a `to` style',
+        {
+          '{}': {},
+          'null': null,
+          'false': false,
+          '""': '',
+          '[]': []
+        }, toStyle => {
+
+          angular.mock.inject(($animate, $rootScope) => {
+            parent.append(element);
+            $animate.animate(element, null, toStyle);
+            $rootScope.$digest();
+            expect(capturedAnimation).toBeNull();
+          });
+        });
+
+      it('should not perform an animation if only from styles are provided',
+        angular.mock.inject(($animate, $rootScope) => {
+
+          const fromStyle = { color: 'pink' };
+          parent.append(element);
+          $animate.animate(element, fromStyle);
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
+        }));
 
       it('should perform an animation if only from styles are provided as well as any valid classes',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        parent.append(element);
+          parent.append(element);
 
-        var fromStyle = { color: 'red' };
-        var options = { removeClass: 'goop' };
-        $animate.animate(element, fromStyle, null, null, options);
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
+          let fromStyle = { color: 'red' };
+          let options = { removeClass: 'goop' };
+          $animate.animate(element, fromStyle, null, null, options);
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
 
-        fromStyle = { color: 'blue' };
-        options = { addClass: 'goop' };
-        $animate.animate(element, fromStyle, null, null, options);
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-      }));
+          fromStyle = { color: 'blue' };
+          options = { addClass: 'goop' };
+          $animate.animate(element, fromStyle, null, null, options);
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
+        }));
     });
 
 
-    describe('$animate.cancel()', function() {
+    describe('$animate.cancel()', () => {
 
-      it('should cancel enter()', inject(function($animate, $rootScope) {
+      it('should cancel enter()', angular.mock.inject(($animate, $rootScope) => {
         expect(parent.children().length).toBe(0);
 
         options.foo = 'bar';
-        var spy = jasmine.createSpy('cancelCatch');
+        const spy = jest.fn();
 
-        var runner = $animate.enter(element, parent, null, options);
+        const runner = $animate.enter(element, parent, null, options);
 
         runner.catch(spy);
 
@@ -1003,16 +1017,16 @@ describe('animations', function() {
       }));
 
 
-      it('should cancel move()', inject(function($animate, $rootScope) {
+      it('should cancel move()', angular.mock.inject(($animate, $rootScope) => {
         parent.append(element);
 
         expect(parent.children().length).toBe(1);
         expect(parent2.children().length).toBe(0);
 
         options.foo = 'bar';
-        var spy = jasmine.createSpy('cancelCatch');
+        const spy = jest.fn();
 
-        var runner = $animate.move(element, parent2, null, options);
+        const runner = $animate.move(element, parent2, null, options);
         runner.catch(spy);
 
         expect(parent.children().length).toBe(0);
@@ -1037,12 +1051,12 @@ describe('animations', function() {
       }));
 
 
-      it('cancel leave()', inject(function($animate, $rootScope) {
+      it('cancel leave()', angular.mock.inject(($animate, $rootScope) => {
         parent.append(element);
         options.foo = 'bar';
-        var spy = jasmine.createSpy('cancelCatch');
+        const spy = jest.fn();
 
-        var runner = $animate.leave(element, options);
+        const runner = $animate.leave(element, options);
 
         runner.catch(spy);
         $rootScope.$digest();
@@ -1063,11 +1077,11 @@ describe('animations', function() {
         expect(spy).toHaveBeenCalled();
       }));
 
-      it('should cancel addClass()', inject(function($animate, $rootScope) {
+      it('should cancel addClass()', angular.mock.inject(($animate, $rootScope) => {
         parent.append(element);
         options.foo = 'bar';
-        var runner = $animate.addClass(element, 'red', options);
-        var spy = jasmine.createSpy('cancelCatch');
+        const runner = $animate.addClass(element, 'red', options);
+        const spy = jest.fn();
 
         runner.catch(spy);
         $rootScope.$digest();
@@ -1085,13 +1099,13 @@ describe('animations', function() {
       }));
 
 
-      it('should cancel setClass()', inject(function($animate, $rootScope) {
+      it('should cancel setClass()', angular.mock.inject(($animate, $rootScope) => {
         parent.append(element);
         element.addClass('red');
         options.foo = 'bar';
 
-        var runner = $animate.setClass(element, 'blue', 'red', options);
-        var spy = jasmine.createSpy('cancelCatch');
+        const runner = $animate.setClass(element, 'blue', 'red', options);
+        const spy = jest.fn();
 
         runner.catch(spy);
         $rootScope.$digest();
@@ -1110,13 +1124,13 @@ describe('animations', function() {
       }));
 
 
-      it('should cancel removeClass()', inject(function($animate, $rootScope) {
+      it('should cancel removeClass()', angular.mock.inject(($animate, $rootScope) => {
         parent.append(element);
         element.addClass('red blue');
 
         options.foo = 'bar';
-        var runner = $animate.removeClass(element, 'red', options);
-        var spy = jasmine.createSpy('cancelCatch');
+        const runner = $animate.removeClass(element, 'red', options);
+        const spy = jest.fn();
 
         runner.catch(spy);
         $rootScope.$digest();
@@ -1135,569 +1149,574 @@ describe('animations', function() {
 
 
       it('should cancel animate()',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        parent.append(element);
+          parent.append(element);
 
-        var fromStyle = { color: 'blue' };
-        var options = { addClass: 'red' };
+          const fromStyle = { color: 'blue' };
+          const options = { addClass: 'red' };
 
-        var runner = $animate.animate(element, fromStyle, null, null, options);
-        var spy = jasmine.createSpy('cancelCatch');
+          const runner = $animate.animate(element, fromStyle, null, null, options);
+          const spy = jest.fn();
 
-        runner.catch(spy);
-        $rootScope.$digest();
+          runner.catch(spy);
+          $rootScope.$digest();
 
-        expect(capturedAnimation).toBeTruthy();
+          expect(capturedAnimation).toBeTruthy();
 
-        $animate.cancel(runner);
-        expect(element).toHaveClass('red');
+          $animate.cancel(runner);
+          expect(element).toHaveClass('red');
 
-        $rootScope.$digest();
-        expect(spy).toHaveBeenCalled();
-      }));
+          $rootScope.$digest();
+          expect(spy).toHaveBeenCalled();
+        }));
     });
 
 
-    describe('parent animations', function() {
+    describe('parent animations', () => {
       they('should not cancel a pre-digest parent class-based animation if a child $prop animation is set to run',
-        ['structural', 'class-based'], function(animationType) {
+        ['structural', 'class-based'], animationType => {
 
-        inject(function($rootScope, $animate) {
-          parent.append(element);
-          var child = jqLite('<div></div>');
+          angular.mock.inject(($rootScope, $animate) => {
+            parent.append(element);
+            const child = angular.element('<div></div>');
 
-          if (animationType === 'structural') {
-            $animate.enter(child, element);
-          } else {
-            element.append(child);
-            $animate.addClass(child, 'test');
-          }
+            if (animationType === 'structural') {
+              $animate.enter(child, element);
+            } else {
+              element.append(child);
+              $animate.addClass(child, 'test');
+            }
 
-          $animate.addClass(parent, 'abc');
-          expect(capturedAnimationHistory.length).toBe(0);
-          $rootScope.$digest();
-          expect(capturedAnimationHistory.length).toBe(2);
+            $animate.addClass(parent, 'abc');
+            expect(capturedAnimationHistory.length).toBe(0);
+            $rootScope.$digest();
+            expect(capturedAnimationHistory.length).toBe(2);
+          });
         });
-      });
 
       they('should not cancel a post-digest parent class-based animation if a child $prop animation is set to run',
-        ['structural', 'class-based'], function(animationType) {
+        ['structural', 'class-based'], animationType => {
 
-        inject(function($rootScope, $animate) {
-          parent.append(element);
-          var child = jqLite('<div></div>');
+          angular.mock.inject(($rootScope, $animate) => {
+            parent.append(element);
+            const child = angular.element('<div></div>');
 
-          $animate.addClass(parent, 'abc');
-          $rootScope.$digest();
+            $animate.addClass(parent, 'abc');
+            $rootScope.$digest();
 
-          if (animationType === 'structural') {
-            $animate.enter(child, element);
-          } else {
-            element.append(child);
-            $animate.addClass(child, 'test');
-          }
+            if (animationType === 'structural') {
+              $animate.enter(child, element);
+            } else {
+              element.append(child);
+              $animate.addClass(child, 'test');
+            }
 
-          expect(capturedAnimationHistory.length).toBe(1);
+            expect(capturedAnimationHistory.length).toBe(1);
 
-          $rootScope.$digest();
+            $rootScope.$digest();
 
-          expect(capturedAnimationHistory.length).toBe(2);
+            expect(capturedAnimationHistory.length).toBe(2);
+          });
         });
-      });
 
       they('should not cancel a post-digest $prop child animation if a class-based parent animation is set to run',
-        ['structural', 'class-based'], function(animationType) {
+        ['structural', 'class-based'], animationType => {
 
-        inject(function($rootScope, $animate) {
-          parent.append(element);
+          angular.mock.inject(($rootScope, $animate) => {
+            parent.append(element);
 
-          var child = jqLite('<div></div>');
-          if (animationType === 'structural') {
-            $animate.enter(child, element);
-          } else {
-            element.append(child);
-            $animate.addClass(child, 'test');
-          }
+            const child = angular.element('<div></div>');
+            if (animationType === 'structural') {
+              $animate.enter(child, element);
+            } else {
+              element.append(child);
+              $animate.addClass(child, 'test');
+            }
 
-          $rootScope.$digest();
+            $rootScope.$digest();
 
-          $animate.addClass(parent, 'abc');
+            $animate.addClass(parent, 'abc');
 
-          expect(capturedAnimationHistory.length).toBe(1);
-          $rootScope.$digest();
+            expect(capturedAnimationHistory.length).toBe(1);
+            $rootScope.$digest();
 
-          expect(capturedAnimationHistory.length).toBe(2);
+            expect(capturedAnimationHistory.length).toBe(2);
+          });
         });
-      });
     });
 
     it('should NOT clobber all data on an element when animation is finished',
-      inject(function($animate, $rootScope) {
+      angular.mock.inject(($animate, $rootScope) => {
 
-      element.data('foo', 'bar');
+        element.data('foo', 'bar');
 
-      $animate.removeClass(element, 'ng-hide');
-      $rootScope.$digest();
-      $animate.addClass(element, 'ng-hide');
-      $rootScope.$digest();
+        $animate.removeClass(element, 'ng-hide');
+        $rootScope.$digest();
+        $animate.addClass(element, 'ng-hide');
+        $rootScope.$digest();
 
-      expect(element.data('foo')).toEqual('bar');
-    }));
+        expect(element.data('foo')).toEqual('bar');
+      }));
 
-    describe('child animations', function() {
+    describe('child animations', () => {
       it('should skip animations if the element is not attached to the $rootElement',
-        inject(function($compile, $rootScope, $animate) {
+        angular.mock.inject(($compile, $rootScope, $animate) => {
 
-        $animate.enabled(true);
+          $animate.enabled(true);
 
-        var elm1 = $compile('<div class="animated"></div>')($rootScope);
+          const elm1 = $compile('<div class="animated"></div>')($rootScope);
 
-        expect(capturedAnimation).toBeNull();
-        $animate.addClass(elm1, 'klass2');
-        expect(capturedAnimation).toBeNull();
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
-      }));
-
-      it('should skip animations if the element is attached to the $rootElement, but not apart of the body',
-        inject(function($compile, $rootScope, $animate, $rootElement) {
-
-        $animate.enabled(true);
-
-        var elm1 = $compile('<div class="animated"></div>')($rootScope);
-
-        var newParent = $compile('<div></div>')($rootScope);
-        newParent.append($rootElement);
-        $rootElement.append(elm1);
-
-        expect(capturedAnimation).toBeNull();
-        $animate.addClass(elm1, 'klass2');
-        expect(capturedAnimation).toBeNull();
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
-      }));
-
-      it('should skip the animation if the element is removed from the DOM before the post digest kicks in',
-        inject(function($animate, $rootScope) {
-
-        $animate.enter(element, parent);
-        expect(capturedAnimation).toBeNull();
-
-        element.remove();
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
-      }));
-
-      it('should be blocked when there is an ongoing structural parent animation occurring',
-        inject(function($rootScope, $rootElement, $animate) {
-
-        parent.append(element);
-
-        expect(capturedAnimation).toBeNull();
-        $animate.move(parent, parent2);
-        $rootScope.$digest();
-
-        // yes the animation is going on
-        expect(capturedAnimation[0]).toBe(parent);
-        capturedAnimation = null;
-
-        $animate.addClass(element, 'blue');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
-      }));
-
-      it('should disable all child animations for atleast one turn when a structural animation is issued',
-        inject(function($animate, $rootScope, $compile, $document, $rootElement, $$AnimateRunner) {
-
-        element = $compile(
-          '<div><div class="if-animation" ng-if="items.length">' +
-          '  <div class="repeat-animation" ng-repeat="item in items">' +
-          '    {{ item }}' +
-          '  </div>' +
-          '</div></div>'
-        )($rootScope);
-
-        jqLite($document[0].body).append($rootElement);
-        $rootElement.append(element);
-
-        var runner = new $$AnimateRunner();
-        overriddenAnimationRunner = runner;
-
-        $rootScope.items = [1];
-        $rootScope.$digest();
-
-        expect(capturedAnimation[0]).toHaveClass('if-animation');
-        expect(capturedAnimationHistory.length).toBe(1);
-        expect(element[0].querySelectorAll('.repeat-animation').length).toBe(1);
-
-        $rootScope.items = [1, 2];
-        $rootScope.$digest();
-
-        expect(capturedAnimation[0]).toHaveClass('if-animation');
-        expect(capturedAnimationHistory.length).toBe(1);
-        expect(element[0].querySelectorAll('.repeat-animation').length).toBe(2);
-
-        runner.end();
-        $animate.flush();
-
-        $rootScope.items = [1, 2, 3];
-        $rootScope.$digest();
-
-        expect(capturedAnimation[0]).toHaveClass('repeat-animation');
-        expect(capturedAnimationHistory.length).toBe(2);
-        expect(element[0].querySelectorAll('.repeat-animation').length).toBe(3);
-      }));
-
-      it('should not be blocked when there is an ongoing class-based parent animation occurring',
-        inject(function($rootScope, $rootElement, $animate) {
-
-        parent.append(element);
-
-        expect(capturedAnimation).toBeNull();
-        $animate.addClass(parent, 'rogers');
-        $rootScope.$digest();
-
-        // yes the animation is going on
-        expect(capturedAnimation[0]).toBe(parent);
-        capturedAnimation = null;
-
-        $animate.addClass(element, 'blue');
-        $rootScope.$digest();
-        expect(capturedAnimation[0]).toBe(element);
-      }));
-
-      describe('when a parent structural animation is triggered:', function() {
-
-        it('should skip all pre-digest queued child animations',
-          inject(function($rootScope, $rootElement, $animate) {
-
-          parent.append(element);
-
-          $animate.addClass(element, 'rumlow');
-          $animate.move(parent, null, parent2);
+          toDealoc.push(elm1);
 
           expect(capturedAnimation).toBeNull();
-          expect(capturedAnimationHistory.length).toBe(0);
+          $animate.addClass(elm1, 'klass2');
+          expect(capturedAnimation).toBeNull();
           $rootScope.$digest();
-
-          expect(capturedAnimation[0]).toBe(parent);
-          expect(capturedAnimationHistory.length).toBe(1);
+          expect(capturedAnimation).toBeNull();
         }));
 
-        it('should end all ongoing post-digest child animations',
-          inject(function($rootScope, $rootElement, $animate) {
+      it('should skip animations if the element is attached to the $rootElement, but not apart of the body',
+        angular.mock.inject(($compile, $rootScope, $animate, $rootElement) => {
+
+          $animate.enabled(true);
+
+          const elm1 = $compile('<div class="animated"></div>')($rootScope);
+          toDealoc.push(elm1);
+
+          const newParent = $compile('<div></div>')($rootScope);
+          toDealoc.push(newParent);
+
+          newParent.append($rootElement);
+          $rootElement.append(elm1);
+
+          expect(capturedAnimation).toBeNull();
+          $animate.addClass(elm1, 'klass2');
+          expect(capturedAnimation).toBeNull();
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
+        }));
+
+      it('should skip the animation if the element is removed from the DOM before the post digest kicks in',
+        angular.mock.inject(($animate, $rootScope) => {
+
+          $animate.enter(element, parent);
+          expect(capturedAnimation).toBeNull();
+
+          element.remove();
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
+        }));
+
+      it('should be blocked when there is an ongoing structural parent animation occurring',
+        angular.mock.inject(($rootScope, $rootElement, $animate) => {
 
           parent.append(element);
 
-          $animate.addClass(element, 'rumlow');
-          var isCancelled = false;
-          overriddenAnimationRunner = extend(defaultFakeAnimationRunner, {
-            end: function() {
+          expect(capturedAnimation).toBeNull();
+          $animate.move(parent, parent2);
+          $rootScope.$digest();
+
+          // yes the animation is going on
+          expect(capturedAnimation[0]).toBe(parent);
+          capturedAnimation = null;
+
+          $animate.addClass(element, 'blue');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
+        }));
+
+      it('should disable all child animations for atleast one turn when a structural animation is issued',
+        angular.mock.inject(($animate, $rootScope, $compile, $document, $rootElement, $$AnimateRunner) => {
+
+          element = $compile(
+            '<div><div class="if-animation" ng-if="items.length">' +
+            '  <div class="repeat-animation" ng-repeat="item in items">' +
+            '    {{ item }}' +
+            '  </div>' +
+            '</div></div>'
+          )($rootScope);
+
+          angular.element($document[0].body).append($rootElement);
+          $rootElement.append(element);
+
+          const runner = new $$AnimateRunner();
+          overriddenAnimationRunner = runner;
+
+          $rootScope.items = [1];
+          $rootScope.$digest();
+
+          expect(capturedAnimation[0]).toHaveClass('if-animation');
+          expect(capturedAnimationHistory.length).toBe(1);
+          expect(element[0].querySelectorAll('.repeat-animation').length).toBe(1);
+
+          $rootScope.items = [1, 2];
+          $rootScope.$digest();
+
+          expect(capturedAnimation[0]).toHaveClass('if-animation');
+          expect(capturedAnimationHistory.length).toBe(1);
+          expect(element[0].querySelectorAll('.repeat-animation').length).toBe(2);
+
+          runner.end();
+          $animate.flush();
+
+          $rootScope.items = [1, 2, 3];
+          $rootScope.$digest();
+
+          expect(capturedAnimation[0]).toHaveClass('repeat-animation');
+          expect(capturedAnimationHistory.length).toBe(2);
+          expect(element[0].querySelectorAll('.repeat-animation').length).toBe(3);
+        }));
+
+      it('should not be blocked when there is an ongoing class-based parent animation occurring',
+        angular.mock.inject(($rootScope, $rootElement, $animate) => {
+
+          parent.append(element);
+
+          expect(capturedAnimation).toBeNull();
+          $animate.addClass(parent, 'rogers');
+          $rootScope.$digest();
+
+          // yes the animation is going on
+          expect(capturedAnimation[0]).toBe(parent);
+          capturedAnimation = null;
+
+          $animate.addClass(element, 'blue');
+          $rootScope.$digest();
+          expect(capturedAnimation[0]).toBe(element);
+        }));
+
+      describe('when a parent structural animation is triggered:', () => {
+
+        it('should skip all pre-digest queued child animations',
+          angular.mock.inject(($rootScope, $rootElement, $animate) => {
+
+            parent.append(element);
+
+            $animate.addClass(element, 'rumlow');
+            $animate.move(parent, null, parent2);
+
+            expect(capturedAnimation).toBeNull();
+            expect(capturedAnimationHistory.length).toBe(0);
+            $rootScope.$digest();
+
+            expect(capturedAnimation[0]).toBe(parent);
+            expect(capturedAnimationHistory.length).toBe(1);
+          }));
+
+        it('should end all ongoing post-digest child animations',
+          angular.mock.inject(($rootScope, $rootElement, $animate) => {
+
+            parent.append(element);
+
+            $animate.addClass(element, 'rumlow');
+            let isCancelled = false;
+            overriddenAnimationRunner = angular.extend(defaultFakeAnimationRunner, {
+              end: function () {
+                isCancelled = true;
+              }
+            });
+
+            $rootScope.$digest();
+            expect(capturedAnimation[0]).toBe(element);
+            expect(isCancelled).toBe(false);
+
+            // restore the default
+            overriddenAnimationRunner = defaultFakeAnimationRunner;
+            $animate.move(parent, null, parent2);
+            $rootScope.$digest();
+            expect(capturedAnimation[0]).toBe(parent);
+
+            expect(isCancelled).toBe(true);
+          }));
+
+        it('should ignore children that have animation data-attributes but no animation data',
+          angular.mock.inject(($rootScope, $rootElement, $animate) => {
+
+            parent.append(element);
+
+            $animate.addClass(element, 'rumlow');
+
+            $rootScope.$digest();
+            expect(capturedAnimation[0]).toBe(element);
+
+            // If an element is cloned during an animation, the clone has the data-attributes indicating
+            // an animation
+            const clone = element.clone();
+            parent.append(clone);
+
+            $animate.move(parent, null, parent2);
+            $rootScope.$digest();
+            expect(capturedAnimation[0]).toBe(parent);
+          }));
+      });
+
+      it('should not end any child animations if a parent class-based animation is issued',
+        angular.mock.inject(($rootScope, $rootElement, $animate) => {
+
+          parent.append(element);
+
+          const element2 = angular.element('<div>element2</div>');
+          $animate.enter(element2, parent);
+
+          let isCancelled = false;
+          overriddenAnimationRunner = angular.extend(defaultFakeAnimationRunner, {
+            end: function () {
               isCancelled = true;
             }
           });
 
           $rootScope.$digest();
-          expect(capturedAnimation[0]).toBe(element);
+          expect(capturedAnimation[0]).toBe(element2);
           expect(isCancelled).toBe(false);
 
           // restore the default
           overriddenAnimationRunner = defaultFakeAnimationRunner;
-          $animate.move(parent, null, parent2);
+          $animate.addClass(parent, 'peter');
           $rootScope.$digest();
           expect(capturedAnimation[0]).toBe(parent);
 
-          expect(isCancelled).toBe(true);
+          expect(isCancelled).toBe(false);
         }));
 
-        it('should ignore children that have animation data-attributes but no animation data',
-          inject(function($rootScope, $rootElement, $animate) {
+      it('should allow follow-up class-based animations to run in parallel on the same element',
+        angular.mock.inject(($rootScope, $animate) => {
 
           parent.append(element);
 
-          $animate.addClass(element, 'rumlow');
+          let runner1done = false;
+          const runner1 = $animate.addClass(element, 'red');
+          runner1.done(() => {
+            runner1done = true;
+          });
 
           $rootScope.$digest();
-          expect(capturedAnimation[0]).toBe(element);
+          expect(capturedAnimation).toBeTruthy();
+          expect(runner1done).toBeFalsy();
 
-          // If an element is cloned during an animation, the clone has the data-attributes indicating
-          // an animation
-          var clone = element.clone();
-          parent.append(clone);
+          capturedAnimation = null;
 
-          $animate.move(parent, null, parent2);
+          // make sure it's a different runner
+          overriddenAnimationRunner = angular.extend(defaultFakeAnimationRunner, {
+            end: function () {
+              // this code will still end the animation, just not at any deeper level
+            }
+          });
+
+          let runner2done = false;
+          const runner2 = $animate.addClass(element, 'blue');
+          runner2.done(() => {
+            runner2done = true;
+          });
+
           $rootScope.$digest();
-          expect(capturedAnimation[0]).toBe(parent);
+          expect(capturedAnimation).toBeTruthy();
+          expect(runner2done).toBeFalsy();
+
+          expect(runner1done).toBeFalsy();
+
+          runner2.end();
+
+          expect(runner2done).toBeTruthy();
+          expect(runner1done).toBeFalsy();
         }));
-      });
-
-      it('should not end any child animations if a parent class-based animation is issued',
-        inject(function($rootScope, $rootElement, $animate) {
-
-        parent.append(element);
-
-        var element2 = jqLite('<div>element2</div>');
-        $animate.enter(element2, parent);
-
-        var isCancelled = false;
-        overriddenAnimationRunner = extend(defaultFakeAnimationRunner, {
-          end: function() {
-            isCancelled = true;
-          }
-        });
-
-        $rootScope.$digest();
-        expect(capturedAnimation[0]).toBe(element2);
-        expect(isCancelled).toBe(false);
-
-        // restore the default
-        overriddenAnimationRunner = defaultFakeAnimationRunner;
-        $animate.addClass(parent, 'peter');
-        $rootScope.$digest();
-        expect(capturedAnimation[0]).toBe(parent);
-
-        expect(isCancelled).toBe(false);
-      }));
-
-      it('should allow follow-up class-based animations to run in parallel on the same element',
-        inject(function($rootScope, $animate) {
-
-        parent.append(element);
-
-        var runner1done = false;
-        var runner1 = $animate.addClass(element, 'red');
-        runner1.done(function() {
-          runner1done = true;
-        });
-
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-        expect(runner1done).toBeFalsy();
-
-        capturedAnimation = null;
-
-        // make sure it's a different runner
-        overriddenAnimationRunner = extend(defaultFakeAnimationRunner, {
-          end: function() {
-            // this code will still end the animation, just not at any deeper level
-          }
-        });
-
-        var runner2done = false;
-        var runner2 = $animate.addClass(element, 'blue');
-        runner2.done(function() {
-          runner2done = true;
-        });
-
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-        expect(runner2done).toBeFalsy();
-
-        expect(runner1done).toBeFalsy();
-
-        runner2.end();
-
-        expect(runner2done).toBeTruthy();
-        expect(runner1done).toBeFalsy();
-      }));
 
       it('should remove the animation block on child animations once the parent animation is complete',
-        inject(function($rootScope, $rootElement, $animate, $$AnimateRunner) {
+        angular.mock.inject(($rootScope, $rootElement, $animate, $$AnimateRunner) => {
 
-        var runner = new $$AnimateRunner();
-        overriddenAnimationRunner = runner;
-        parent.append(element);
+          const runner = new $$AnimateRunner();
+          overriddenAnimationRunner = runner;
+          parent.append(element);
 
-        $animate.enter(parent, null, parent2);
-        $rootScope.$digest();
-        expect(capturedAnimationHistory.length).toBe(1);
+          $animate.enter(parent, null, parent2);
+          $rootScope.$digest();
+          expect(capturedAnimationHistory.length).toBe(1);
 
-        $animate.addClass(element, 'tony');
-        $rootScope.$digest();
-        expect(capturedAnimationHistory.length).toBe(1);
+          $animate.addClass(element, 'tony');
+          $rootScope.$digest();
+          expect(capturedAnimationHistory.length).toBe(1);
 
-        runner.end();
-        $animate.flush();
+          runner.end();
+          $animate.flush();
 
-        $animate.addClass(element, 'stark');
-        $rootScope.$digest();
-        expect(capturedAnimationHistory.length).toBe(2);
-      }));
+          $animate.addClass(element, 'stark');
+          $rootScope.$digest();
+          expect(capturedAnimationHistory.length).toBe(2);
+        }));
     });
 
-    describe('cancellations', function() {
+    describe('cancellations', () => {
       it('should cancel the previous animation if a follow-up structural animation takes over',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        var enterComplete = false;
-        overriddenAnimationRunner = extend(defaultFakeAnimationRunner, {
-          end: function() {
-            enterComplete = true;
-          }
-        });
+          let enterComplete = false;
+          overriddenAnimationRunner = angular.extend(defaultFakeAnimationRunner, {
+            end: function () {
+              enterComplete = true;
+            }
+          });
 
-        parent.append(element);
-        $animate.move(element, parent2);
+          parent.append(element);
+          $animate.move(element, parent2);
 
-        $rootScope.$digest();
-        expect(enterComplete).toBe(false);
+          $rootScope.$digest();
+          expect(enterComplete).toBe(false);
 
-        $animate.leave(element);
-        $rootScope.$digest();
-        expect(enterComplete).toBe(true);
-      }));
+          $animate.leave(element);
+          $rootScope.$digest();
+          expect(enterComplete).toBe(true);
+        }));
 
       it('should cancel the previous structural animation if a follow-up structural animation takes over before the postDigest',
-        inject(function($animate) {
+        angular.mock.inject($animate => {
 
-        var enterDone = jasmine.createSpy('enter animation done');
-        $animate.enter(element, parent).done(enterDone);
-        expect(enterDone).not.toHaveBeenCalled();
+          const enterDone = jest.fn();
+          $animate.enter(element, parent).done(enterDone);
+          expect(enterDone).not.toHaveBeenCalled();
 
-        $animate.leave(element);
-        $animate.flush();
-        expect(enterDone).toHaveBeenCalled();
-      }));
+          $animate.leave(element);
+          $animate.flush();
+          expect(enterDone).toHaveBeenCalled();
+        }));
 
       it('should cancel the previously running addClass animation if a follow-up removeClass animation is using the same class value',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        parent.append(element);
-        var runner = $animate.addClass(element, 'active-class');
-        $rootScope.$digest();
+          parent.append(element);
+          const runner = $animate.addClass(element, 'active-class');
+          $rootScope.$digest();
 
-        var doneHandler = jasmine.createSpy('addClass done');
-        runner.done(doneHandler);
+          const doneHandler = jest.fn();
+          runner.done(doneHandler);
 
-        expect(doneHandler).not.toHaveBeenCalled();
+          expect(doneHandler).not.toHaveBeenCalled();
 
-        $animate.removeClass(element, 'active-class');
-        $rootScope.$digest();
+          $animate.removeClass(element, 'active-class');
+          $rootScope.$digest();
 
-        // true = rejected
-        expect(doneHandler).toHaveBeenCalledWith(true);
-      }));
+          // true = rejected
+          expect(doneHandler).toHaveBeenCalledWith(true);
+        }));
 
       it('should cancel the previously running removeClass animation if a follow-up addClass animation is using the same class value',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        element.addClass('active-class');
-        parent.append(element);
-        var runner = $animate.removeClass(element, 'active-class');
-        $rootScope.$digest();
+          element.addClass('active-class');
+          parent.append(element);
+          const runner = $animate.removeClass(element, 'active-class');
+          $rootScope.$digest();
 
-        var doneHandler = jasmine.createSpy('addClass done');
-        runner.done(doneHandler);
+          const doneHandler = jest.fn();
+          runner.done(doneHandler);
 
-        expect(doneHandler).not.toHaveBeenCalled();
+          expect(doneHandler).not.toHaveBeenCalled();
 
-        $animate.addClass(element, 'active-class');
-        $rootScope.$digest();
+          $animate.addClass(element, 'active-class');
+          $rootScope.$digest();
 
-        // true = rejected
-        expect(doneHandler).toHaveBeenCalledWith(true);
-      }));
+          // true = rejected
+          expect(doneHandler).toHaveBeenCalledWith(true);
+        }));
 
       it('should merge a follow-up animation that does not add classes into the previous animation (pre-digest)',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        $animate.enter(element, parent);
-        $animate.animate(element, {height: 0}, {height: '100px'});
+          $animate.enter(element, parent);
+          $animate.animate(element, { height: 0 }, { height: '100px' });
 
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-        expect(capturedAnimation[1]).toBe('enter'); // make sure the enter animation is present
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
+          expect(capturedAnimation[1]).toBe('enter'); // make sure the enter animation is present
 
-        // fake the style setting (because $$animation is mocked)
-        applyAnimationStyles(element, capturedAnimation[2]);
-        expect(element.css('height')).toContain('100px');
-      }));
+          // fake the style setting (because $$animation is mocked)
+          ngInternals.applyAnimationStyles(element, capturedAnimation[2]);
+          expect(element.css('height')).toContain('100px');
+        }));
 
       it('should immediately skip the class-based animation if there is an active structural animation',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        $animate.enter(element, parent);
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
+          $animate.enter(element, parent);
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
 
-        capturedAnimation = null;
-        $animate.addClass(element, 'red');
-        expect(element).toHaveClass('red');
-      }));
+          capturedAnimation = null;
+          $animate.addClass(element, 'red');
+          expect(element).toHaveClass('red');
+        }));
 
       it('should join the class-based animation into the structural animation if the structural animation is pre-digest',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        $animate.enter(element, parent);
-        expect(capturedAnimation).toBeNull();
+          $animate.enter(element, parent);
+          expect(capturedAnimation).toBeNull();
 
-        $animate.addClass(element, 'red');
-        expect(element).not.toHaveClass('red');
+          $animate.addClass(element, 'red');
+          expect(element).not.toHaveClass('red');
 
-        expect(capturedAnimation).toBeNull();
-        $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
+          $rootScope.$digest();
 
-        expect(capturedAnimation[1]).toBe('enter');
-        expect(capturedAnimation[2].addClass).toBe('red');
-      }));
+          expect(capturedAnimation[1]).toBe('enter');
+          expect(capturedAnimation[2].addClass).toBe('red');
+        }));
 
       it('should issue a new runner instance if a previous structural animation was cancelled',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        parent.append(element);
+          parent.append(element);
 
-        var runner1 = $animate.move(element, parent2);
-        $rootScope.$digest();
+          const runner1 = $animate.move(element, parent2);
+          $rootScope.$digest();
 
-        var runner2 = $animate.leave(element);
-        $rootScope.$digest();
+          const runner2 = $animate.leave(element);
+          $rootScope.$digest();
 
-        expect(runner1).not.toBe(runner2);
-      }));
+          expect(runner1).not.toBe(runner2);
+        }));
 
       it('should properly cancel out animations when the same class is added/removed within the same digest',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        parent.append(element);
-        $animate.addClass(element, 'red');
-        $animate.removeClass(element, 'red');
-        $rootScope.$digest();
+          parent.append(element);
+          $animate.addClass(element, 'red');
+          $animate.removeClass(element, 'red');
+          $rootScope.$digest();
 
-        expect(capturedAnimation).toBeNull();
+          expect(capturedAnimation).toBeNull();
 
-        $animate.addClass(element, 'blue');
-        $rootScope.$digest();
+          $animate.addClass(element, 'blue');
+          $rootScope.$digest();
 
-        expect(capturedAnimation[2].addClass).toBe('blue');
-      }));
+          expect(capturedAnimation[2].addClass).toBe('blue');
+        }));
 
       it('should NOT cancel a previously joined addClass+structural animation if a follow-up ' +
         'removeClass animation is using the same class value (pre-digest)',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        var runner = $animate.enter(element, parent);
-        $animate.addClass(element, 'active-class');
+          const runner = $animate.enter(element, parent);
+          $animate.addClass(element, 'active-class');
 
-        var doneHandler = jasmine.createSpy('enter done');
-        runner.done(doneHandler);
+          const doneHandler = jest.fn();
+          runner.done(doneHandler);
 
-        expect(doneHandler).not.toHaveBeenCalled();
+          expect(doneHandler).not.toHaveBeenCalled();
 
-        $animate.removeClass(element, 'active-class');
-        $rootScope.$digest();
+          $animate.removeClass(element, 'active-class');
+          $rootScope.$digest();
 
-        expect(capturedAnimation[1]).toBe('enter');
-        expect(capturedAnimation[2].addClass).toBe(null);
-        expect(capturedAnimation[2].removeClass).toBe(null);
+          expect(capturedAnimation[1]).toBe('enter');
+          expect(capturedAnimation[2].addClass).toBe(null);
+          expect(capturedAnimation[2].removeClass).toBe(null);
 
-        expect(doneHandler).not.toHaveBeenCalled();
-      }));
+          expect(doneHandler).not.toHaveBeenCalled();
+        }));
 
     });
 
-    describe('should merge', function() {
-      it('multiple class-based animations together into one before the digest passes', inject(function($animate, $rootScope) {
+    describe('should merge', () => {
+      it('multiple class-based animations together into one before the digest passes', angular.mock.inject(($animate, $rootScope) => {
         parent.append(element);
         element.addClass('green');
 
@@ -1725,7 +1744,7 @@ describe('animations', function() {
         expect(element).not.toHaveClass('green');
       }));
 
-      it('multiple class-based animations together into a single structural event before the digest passes', inject(function($animate, $rootScope) {
+      it('multiple class-based animations together into a single structural event before the digest passes', angular.mock.inject(($animate, $rootScope) => {
         element.addClass('green');
 
         expect(element.parent().length).toBe(0);
@@ -1754,131 +1773,131 @@ describe('animations', function() {
       }));
 
       it('should automatically cancel out class-based animations if the element already contains or doesn\'t contain the applied classes',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        parent.append(element);
-        element.addClass('one three');
+          parent.append(element);
+          element.addClass('one three');
 
-        $animate.addClass(element, 'one');
-        $animate.addClass(element, 'two');
-        $animate.removeClass(element, 'three');
-        $animate.removeClass(element, 'four');
+          $animate.addClass(element, 'one');
+          $animate.addClass(element, 'two');
+          $animate.removeClass(element, 'three');
+          $animate.removeClass(element, 'four');
 
-        $rootScope.$digest();
+          $rootScope.$digest();
 
-        options = capturedAnimation[2];
-        expect(options.addClass).toEqual('two');
-        expect(options.removeClass).toEqual('three');
-      }));
+          options = capturedAnimation[2];
+          expect(options.addClass).toEqual('two');
+          expect(options.removeClass).toEqual('three');
+        }));
 
       it('and skip the animation entirely if no class-based animations remain and if there is no structural animation applied',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        parent.append(element);
-        element.addClass('one three');
+          parent.append(element);
+          element.addClass('one three');
 
-        $animate.addClass(element, 'one');
-        $animate.removeClass(element, 'four');
+          $animate.addClass(element, 'one');
+          $animate.removeClass(element, 'four');
 
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
-      }));
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
+        }));
 
       it('but not skip the animation if it is a structural animation and if there are no classes to be animated',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        element.addClass('one three');
+          element.addClass('one three');
 
-        $animate.addClass(element, 'one');
-        $animate.removeClass(element, 'four');
-        $animate.enter(element, parent);
+          $animate.addClass(element, 'one');
+          $animate.removeClass(element, 'four');
+          $animate.enter(element, parent);
 
-        $rootScope.$digest();
+          $rootScope.$digest();
 
-        expect(capturedAnimation[1]).toBe('enter');
-      }));
+          expect(capturedAnimation[1]).toBe('enter');
+        }));
 
       it('class-based animations, however it should also cancel former structural animations in the process',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        element.addClass('green lime');
+          element.addClass('green lime');
 
-        $animate.enter(element, parent);
-        $animate.addClass(element, 'red');
-        $animate.removeClass(element, 'green');
+          $animate.enter(element, parent);
+          $animate.addClass(element, 'red');
+          $animate.removeClass(element, 'green');
 
-        $animate.leave(element);
-        $animate.addClass(element, 'pink');
-        $animate.removeClass(element, 'lime');
+          $animate.leave(element);
+          $animate.addClass(element, 'pink');
+          $animate.removeClass(element, 'lime');
 
-        expect(element).toHaveClass('red');
-        expect(element).not.toHaveClass('green');
-        expect(element).not.toHaveClass('pink');
-        expect(element).toHaveClass('lime');
+          expect(element).toHaveClass('red');
+          expect(element).not.toHaveClass('green');
+          expect(element).not.toHaveClass('pink');
+          expect(element).toHaveClass('lime');
 
-        $rootScope.$digest();
+          $rootScope.$digest();
 
-        expect(capturedAnimation[0]).toBe(element);
-        expect(capturedAnimation[1]).toBe('leave');
+          expect(capturedAnimation[0]).toBe(element);
+          expect(capturedAnimation[1]).toBe('leave');
 
-        // $$hashKey causes comparison issues
-        expect(element.parent()[0]).toBe(parent[0]);
+          // $$hashKey causes comparison issues
+          expect(element.parent()[0]).toBe(parent[0]);
 
-        options = capturedAnimation[2];
-        expect(options.addClass).toEqual('pink');
-        expect(options.removeClass).toEqual('lime');
-      }));
+          options = capturedAnimation[2];
+          expect(options.addClass).toEqual('pink');
+          expect(options.removeClass).toEqual('lime');
+        }));
 
       it('should retain the instance to the very first runner object when multiple element-level animations are issued',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        element.addClass('green');
+          element.addClass('green');
 
-        var r1 = $animate.enter(element, parent);
-        var r2 = $animate.addClass(element, 'red');
-        var r3 = $animate.removeClass(element, 'green');
+          const r1 = $animate.enter(element, parent);
+          const r2 = $animate.addClass(element, 'red');
+          const r3 = $animate.removeClass(element, 'green');
 
-        expect(r1).toBe(r2);
-        expect(r2).toBe(r3);
-      }));
+          expect(r1).toBe(r2);
+          expect(r2).toBe(r3);
+        }));
 
       it('should not skip or miss the animations when animations are executed sequential',
-        inject(function($animate, $rootScope, $rootElement) {
+        angular.mock.inject(($animate, $rootScope, $rootElement) => {
 
-        element = jqLite('<div></div>');
+          element = angular.element('<div></div>');
 
-        $rootElement.append(element);
+          $rootElement.append(element);
 
-        $animate.addClass(element, 'rclass');
-        $animate.removeClass(element, 'rclass');
-        $animate.addClass(element, 'rclass');
-        $animate.removeClass(element, 'rclass');
+          $animate.addClass(element, 'rclass');
+          $animate.removeClass(element, 'rclass');
+          $animate.addClass(element, 'rclass');
+          $animate.removeClass(element, 'rclass');
 
-        $rootScope.$digest();
-        expect(element).not.toHaveClass('rclass');
-      }));
+          $rootScope.$digest();
+          expect(element).not.toHaveClass('rclass');
+        }));
     });
   });
 
-  they('should allow an animation to run on the $prop element', ['$rootElement', 'body'], function(name) {
-    var capturedAnimation;
+  they('should allow an animation to run on the $prop element', ['$rootElement', 'body'], name => {
+    let capturedAnimation;
 
-    module(function($provide) {
-      $provide.factory('$rootElement', function($document) {
-        return jqLite($document[0].querySelector('html'));
+    angular.mock.module($provide => {
+      $provide.factory('$rootElement', $document => {
+        return angular.element($document[0].querySelector('html'));
       });
-      $provide.factory('$$animation', function($$AnimateRunner) {
-        return function(element, method, options) {
+      $provide.factory('$$animation', $$AnimateRunner => {
+        return function (element, method, options) {
           capturedAnimation = arguments;
           return new $$AnimateRunner();
         };
       });
     });
-    inject(function($animate, $rootScope, $document, $rootElement) {
+    angular.mock.inject(($animate, $rootScope, $document, $rootElement) => {
       $animate.enabled(true);
 
-      var body = jqLite($document[0].body);
-      var targetElement = name === 'body' ? body : $rootElement;
+      const body = angular.element($document[0].body);
+      const targetElement = name === 'body' ? body : $rootElement;
 
       $animate.addClass(targetElement, 'red');
       $rootScope.$digest();
@@ -1888,615 +1907,430 @@ describe('animations', function() {
     });
   });
 
-  describe('[ng-animate-children]', function() {
-    var parent, element, child, capturedAnimation, captureLog;
-    beforeEach(module(function($provide) {
+  describe('[ng-animate-children]', () => {
+    let parent, element, child, capturedAnimation, captureLog;
+    beforeEach(angular.mock.module($provide => {
       capturedAnimation = null;
       captureLog = [];
-      $provide.factory('$$animation', function($$AnimateRunner) {
-        return function(element, method, options) {
+      $provide.factory('$$animation', $$AnimateRunner => {
+        return function (element, method, options) {
           options.domOperation();
           captureLog.push(capturedAnimation = arguments);
           return new $$AnimateRunner();
         };
       });
-      return function($rootElement, $document, $animate) {
-        jqLite($document[0].body).append($rootElement);
-        parent  = jqLite('<div class="parent"></div>');
-        element = jqLite('<div class="element"></div>');
-        child   = jqLite('<div class="child"></div>');
+      return ($rootElement, $document, $animate) => {
+        angular.element($document[0].body).append($rootElement);
+        parent = angular.element('<div class="parent"></div>');
+        element = angular.element('<div class="element"></div>');
+        child = angular.element('<div class="child"></div>');
+
+        toDealoc.push(child);
+        toDealoc.push(element);
+        toDealoc.push(parent);
+
         $animate.enabled(true);
       };
     }));
 
     it('should allow child animations to run when the attribute is used',
-      inject(function($animate, $rootScope, $rootElement, $compile) {
+      angular.mock.inject(($animate, $rootScope, $rootElement, $compile) => {
 
-      $animate.enter(parent, $rootElement);
-      $animate.enter(element, parent);
-      $animate.enter(child, element);
-      $rootScope.$digest();
-      expect(captureLog.length).toBe(1);
+        $animate.enter(parent, $rootElement);
+        $animate.enter(element, parent);
+        $animate.enter(child, element);
+        $rootScope.$digest();
+        expect(captureLog.length).toBe(1);
 
-      captureLog = [];
+        captureLog = [];
 
-      parent.attr('ng-animate-children', '');
-      $compile(parent)($rootScope);
-      $rootScope.$digest();
+        parent.attr('ng-animate-children', '');
+        $compile(parent)($rootScope);
+        $rootScope.$digest();
 
-      $animate.enter(parent, $rootElement);
-      $rootScope.$digest();
-      expect(captureLog.length).toBe(1);
+        $animate.enter(parent, $rootElement);
+        $rootScope.$digest();
+        expect(captureLog.length).toBe(1);
 
-      $animate.enter(element, parent);
-      $animate.enter(child, element);
-      $rootScope.$digest();
-      expect(captureLog.length).toBe(3);
-    }));
+        $animate.enter(element, parent);
+        $animate.enter(child, element);
+        $rootScope.$digest();
+        expect(captureLog.length).toBe(3);
+      }));
 
     it('should fully disallow all parallel child animations from running if `off` is used',
-      inject(function($animate, $rootScope, $rootElement, $compile) {
+      angular.mock.inject(($animate, $rootScope, $rootElement, $compile) => {
 
-      $rootElement.append(parent);
-      parent.append(element);
-      element.append(child);
+        $rootElement.append(parent);
+        parent.append(element);
+        element.append(child);
 
-      parent.attr('ng-animate-children', 'off');
-      element.attr('ng-animate-children', 'on');
+        parent.attr('ng-animate-children', 'off');
+        element.attr('ng-animate-children', 'on');
 
-      $compile(parent)($rootScope);
-      $compile(element)($rootScope);
-      $rootScope.$digest();
+        $compile(parent)($rootScope);
+        $compile(element)($rootScope);
+        $rootScope.$digest();
 
-      $animate.leave(parent);
-      $animate.leave(element);
-      $animate.leave(child);
-      $rootScope.$digest();
+        $animate.leave(parent);
+        $animate.leave(element);
+        $animate.leave(child);
+        $rootScope.$digest();
 
-      expect(captureLog.length).toBe(1);
-
-      dealoc(element);
-      dealoc(child);
-    }));
+        expect(captureLog.length).toBe(1);
+      }));
 
     it('should watch to see if the ng-animate-children attribute changes',
-      inject(function($animate, $rootScope, $rootElement, $compile) {
+      angular.mock.inject(($animate, $rootScope, $rootElement, $compile) => {
 
-      $rootElement.append(parent);
-      $rootScope.val = 'on';
-      parent.attr('ng-animate-children', '{{ val }}');
-      $compile(parent)($rootScope);
-      $rootScope.$digest();
+        $rootElement.append(parent);
+        $rootScope.val = 'on';
+        parent.attr('ng-animate-children', '{{ val }}');
+        $compile(parent)($rootScope);
+        $rootScope.$digest();
 
-      $animate.enter(parent, $rootElement);
-      $animate.enter(element, parent);
-      $animate.enter(child, element);
-      $rootScope.$digest();
-      expect(captureLog.length).toBe(3);
+        $animate.enter(parent, $rootElement);
+        $animate.enter(element, parent);
+        $animate.enter(child, element);
+        $rootScope.$digest();
+        expect(captureLog.length).toBe(3);
 
-      captureLog = [];
+        captureLog = [];
 
-      $rootScope.val = 'off';
-      $rootScope.$digest();
+        $rootScope.val = 'off';
+        $rootScope.$digest();
 
-      $animate.leave(parent);
-      $animate.leave(element);
-      $animate.leave(child);
-      $rootScope.$digest();
+        $animate.leave(parent);
+        $animate.leave(element);
+        $animate.leave(child);
+        $rootScope.$digest();
 
-      expect(captureLog.length).toBe(1);
-
-      dealoc(element);
-      dealoc(child);
-    }));
+        expect(captureLog.length).toBe(1);
+      }));
 
     it('should respect the value if the directive is on an element with ngIf',
-      inject(function($rootScope, $rootElement, $compile) {
+      angular.mock.inject(($rootScope, $rootElement, $compile) => {
 
-      parent.attr('ng-animate-children', 'true');
-      parent.attr('ng-if', 'true');
-      element.attr('ng-if', 'true');
+        parent.attr('ng-animate-children', 'true');
+        parent.attr('ng-if', 'true');
+        element.attr('ng-if', 'true');
 
-      $rootElement.append(parent);
-      parent.append(element);
+        $rootElement.append(parent);
+        parent.append(element);
 
-      $compile(parent)($rootScope);
-      $rootScope.$digest();
+        compileForTest(parent);
+        $rootScope.$digest();
 
-      expect(captureLog.length).toBe(2);
-    }));
+        expect(captureLog.length).toBe(2);
+
+        dealoc($rootElement);
+      }));
   });
 
-  describe('.pin()', function() {
-    var capturedAnimation;
+  describe('.pin()', () => {
+    let capturedAnimation;
 
-    beforeEach(module(function($provide) {
+    beforeEach(angular.mock.module($provide => {
       capturedAnimation = null;
-      $provide.factory('$$animation', function($$AnimateRunner) {
-        return function() {
+      $provide.factory('$$animation', $$AnimateRunner => {
+        return function () {
           capturedAnimation = arguments;
           return new $$AnimateRunner();
         };
       });
 
-      return function($animate) {
+      return $animate => {
         $animate.enabled(true);
       };
     }));
 
     it('should throw if the arguments are not elements',
-      inject(function($animate, $rootElement) {
+      angular.mock.inject(($animate, $rootElement) => {
 
-      var element = jqLite('<div></div>');
+        const element = angular.element('<div></div>');
 
-      expect(function() {
-        $animate.pin(element);
-      }).toThrowMinErr('ng', 'areq', 'Argument \'parentElement\' is not an element');
+        expect(() => {
+          $animate.pin(element);
+        }).toThrowMinErr('ng', 'areq', 'Argument \'parentElement\' is not an element');
 
-      expect(function() {
-        $animate.pin(null, $rootElement);
-      }).toThrowMinErr('ng', 'areq', 'Argument \'element\' is not an element');
+        expect(() => {
+          $animate.pin(null, $rootElement);
+        }).toThrowMinErr('ng', 'areq', 'Argument \'element\' is not an element');
 
-      dealoc(element);
-    }));
+      }));
 
 
     they('should animate an element inside a pinned element that is the $prop element',
       ['same', 'parent', 'grandparent'],
-      function(elementRelation) {
-        inject(function($animate, $document, $rootElement, $rootScope) {
+      elementRelation => {
+        angular.mock.inject(($animate, $document, $rootElement, $rootScope) => {
 
-        var pinElement, animateElement;
+          let pinElement, animateElement;
 
-        var innerParent = jqLite('<div></div>');
-        jqLite($document[0].body).append(innerParent);
-        innerParent.append($rootElement);
+          const innerParent = angular.element('<div></div>');
+          angular.element($document[0].body).append(innerParent);
+          innerParent.append($rootElement);
 
-        switch (elementRelation) {
-          case 'same':
-            pinElement = jqLite('<div id="animate"></div>');
-            break;
-          case 'parent':
-            pinElement = jqLite('<div><div id="animate"></div></div>');
-            break;
-          case 'grandparent':
-            pinElement = jqLite('<div><div><div id="animate"></div></div></div>');
-            break;
-        }
+          switch (elementRelation) {
+            case 'same':
+              pinElement = angular.element('<div id="animate"></div>');
+              break;
+            case 'parent':
+              pinElement = angular.element('<div><div id="animate"></div></div>');
+              break;
+            case 'grandparent':
+              pinElement = angular.element('<div><div><div id="animate"></div></div></div>');
+              break;
+          }
 
-        jqLite($document[0].body).append(pinElement);
-        animateElement = jqLite($document[0].getElementById('animate'));
+          angular.element($document[0].body).append(pinElement);
+          animateElement = angular.element($document[0].getElementById('animate'));
 
-        $animate.addClass(animateElement, 'red');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
+          $animate.addClass(animateElement, 'red');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
 
-        // Pin the element to the app root to enable animations
-        $animate.pin(pinElement, $rootElement);
+          // Pin the element to the app root to enable animations
+          $animate.pin(pinElement, $rootElement);
 
-        $animate.addClass(animateElement, 'blue');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
+          $animate.addClass(animateElement, 'blue');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
 
-        dealoc(pinElement);
+          dealoc(pinElement);
+        });
       });
-    });
 
     they('should not animate an element when the pinned ($prop) element, is pinned to an element that is not a child of the $rootElement',
       ['same', 'parent', 'grandparent'],
-      function(elementRelation) {
-        inject(function($animate, $document, $rootElement, $rootScope) {
+      elementRelation => {
+        angular.mock.inject(($animate, $document, $rootElement, $rootScope) => {
+          let pinElement;
+          let animateElement;
+          const pinTargetElement = angular.element('<div></div>');
 
-        var pinElement, animateElement, pinTargetElement = jqLite('<div></div>');
+          const innerParent = angular.element('<div></div>');
+          angular.element($document[0].body).append(innerParent);
+          innerParent.append($rootElement);
 
-        var innerParent = jqLite('<div></div>');
-        jqLite($document[0].body).append(innerParent);
-        innerParent.append($rootElement);
+          switch (elementRelation) {
+            case 'same':
+              pinElement = angular.element('<div id="animate"></div>');
+              break;
+            case 'parent':
+              pinElement = angular.element('<div><div id="animate"></div></div>');
+              break;
+            case 'grandparent':
+              pinElement = angular.element('<div><div><div id="animate"></div></div></div>');
+              break;
+          }
 
-        switch (elementRelation) {
-          case 'same':
-            pinElement = jqLite('<div id="animate"></div>');
-            break;
-          case 'parent':
-            pinElement = jqLite('<div><div id="animate"></div></div>');
-            break;
-          case 'grandparent':
-            pinElement = jqLite('<div><div><div id="animate"></div></div></div>');
-            break;
-        }
+          // Append both the pin element and the pinTargetElement outside the app root
+          angular.element($document[0].body).append(pinElement);
+          angular.element($document[0].body).append(pinTargetElement);
 
-        // Append both the pin element and the pinTargetElement outside the app root
-        jqLite($document[0].body).append(pinElement);
-        jqLite($document[0].body).append(pinTargetElement);
+          animateElement = angular.element($document[0].getElementById('animate'));
 
-        animateElement = jqLite($document[0].getElementById('animate'));
+          $animate.addClass(animateElement, 'red');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
 
-        $animate.addClass(animateElement, 'red');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
+          $animate.pin(pinElement, pinTargetElement);
 
-        $animate.pin(pinElement, pinTargetElement);
+          $animate.addClass(animateElement, 'blue');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
 
-        $animate.addClass(animateElement, 'blue');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
-
-        dealoc(pinElement);
+          dealoc(pinElement);
+        });
       });
-    });
 
     they('should adhere to the disabled state of the hosted parent when the $prop element is pinned',
       ['same', 'parent', 'grandparent'],
-      function(elementRelation) {
-        inject(function($animate, $document, $rootElement, $rootScope) {
+      elementRelation => {
+        angular.mock.inject(($animate, $document, $rootElement, $rootScope) => {
+          let pinElement;
+          let animateElement;
+          const pinHostElement = angular.element('<div></div>');
 
-        var pinElement, animateElement, pinHostElement = jqLite('<div></div>');
+          const innerParent = angular.element('<div></div>');
+          angular.element($document[0].body).append(innerParent);
+          innerParent.append($rootElement);
 
-        var innerParent = jqLite('<div></div>');
-        jqLite($document[0].body).append(innerParent);
-        innerParent.append($rootElement);
+          switch (elementRelation) {
+            case 'same':
+              pinElement = angular.element('<div id="animate"></div>');
+              break;
+            case 'parent':
+              pinElement = angular.element('<div><div id="animate"></div></div>');
+              break;
+            case 'grandparent':
+              pinElement = angular.element('<div><div><div id="animate"></div></div></div>');
+              break;
+          }
 
-        switch (elementRelation) {
-          case 'same':
-            pinElement = jqLite('<div id="animate"></div>');
-            break;
-          case 'parent':
-            pinElement = jqLite('<div><div id="animate"></div></div>');
-            break;
-          case 'grandparent':
-            pinElement = jqLite('<div><div><div id="animate"></div></div></div>');
-            break;
-        }
+          $rootElement.append(pinHostElement);
+          angular.element($document[0].body).append(pinElement);
+          animateElement = angular.element($document[0].getElementById('animate'));
 
-        $rootElement.append(pinHostElement);
-        jqLite($document[0].body).append(pinElement);
-        animateElement = jqLite($document[0].getElementById('animate'));
+          $animate.pin(pinElement, pinHostElement);
+          $animate.enabled(pinHostElement, false);
 
-        $animate.pin(pinElement, pinHostElement);
-        $animate.enabled(pinHostElement, false);
+          $animate.addClass(animateElement, 'blue');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeNull();
 
-        $animate.addClass(animateElement, 'blue');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeNull();
+          $animate.enabled(pinHostElement, true);
 
-        $animate.enabled(pinHostElement, true);
+          $animate.addClass(animateElement, 'red');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
 
-        $animate.addClass(animateElement, 'red');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-
-        dealoc(pinElement);
+          dealoc(pinElement);
+        });
       });
-    });
   });
 
-  describe('callbacks', function() {
-    var captureLog = [];
-    var capturedAnimation = [];
-    var runner;
-    var body;
-    beforeEach(module(function($provide) {
+  describe('callbacks', () => {
+    const captureLog = [];
+    let capturedAnimation = [];
+    let runner;
+    let body;
+    beforeEach(angular.mock.module($provide => {
       runner = null;
       capturedAnimation = null;
-      $provide.factory('$$animation', function($$AnimateRunner) {
-        return function() {
+      $provide.factory('$$animation', $$AnimateRunner => {
+        return function () {
           captureLog.push(capturedAnimation = arguments);
           runner = new $$AnimateRunner();
           return runner;
         };
       });
 
-      return function($document, $rootElement, $animate) {
+      return ($document, $rootElement, $animate) => {
         if ($document !== $rootElement) {
-          jqLite($document[0].body).append($rootElement);
+          angular.element($document[0].body).append($rootElement);
         }
         $animate.enabled(true);
       };
     }));
 
     it('should trigger a callback for an enter animation',
-      inject(function($animate, $rootScope, $rootElement, $document) {
+      angular.mock.inject(($animate, $rootScope, $rootElement, $document) => {
 
-      var callbackTriggered = false;
-      $animate.on('enter', jqLite($document[0].body), function() {
-        callbackTriggered = true;
-      });
+        let callbackTriggered = false;
+        $animate.on('enter', angular.element($document[0].body), () => {
+          callbackTriggered = true;
+        });
 
-      element = jqLite('<div></div>');
-      $animate.enter(element, $rootElement);
-      $rootScope.$digest();
+        element = angular.element('<div></div>');
+        $animate.enter(element, $rootElement);
+        $rootScope.$digest();
 
-      $animate.flush();
+        $animate.flush();
 
-      expect(callbackTriggered).toBe(true);
-    }));
+        expect(callbackTriggered).toBe(true);
+      }));
 
     it('should fire the callback with the signature of (element, phase, data)',
-      inject(function($animate, $rootScope, $rootElement, $document) {
+      angular.mock.inject(($animate, $rootScope, $rootElement, $document) => {
 
-      var capturedElement;
-      var capturedPhase;
-      var capturedData;
-      $animate.on('enter', jqLite($document[0].body),
-        function(element, phase, data) {
+        let capturedElement;
+        let capturedPhase;
+        let capturedData;
+        $animate.on('enter', angular.element($document[0].body),
+          (element, phase, data) => {
 
-        capturedElement = element;
-        capturedPhase = phase;
-        capturedData = data;
-      });
+            capturedElement = element;
+            capturedPhase = phase;
+            capturedData = data;
+          });
 
-      element = jqLite('<div></div>');
-      $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      $animate.flush();
+        element = angular.element('<div></div>');
+        $animate.enter(element, $rootElement);
+        $rootScope.$digest();
+        $animate.flush();
 
-      expect(capturedElement).toBe(element);
-      expect(isString(capturedPhase)).toBe(true);
-      expect(isObject(capturedData)).toBe(true);
-    }));
+        expect(capturedElement).toBe(element);
+        expect(angular.isString(capturedPhase)).toBe(true);
+        expect(angular.isObject(capturedData)).toBe(true);
+      }));
 
     it('should not fire a callback if the element is outside of the given container',
-      inject(function($animate, $rootScope, $rootElement) {
+      angular.mock.inject(($animate, $rootScope, $rootElement) => {
 
-      var callbackTriggered = false;
-      var innerContainer = jqLite('<div></div>');
-      $rootElement.append(innerContainer);
+        let callbackTriggered = false;
+        const innerContainer = angular.element('<div></div>');
+        $rootElement.append(innerContainer);
 
-      $animate.on('enter', innerContainer,
-        function(element, phase, data) {
+        $animate.on('enter', innerContainer,
+          (element, phase, data) => {
 
-        callbackTriggered = true;
-      });
+            callbackTriggered = true;
+          });
 
-      element = jqLite('<div></div>');
-      $animate.enter(element, $rootElement);
-      $rootScope.$digest();
+        element = angular.element('<div></div>');
+        $animate.enter(element, $rootElement);
+        $rootScope.$digest();
 
-      expect(callbackTriggered).toBe(false);
-    }));
+        expect(callbackTriggered).toBe(false);
+      }));
 
     it('should fire a callback if the element is the given container',
-      inject(function($animate, $rootScope, $rootElement) {
+      angular.mock.inject(($animate, $rootScope, $rootElement) => {
 
-      element = jqLite('<div></div>');
+        element = angular.element('<div></div>');
 
-      var callbackTriggered = false;
-      $animate.on('enter', element,
-        function(element, phase, data) {
+        let callbackTriggered = false;
+        $animate.on('enter', element,
+          (element, phase, data) => {
 
-        callbackTriggered = true;
-      });
+            callbackTriggered = true;
+          });
 
-      $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      $animate.flush();
+        $animate.enter(element, $rootElement);
+        $rootScope.$digest();
+        $animate.flush();
 
-      expect(callbackTriggered).toBe(true);
-    }));
+        expect(callbackTriggered).toBe(true);
+      }));
 
     it('should remove all the event-based event listeners when $animate.off(event) is called',
-      inject(function($animate, $rootScope, $rootElement, $document) {
+      angular.mock.inject(($animate, $rootScope, $rootElement, $document) => {
 
-      element = jqLite('<div></div>');
+        element = angular.element('<div></div>');
 
-      var count = 0;
-      $animate.on('enter', element, counter);
-      $animate.on('enter', jqLite($document[0].body), counter);
+        let count = 0;
+        $animate.on('enter', element, counter);
+        $animate.on('enter', angular.element($document[0].body), counter);
 
-      function counter(element, phase) {
-        count++;
-      }
+        function counter(element, phase) {
+          count++;
+        }
 
-      $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      $animate.flush();
+        $animate.enter(element, $rootElement);
+        $rootScope.$digest();
+        $animate.flush();
 
-      expect(count).toBe(2);
+        expect(count).toBe(2);
 
-      $animate.off('enter');
+        $animate.off('enter');
 
-      $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      $animate.flush();
+        $animate.enter(element, $rootElement);
+        $rootScope.$digest();
+        $animate.flush();
 
-      expect(count).toBe(2);
-    }));
+        expect(count).toBe(2);
+      }));
 
     it('should remove the container-based event listeners when $animate.off(event, container) is called',
-      inject(function($animate, $rootScope, $rootElement, $document) {
+      angular.mock.inject(($animate, $rootScope, $rootElement, $document) => {
 
-      element = jqLite('<div></div>');
+        element = angular.element('<div></div>');
 
-      var count = 0;
-      $animate.on('enter', element, counter);
-      $animate.on('enter', jqLite($document[0].body), counter);
-
-      function counter(element, phase) {
-        if (phase === 'start') {
-          count++;
-        }
-      }
-
-      $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      $animate.flush();
-
-      expect(count).toBe(2);
-
-      $animate.off('enter', jqLite($document[0].body));
-
-      $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      $animate.flush();
-
-      expect(count).toBe(3);
-    }));
-
-    it('should remove the callback-based event listener when $animate.off(event, container, callback) is called',
-      inject(function($animate, $rootScope, $rootElement) {
-
-      element = jqLite('<div></div>');
-
-      var count = 0;
-      $animate.on('enter', element, counter1);
-      $animate.on('enter', element, counter2);
-
-      function counter1(element, phase) {
-        if (phase === 'start') {
-          count++;
-        }
-      }
-
-      function counter2(element, phase) {
-        if (phase === 'start') {
-          count++;
-        }
-      }
-
-      $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      $animate.flush();
-
-      expect(count).toBe(2);
-
-      $animate.off('enter', element, counter2);
-
-      $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      $animate.flush();
-
-      expect(count).toBe(3);
-    }));
-
-    it('should remove all event listeners for an element when $animate.off(element) is called',
-      inject(function($animate, $rootScope, $rootElement, $document, $$rAF) {
-
-      element = jqLite('<div></div>');
-      var otherElement = jqLite('<div></div>');
-      $rootElement.append(otherElement);
-
-      var count = 0;
-      var runner;
-      $animate.on('enter', element, counter);
-      $animate.on('leave', element, counter);
-      $animate.on('addClass', element, counter);
-      $animate.on('addClass', otherElement, counter);
-
-      function counter(element, phase) {
-        count++;
-      }
-
-      runner = $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      $animate.flush();
-      runner.end();
-
-      runner = $animate.addClass(element, 'blue');
-      $rootScope.$digest();
-      $animate.flush();
-
-      runner.end();
-      $$rAF.flush();
-
-      expect(count).toBe(4);
-
-      $animate.off(element);
-
-      runner = $animate.enter(element, $rootElement);
-      $animate.flush();
-      expect(capturedAnimation[1]).toBe('enter');
-      runner.end();
-
-      runner = $animate.addClass(element, 'red');
-      $animate.flush();
-      expect(capturedAnimation[1]).toBe('addClass');
-      runner.end();
-
-      runner = $animate.leave(element);
-      $animate.flush();
-      expect(capturedAnimation[1]).toBe('leave');
-      runner.end();
-
-      // Try to flush all remaining callbacks
-      expect(function() {
-        $$rAF.flush();
-      }).toThrowError('No rAF callbacks present');
-
-      expect(count).toBe(4);
-
-      // Check that other elements' event listeners are not affected
-      $animate.addClass(otherElement, 'green');
-      $animate.flush();
-      expect(count).toBe(5);
-    }));
-
-    it('should not get affected by custom, enumerable properties on `Object.prototype`',
-      inject(function($animate) {
-        // eslint-disable-next-line no-extend-native
-        Object.prototype.foo = 'ENUMARABLE_AND_NOT_AN_ARRAY';
-
-        element = jqLite('<div></div>');
-        expect(function() { $animate.off(element); }).not.toThrow();
-
-        delete Object.prototype.foo;
-      })
-    );
-
-    it('should fire a `start` callback when the animation starts with the matching element',
-      inject(function($animate, $rootScope, $rootElement, $document) {
-
-      element = jqLite('<div></div>');
-
-      var capturedState;
-      var capturedElement;
-      $animate.on('enter', jqLite($document[0].body), function(element, phase) {
-        capturedState = phase;
-        capturedElement = element;
-      });
-
-      $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      $animate.flush();
-
-      expect(capturedState).toBe('start');
-      expect(capturedElement).toBe(element);
-    }));
-
-    it('should fire a `close` callback when the animation ends with the matching element',
-      inject(function($animate, $rootScope, $rootElement, $document) {
-
-      element = jqLite('<div></div>');
-
-      var capturedState;
-      var capturedElement;
-      $animate.on('enter', jqLite($document[0].body), function(element, phase) {
-        capturedState = phase;
-        capturedElement = element;
-      });
-
-      var runner = $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      runner.end();
-      $animate.flush();
-
-      expect(capturedState).toBe('close');
-      expect(capturedElement).toBe(element);
-    }));
-
-
-    they('should remove all event listeners when the element is removed via $prop',
-      ['leave()', 'remove()'], function(method) {
-      inject(function($animate, $rootScope, $rootElement, $$rAF) {
-
-        element = jqLite('<div></div>');
-
-        var count = 0;
-        var enterSpy = jasmine.createSpy();
-        var addClassSpy = jasmine.createSpy();
-        var runner;
-
-        $animate.on('enter', element, enterSpy);
-        $animate.on('addClass', element[0], addClassSpy);
+        let count = 0;
+        $animate.on('enter', element, counter);
+        $animate.on('enter', angular.element($document[0].body), counter);
 
         function counter(element, phase) {
           if (phase === 'start') {
@@ -2504,337 +2338,525 @@ describe('animations', function() {
           }
         }
 
+        $animate.enter(element, $rootElement);
+        $rootScope.$digest();
+        $animate.flush();
+
+        expect(count).toBe(2);
+
+        $animate.off('enter', angular.element($document[0].body));
+
+        $animate.enter(element, $rootElement);
+        $rootScope.$digest();
+        $animate.flush();
+
+        expect(count).toBe(3);
+      }));
+
+    it('should remove the callback-based event listener when $animate.off(event, container, callback) is called',
+      angular.mock.inject(($animate, $rootScope, $rootElement) => {
+
+        element = angular.element('<div></div>');
+
+        let count = 0;
+        $animate.on('enter', element, counter1);
+        $animate.on('enter', element, counter2);
+
+        function counter1(element, phase) {
+          if (phase === 'start') {
+            count++;
+          }
+        }
+
+        function counter2(element, phase) {
+          if (phase === 'start') {
+            count++;
+          }
+        }
+
+        $animate.enter(element, $rootElement);
+        $rootScope.$digest();
+        $animate.flush();
+
+        expect(count).toBe(2);
+
+        $animate.off('enter', element, counter2);
+
+        $animate.enter(element, $rootElement);
+        $rootScope.$digest();
+        $animate.flush();
+
+        expect(count).toBe(3);
+      }));
+
+    it('should remove all event listeners for an element when $animate.off(element) is called',
+      angular.mock.inject(($animate, $rootScope, $rootElement, $document, $$rAF) => {
+
+        element = angular.element('<div></div>');
+        const otherElement = angular.element('<div></div>');
+        $rootElement.append(otherElement);
+
+        let count = 0;
+        let runner;
+        $animate.on('enter', element, counter);
+        $animate.on('leave', element, counter);
+        $animate.on('addClass', element, counter);
+        $animate.on('addClass', otherElement, counter);
+
+        function counter(element, phase) {
+          count++;
+        }
+
         runner = $animate.enter(element, $rootElement);
         $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-
         $animate.flush();
-        expect(enterSpy.calls.count()).toBe(1);
-        expect(enterSpy.calls.mostRecent().args[1]).toBe('start');
-
-        runner.end(); // Otherwise the class animation won't run because enter is still in progress
-        $$rAF.flush();
-        expect(enterSpy.calls.count()).toBe(2);
-        expect(enterSpy.calls.mostRecent().args[1]).toBe('close');
-
-        enterSpy.calls.reset();
-        capturedAnimation = null;
+        runner.end();
 
         runner = $animate.addClass(element, 'blue');
         $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-
         $animate.flush();
-        expect(addClassSpy.calls.count()).toBe(1);
-        expect(addClassSpy.calls.mostRecent().args[1]).toBe('start');
 
         runner.end();
         $$rAF.flush();
-        expect(addClassSpy.calls.count()).toBe(2);
-        expect(addClassSpy.calls.mostRecent().args[1]).toBe('close');
 
-        addClassSpy.calls.reset();
-        capturedAnimation = null;
+        expect(count).toBe(4);
 
-        if (method === 'leave()') {
-          runner = $animate.leave(element);
-          $animate.flush();
-          runner.end();
-        } else if (method === 'remove()') {
-          element.remove();
-        }
+        $animate.off(element);
 
         runner = $animate.enter(element, $rootElement);
-        $rootScope.$digest();
-
         $animate.flush();
-        expect(enterSpy.calls.count()).toBe(0);
+        expect(capturedAnimation[1]).toBe('enter');
+        runner.end();
 
-        runner.end(); // Otherwise the class animation won't run because enter is still in progress
-        expect(function() {
+        runner = $animate.addClass(element, 'red');
+        $animate.flush();
+        expect(capturedAnimation[1]).toBe('addClass');
+        runner.end();
+
+        runner = $animate.leave(element);
+        $animate.flush();
+        expect(capturedAnimation[1]).toBe('leave');
+        runner.end();
+
+        // Try to flush all remaining callbacks
+        expect(() => {
           $$rAF.flush();
-        }).toThrowError('No rAF callbacks present'); // Try to flush any callbacks
-        expect(enterSpy.calls.count()).toBe(0);
+        }).toThrowError('No rAF callbacks present');
 
-        capturedAnimation = null;
+        expect(count).toBe(4);
 
-        $animate.addClass(element, 'red');
-        $rootScope.$digest();
-        expect(capturedAnimation).toBeTruthy();
-
+        // Check that other elements' event listeners are not affected
+        $animate.addClass(otherElement, 'green');
         $animate.flush();
-        expect(addClassSpy.calls.count()).toBe(0);
-
-        runner.end();
-        expect(function() {
-          $$rAF.flush();
-        }).toThrowError('No rAF callbacks present'); // Try to flush any callbacks
-        expect(addClassSpy.calls.count()).toBe(0);
-        expect(enterSpy.calls.count()).toBe(0);
-      });
-    });
-
-    it('should always detect registered callbacks after one postDigest has fired',
-      inject(function($animate, $rootScope, $rootElement) {
-
-      element = jqLite('<div></div>');
-
-      var spy = jasmine.createSpy();
-      registerCallback();
-
-      var runner = $animate.enter(element, $rootElement);
-      registerCallback();
-
-      $rootScope.$digest();
-      registerCallback();
-
-      expect(spy).not.toHaveBeenCalled();
-      $animate.flush();
-
-      // this is not 3 since the 3rd callback
-      // was added after the first callback
-      // was fired
-      expect(spy).toHaveBeenCalledTimes(2);
-
-      spy.calls.reset();
-      runner.end();
-
-      $animate.flush();
-
-      // now we expect all three callbacks
-      // to fire when the animation ends since
-      // the callback detection happens again
-      expect(spy).toHaveBeenCalledTimes(3);
-
-      function registerCallback() {
-        $animate.on('enter', element, spy);
-      }
-    }));
-
-    it('should use RAF if there are detected callbacks within the hierarchy of the element being animated',
-      inject(function($animate, $rootScope, $rootElement, $$rAF) {
-
-      var runner;
-
-      element = jqLite('<div></div>');
-      runner = $animate.enter(element, $rootElement);
-      $rootScope.$digest();
-      runner.end();
-
-      assertRAFsUsed(false);
-
-      var spy = jasmine.createSpy();
-      $animate.on('leave', element, spy);
-
-      runner = $animate.leave(element, $rootElement);
-      $rootScope.$digest();
-      runner.end();
-
-      assertRAFsUsed(true);
-
-      function assertRAFsUsed(bool) {
-        expect($$rAF.queue.length)[bool ? 'toBeGreaterThan' : 'toBe'](0);
-      }
-    }));
-
-    describe('for leave', function() {
-
-      it('should remove the element even if another animation is called afterwards',
-        inject(function($animate, $rootScope, $rootElement) {
-
-        var outerContainer = jqLite('<div></div>');
-        element = jqLite('<div></div>');
-        outerContainer.append(element);
-        $rootElement.append(outerContainer);
-
-        var runner = $animate.leave(element, $rootElement);
-        $animate.removeClass(element,'rclass');
-        $rootScope.$digest();
-        runner.end();
-        $animate.flush();
-
-        var isElementRemoved = !outerContainer[0].contains(element[0]);
-        expect(isElementRemoved).toBe(true);
+        expect(count).toBe(5);
       }));
 
-      they('should trigger callbacks when the listener is on the $prop element', ['same', 'parent'],
-        function(elementRelation) {
-          inject(function($animate, $rootScope, $$rAF, $rootElement, $document) {
-            var listenerElement, callbackSpy = jasmine.createSpy();
+    it('should not get affected by custom, enumerable properties on `Object.prototype`',
+      angular.mock.inject($animate => {
+        // eslint-disable-next-line no-extend-native
+        Object.prototype.foo = 'ENUMARABLE_AND_NOT_AN_ARRAY';
 
-            element = jqLite('<div></div>');
-            listenerElement = elementRelation === 'same' ? element : jqLite($document[0].body);
-            $animate.on('leave', listenerElement, callbackSpy);
-            $rootElement.append(element);
-            var runner = $animate.leave(element, $rootElement);
-            $rootScope.$digest();
+        element = angular.element('<div></div>');
+        expect(() => { $animate.off(element); }).not.toThrow();
 
-            $$rAF.flush();
+        delete Object.prototype.foo;
+      })
+    );
 
-            expect(callbackSpy.calls.count()).toBe(1);
-            expect(callbackSpy.calls.mostRecent().args[1]).toBe('start');
-            callbackSpy.calls.reset();
+    it('should fire a `start` callback when the animation starts with the matching element',
+      angular.mock.inject(($animate, $rootScope, $rootElement, $document) => {
 
-            runner.end();
-            $$rAF.flush();
+        element = angular.element('<div></div>');
 
-            expect(callbackSpy.calls.count()).toBe(1);
-            expect(callbackSpy.calls.mostRecent().args[1]).toBe('close');
-          });
-        }
-      );
-
-      it('should trigger callbacks for a leave animation',
-        inject(function($animate, $rootScope, $$rAF, $rootElement, $document) {
-
-        var callbackSpy = jasmine.createSpy();
-        $animate.on('leave', jqLite($document[0].body), callbackSpy);
-
-        element = jqLite('<div></div>');
-        $rootElement.append(element);
-        $animate.leave(element, $rootElement);
-        $rootScope.$digest();
-
-        $$rAF.flush();
-
-        expect(callbackSpy).toHaveBeenCalled();
-        expect(callbackSpy.calls.count()).toBe(1);
-      }));
-
-      it('should trigger a callback for an leave animation (same element)',
-        inject(function($animate, $rootScope, $$rAF, $rootElement, $document) {
-
-        var callbackSpy = jasmine.createSpy();
-
-        element = jqLite('<div></div>');
-        $animate.on('leave', element, callbackSpy);
-        $rootElement.append(element);
-        var runner = $animate.leave(element, $rootElement);
-        $rootScope.$digest();
-
-        $$rAF.flush();
-
-        expect(callbackSpy.calls.count()).toBe(1);
-        expect(callbackSpy.calls.mostRecent().args[1]).toBe('start');
-        callbackSpy.calls.reset();
-
-        runner.end();
-        $$rAF.flush();
-
-        expect(callbackSpy.calls.count()).toBe(1);
-        expect(callbackSpy.calls.mostRecent().args[1]).toBe('close');
-      }));
-
-      it('should not fire a callback if the element is outside of the given container',
-        inject(function($animate, $rootScope, $$rAF, $rootElement) {
-
-        var callbackTriggered = false;
-        var innerContainer = jqLite('<div></div>');
-        $rootElement.append(innerContainer);
-
-        $animate.on('leave', innerContainer,
-          function(element, phase, data) {
-          callbackTriggered = true;
-        });
-
-        element = jqLite('<div></div>');
-        $rootElement.append(element);
-        $animate.leave(element, $rootElement);
-        $rootScope.$digest();
-
-        expect(callbackTriggered).toBe(false);
-      }));
-
-      it('should fire a `start` callback when the animation starts',
-        inject(function($animate, $rootScope, $$rAF, $rootElement, $document) {
-
-        element = jqLite('<div></div>');
-
-        var capturedState;
-        var capturedElement;
-        $animate.on('leave', jqLite($document[0].body), function(element, phase) {
+        let capturedState;
+        let capturedElement;
+        $animate.on('enter', angular.element($document[0].body), (element, phase) => {
           capturedState = phase;
           capturedElement = element;
         });
 
-        $rootElement.append(element);
-        $animate.leave(element, $rootElement);
+        $animate.enter(element, $rootElement);
         $rootScope.$digest();
-        $$rAF.flush();
+        $animate.flush();
 
         expect(capturedState).toBe('start');
         expect(capturedElement).toBe(element);
       }));
 
-      it('should fire a `close` callback when the animation ends',
-        inject(function($animate, $rootScope, $$rAF, $rootElement, $document) {
+    it('should fire a `close` callback when the animation ends with the matching element',
+      angular.mock.inject(($animate, $rootScope, $rootElement, $document) => {
 
-        element = jqLite('<div></div>');
+        element = angular.element('<div></div>');
 
-        var capturedState;
-        var capturedElement;
-        $animate.on('leave', jqLite($document[0].body), function(element, phase) {
+        let capturedState;
+        let capturedElement;
+        $animate.on('enter', angular.element($document[0].body), (element, phase) => {
           capturedState = phase;
           capturedElement = element;
         });
 
-        $rootElement.append(element);
-        var runner = $animate.leave(element, $rootElement);
+        const runner = $animate.enter(element, $rootElement);
         $rootScope.$digest();
         runner.end();
-        $$rAF.flush();
+        $animate.flush();
 
         expect(capturedState).toBe('close');
         expect(capturedElement).toBe(element);
       }));
 
-      it('should remove all event listeners after all callbacks for the "leave:close" phase have been called',
-        inject(function($animate, $rootScope, $rootElement, $$rAF) {
 
-        var leaveSpy = jasmine.createSpy();
-        var addClassSpy = jasmine.createSpy();
+    they('should remove all event listeners when the element is removed via $prop',
+      ['leave()', 'remove()'], method => {
+        angular.mock.inject(($animate, $rootScope, $rootElement, $$rAF) => {
 
-        element = jqLite('<div></div>');
-        $animate.on('leave', element, leaveSpy);
-        $animate.on('addClass', element, addClassSpy);
-        $rootElement.append(element);
-        var runner = $animate.leave(element, $rootElement);
-        $animate.flush();
+          element = angular.element('<div></div>');
 
-        runner.end();
-        $$rAF.flush();
+          let count = 0;
+          const enterSpy = jest.fn();
+          const addClassSpy = jest.fn();
+          let runner;
 
-        expect(leaveSpy.calls.mostRecent().args[1]).toBe('close');
+          $animate.on('enter', element, enterSpy);
+          $animate.on('addClass', element[0], addClassSpy);
 
-        $animate.addClass(element, 'blue');
+          function counter(element, phase) {
+            if (phase === 'start') {
+              count++;
+            }
+          }
 
-        $animate.flush();
-        runner.end();
-        expect(function() {
+          runner = $animate.enter(element, $rootElement);
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
+
+          $animate.flush();
+          expect(enterSpy.mock.calls.length).toBe(1);
+          expect(enterSpy.mock.calls[enterSpy.mock.calls.length - 1][1]).toBe('start');
+
+          runner.end(); // Otherwise the class animation won't run because enter is still in progress
           $$rAF.flush();
-        }).toThrowError('No rAF callbacks present');
+          expect(enterSpy.mock.calls.length).toBe(2);
+          expect(enterSpy.mock.calls[enterSpy.mock.calls.length - 1][1]).toBe('close');
 
-        expect(addClassSpy.calls.count()).toBe(0);
+          enterSpy.mockClear();
+          capturedAnimation = null;
+
+          runner = $animate.addClass(element, 'blue');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
+
+          $animate.flush();
+          expect(addClassSpy.mock.calls.length).toBe(1);
+          expect(addClassSpy.mock.calls[addClassSpy.mock.calls.length - 1][1]).toBe('start');
+
+          runner.end();
+          $$rAF.flush();
+          expect(addClassSpy.mock.calls.length).toBe(2);
+          expect(addClassSpy.mock.calls[addClassSpy.mock.calls.length - 1][1]).toBe('close');
+
+          addClassSpy.mockClear();
+          capturedAnimation = null;
+
+          if (method === 'leave()') {
+            runner = $animate.leave(element);
+            $animate.flush();
+            runner.end();
+          } else if (method === 'remove()') {
+            element.remove();
+          }
+
+          runner = $animate.enter(element, $rootElement);
+          $rootScope.$digest();
+
+          $animate.flush();
+          expect(enterSpy.mock.calls.length).toBe(0);
+
+          runner.end(); // Otherwise the class animation won't run because enter is still in progress
+          expect(() => {
+            $$rAF.flush();
+          }).toThrowError('No rAF callbacks present'); // Try to flush any callbacks
+          expect(enterSpy.mock.calls.length).toBe(0);
+
+          capturedAnimation = null;
+
+          $animate.addClass(element, 'red');
+          $rootScope.$digest();
+          expect(capturedAnimation).toBeTruthy();
+
+          $animate.flush();
+          expect(addClassSpy.mock.calls.length).toBe(0);
+
+          runner.end();
+          expect(() => {
+            $$rAF.flush();
+          }).toThrowError('No rAF callbacks present'); // Try to flush any callbacks
+          expect(addClassSpy.mock.calls.length).toBe(0);
+          expect(enterSpy.mock.calls.length).toBe(0);
+        });
+      });
+
+    it('should always detect registered callbacks after one postDigest has fired',
+      angular.mock.inject(($animate, $rootScope, $rootElement) => {
+
+        element = angular.element('<div></div>');
+
+        const spy = jest.fn();
+        registerCallback();
+
+        const runner = $animate.enter(element, $rootElement);
+        registerCallback();
+
+        $rootScope.$digest();
+        registerCallback();
+
+        expect(spy).not.toHaveBeenCalled();
+        $animate.flush();
+
+        // this is not 3 since the 3rd callback
+        // was added after the first callback
+        // was fired
+        expect(spy).toHaveBeenCalledTimes(2);
+
+        spy.mockClear();
+        runner.end();
+
+        $animate.flush();
+
+        // now we expect all three callbacks
+        // to fire when the animation ends since
+        // the callback detection happens again
+        expect(spy).toHaveBeenCalledTimes(3);
+
+        function registerCallback() {
+          $animate.on('enter', element, spy);
+        }
       }));
+
+    it('should use RAF if there are detected callbacks within the hierarchy of the element being animated',
+      angular.mock.inject(($animate, $rootScope, $rootElement, $$rAF) => {
+
+        let runner;
+
+        element = angular.element('<div></div>');
+        runner = $animate.enter(element, $rootElement);
+        $rootScope.$digest();
+        runner.end();
+
+        assertRAFsUsed(false);
+
+        const spy = jest.fn();
+        $animate.on('leave', element, spy);
+
+        runner = $animate.leave(element, $rootElement);
+        $rootScope.$digest();
+        runner.end();
+
+        assertRAFsUsed(true);
+
+        function assertRAFsUsed(bool) {
+          expect($$rAF.queue.length)[bool ? 'toBeGreaterThan' : 'toBe'](0);
+        }
+      }));
+
+    describe('for leave', () => {
+
+      it('should remove the element even if another animation is called afterwards',
+        angular.mock.inject(($animate, $rootScope, $rootElement) => {
+
+          const outerContainer = angular.element('<div></div>');
+          element = angular.element('<div></div>');
+          outerContainer.append(element);
+          $rootElement.append(outerContainer);
+
+          const runner = $animate.leave(element, $rootElement);
+          $animate.removeClass(element, 'rclass');
+          $rootScope.$digest();
+          runner.end();
+          $animate.flush();
+
+          const isElementRemoved = !outerContainer[0].contains(element[0]);
+          expect(isElementRemoved).toBe(true);
+        }));
+
+      they('should trigger callbacks when the listener is on the $prop element', ['same', 'parent'],
+        elementRelation => {
+          angular.mock.inject(($animate, $rootScope, $$rAF, $rootElement, $document) => {
+            let listenerElement;
+            const callbackSpy = jest.fn();
+
+            element = angular.element('<div></div>');
+            listenerElement = elementRelation === 'same' ? element : angular.element($document[0].body);
+            $animate.on('leave', listenerElement, callbackSpy);
+            $rootElement.append(element);
+            const runner = $animate.leave(element, $rootElement);
+            $rootScope.$digest();
+
+            $$rAF.flush();
+
+            expect(callbackSpy.mock.calls.length).toBe(1);
+            expect(callbackSpy.mock.calls[callbackSpy.mock.calls.length - 1][1]).toBe('start');
+            callbackSpy.mockClear();
+
+            runner.end();
+            $$rAF.flush();
+
+            expect(callbackSpy.mock.calls.length).toBe(1);
+            expect(callbackSpy.mock.calls[callbackSpy.mock.calls.length - 1][1]).toBe('close');
+          });
+        }
+      );
+
+      it('should trigger callbacks for a leave animation',
+        angular.mock.inject(($animate, $rootScope, $$rAF, $rootElement, $document) => {
+
+          const callbackSpy = jest.fn();
+          $animate.on('leave', angular.element($document[0].body), callbackSpy);
+
+          element = angular.element('<div></div>');
+          $rootElement.append(element);
+          $animate.leave(element, $rootElement);
+          $rootScope.$digest();
+
+          $$rAF.flush();
+
+          expect(callbackSpy).toHaveBeenCalled();
+          expect(callbackSpy.mock.calls.length).toBe(1);
+        }));
+
+      it('should trigger a callback for an leave animation (same element)',
+        angular.mock.inject(($animate, $rootScope, $$rAF, $rootElement, $document) => {
+
+          const callbackSpy = jest.fn();
+
+          element = angular.element('<div></div>');
+          $animate.on('leave', element, callbackSpy);
+          $rootElement.append(element);
+          const runner = $animate.leave(element, $rootElement);
+          $rootScope.$digest();
+
+          $$rAF.flush();
+
+          expect(callbackSpy.mock.calls.length).toBe(1);
+          expect(callbackSpy.mock.calls[callbackSpy.mock.calls.length - 1][1]).toBe('start');
+          callbackSpy.mockClear();
+
+          runner.end();
+          $$rAF.flush();
+
+          expect(callbackSpy.mock.calls.length).toBe(1);
+          expect(callbackSpy.mock.calls[callbackSpy.mock.calls.length - 1][1]).toBe('close');
+        }));
+
+      it('should not fire a callback if the element is outside of the given container',
+        angular.mock.inject(($animate, $rootScope, $$rAF, $rootElement) => {
+
+          let callbackTriggered = false;
+          const innerContainer = angular.element('<div></div>');
+          $rootElement.append(innerContainer);
+
+          $animate.on('leave', innerContainer,
+            (element, phase, data) => {
+              callbackTriggered = true;
+            });
+
+          element = angular.element('<div></div>');
+          $rootElement.append(element);
+          $animate.leave(element, $rootElement);
+          $rootScope.$digest();
+
+          expect(callbackTriggered).toBe(false);
+        }));
+
+      it('should fire a `start` callback when the animation starts',
+        angular.mock.inject(($animate, $rootScope, $$rAF, $rootElement, $document) => {
+
+          element = angular.element('<div></div>');
+
+          let capturedState;
+          let capturedElement;
+          $animate.on('leave', angular.element($document[0].body), (element, phase) => {
+            capturedState = phase;
+            capturedElement = element;
+          });
+
+          $rootElement.append(element);
+          $animate.leave(element, $rootElement);
+          $rootScope.$digest();
+          $$rAF.flush();
+
+          expect(capturedState).toBe('start');
+          expect(capturedElement).toBe(element);
+        }));
+
+      it('should fire a `close` callback when the animation ends',
+        angular.mock.inject(($animate, $rootScope, $$rAF, $rootElement, $document) => {
+
+          element = angular.element('<div></div>');
+
+          let capturedState;
+          let capturedElement;
+          $animate.on('leave', angular.element($document[0].body), (element, phase) => {
+            capturedState = phase;
+            capturedElement = element;
+          });
+
+          $rootElement.append(element);
+          const runner = $animate.leave(element, $rootElement);
+          $rootScope.$digest();
+          runner.end();
+          $$rAF.flush();
+
+          expect(capturedState).toBe('close');
+          expect(capturedElement).toBe(element);
+        }));
+
+      it('should remove all event listeners after all callbacks for the "leave:close" phase have been called',
+        angular.mock.inject(($animate, $rootScope, $rootElement, $$rAF) => {
+
+          const leaveSpy = jest.fn();
+          const addClassSpy = jest.fn();
+
+          element = angular.element('<div></div>');
+          $animate.on('leave', element, leaveSpy);
+          $animate.on('addClass', element, addClassSpy);
+          $rootElement.append(element);
+          const runner = $animate.leave(element, $rootElement);
+          $animate.flush();
+
+          runner.end();
+          $$rAF.flush();
+
+          expect(leaveSpy.mock.calls[leaveSpy.mock.calls.length - 1][1]).toBe('close');
+
+          $animate.addClass(element, 'blue');
+
+          $animate.flush();
+          runner.end();
+          expect(() => {
+            $$rAF.flush();
+          }).toThrowError('No rAF callbacks present');
+
+          expect(addClassSpy.mock.calls.length).toBe(0);
+        }));
 
     });
 
-    describe('event data', function() {
+    describe('event data', () => {
 
       it('should be included for enter',
-        inject(function($animate, $rootScope, $rootElement, $document) {
-          var eventData;
+        angular.mock.inject(($animate, $rootScope, $rootElement, $document) => {
+          let eventData;
 
-          $animate.on('enter', jqLite($document[0].body), function(element, phase, data) {
+          $animate.on('enter', angular.element($document[0].body), (element, phase, data) => {
             eventData = data;
           });
 
-          element = jqLite('<div></div>');
+          element = angular.element('<div></div>');
           $animate.enter(element, $rootElement, null, {
             addClass: 'red blue',
             removeClass: 'yellow green',
-            from: {opacity: 0},
-            to: {opacity: 1}
+            from: { opacity: 0 },
+            to: { opacity: 1 }
           });
           $rootScope.$digest();
 
@@ -2843,30 +2865,30 @@ describe('animations', function() {
           expect(eventData).toEqual({
             addClass: 'red blue',
             removeClass: null,
-            from: {opacity: 0},
-            to: {opacity: 1}
+            from: { opacity: 0 },
+            to: { opacity: 1 }
           });
-      }));
+        }));
 
 
       it('should be included for leave',
-        inject(function($animate, $rootScope, $rootElement, $document) {
-          var eventData;
+        angular.mock.inject(($animate, $rootScope, $rootElement, $document) => {
+          let eventData;
 
-          $animate.on('leave', jqLite($document[0].body), function(element, phase, data) {
+          $animate.on('leave', angular.element($document[0].body), (element, phase, data) => {
             eventData = data;
           });
 
-          var outerContainer = jqLite('<div></div>');
-          element = jqLite('<div></div>');
+          const outerContainer = angular.element('<div></div>');
+          element = angular.element('<div></div>');
           outerContainer.append(element);
           $rootElement.append(outerContainer);
 
           $animate.leave(element, {
             addClass: 'red blue',
             removeClass: 'yellow green',
-            from: {opacity: 0},
-            to: {opacity: 1}
+            from: { opacity: 0 },
+            to: { opacity: 1 }
           });
 
           $animate.flush();
@@ -2874,24 +2896,24 @@ describe('animations', function() {
           expect(eventData).toEqual({
             addClass: 'red blue',
             removeClass: null,
-            from: {opacity: 0},
-            to: {opacity: 1}
+            from: { opacity: 0 },
+            to: { opacity: 1 }
           });
         })
       );
 
 
       it('should be included for move',
-        inject(function($animate, $rootScope, $rootElement, $document) {
-          var eventData;
+        angular.mock.inject(($animate, $rootScope, $rootElement, $document) => {
+          let eventData;
 
-          $animate.on('move', jqLite($document[0].body), function(element, phase, data) {
+          $animate.on('move', angular.element($document[0].body), (element, phase, data) => {
             eventData = data;
           });
 
-          var parent = jqLite('<div></div>');
-          var parent2 = jqLite('<div></div>');
-          element = jqLite('<div></div>');
+          const parent = angular.element('<div></div>');
+          const parent2 = angular.element('<div></div>');
+          element = angular.element('<div></div>');
           parent.append(element);
           $rootElement.append(parent);
           $rootElement.append(parent2);
@@ -2899,8 +2921,8 @@ describe('animations', function() {
           $animate.move(element, parent2, null, {
             addClass: 'red blue',
             removeClass: 'yellow green',
-            from: {opacity: 0},
-            to: {opacity: 1}
+            from: { opacity: 0 },
+            to: { opacity: 1 }
           });
 
           $animate.flush();
@@ -2908,107 +2930,107 @@ describe('animations', function() {
           expect(eventData).toEqual({
             addClass: 'red blue',
             removeClass: null,
-            from: {opacity: 0},
-            to: {opacity: 1}
+            from: { opacity: 0 },
+            to: { opacity: 1 }
           });
         })
       );
 
 
-      it('should be included for addClass', inject(function($animate, $rootElement) {
-        var eventData;
+      it('should be included for addClass', angular.mock.inject(($animate, $rootElement) => {
+        let eventData;
 
-        element = jqLite('<div class="purple"></div>');
-        $animate.on('addClass', element, function(element, phase, data) {
+        element = angular.element('<div class="purple"></div>');
+        $animate.on('addClass', element, (element, phase, data) => {
           eventData = data;
         });
 
         $rootElement.append(element);
         $animate.addClass(element, 'red blue', {
-          from: {opacity: 0},
-          to: {opacity: 1}
+          from: { opacity: 0 },
+          to: { opacity: 1 }
         });
         $animate.flush();
 
         expect(eventData).toEqual({
           addClass: 'red blue',
           removeClass: null,
-          from: {opacity: 0},
-          to: {opacity: 1}
+          from: { opacity: 0 },
+          to: { opacity: 1 }
         });
       }));
 
 
-      it('should be included for removeClass', inject(function($animate, $rootElement) {
-        var eventData;
+      it('should be included for removeClass', angular.mock.inject(($animate, $rootElement) => {
+        let eventData;
 
-        element = jqLite('<div class="red blue purple"></div>');
-        $animate.on('removeClass', element, function(element, phase, data) {
+        element = angular.element('<div class="red blue purple"></div>');
+        $animate.on('removeClass', element, (element, phase, data) => {
           eventData = data;
         });
 
         $rootElement.append(element);
         $animate.removeClass(element, 'red blue', {
-          from: {opacity: 0},
-          to: {opacity: 1}
+          from: { opacity: 0 },
+          to: { opacity: 1 }
         });
         $animate.flush();
 
         expect(eventData).toEqual({
           removeClass: 'red blue',
           addClass: null,
-          from: {opacity: 0},
-          to: {opacity: 1}
+          from: { opacity: 0 },
+          to: { opacity: 1 }
         });
       }));
 
 
-      it('should be included for setClass', inject(function($animate, $rootElement) {
-        var eventData;
+      it('should be included for setClass', angular.mock.inject(($animate, $rootElement) => {
+        let eventData;
 
-        element = jqLite('<div class="yellow green purple"></div>');
+        element = angular.element('<div class="yellow green purple"></div>');
 
-        $animate.on('setClass', element, function(element, phase, data) {
+        $animate.on('setClass', element, (element, phase, data) => {
 
           eventData = data;
         });
 
         $rootElement.append(element);
         $animate.setClass(element, 'red blue', 'yellow green', {
-          from: {opacity: 0},
-          to: {opacity: 1}
+          from: { opacity: 0 },
+          to: { opacity: 1 }
         });
         $animate.flush();
 
         expect(eventData).toEqual({
           addClass: 'red blue',
           removeClass: 'yellow green',
-          from: {opacity: 0},
-          to: {opacity: 1}
+          from: { opacity: 0 },
+          to: { opacity: 1 }
         });
       }));
 
-      it('should be included for animate', inject(function($animate, $rootElement) {
+      it('should be included for animate', angular.mock.inject(($animate, $rootElement) => {
         // The event for animate changes to 'setClass' if both addClass and removeClass
         // are definded, because the operations are merged. However, it is still 'animate'
         // and not 'addClass' if only 'addClass' is defined.
         // Ideally, we would make this consistent, but it's a BC
-        var eventData, eventName;
+        let eventData, eventName;
 
-        element = jqLite('<div class="yellow green purple"></div>');
+        element = angular.element('<div class="yellow green purple"></div>');
 
-        $animate.on('setClass', element, function(element, phase, data) {
+        $animate.on('setClass', element, (element, phase, data) => {
           eventData = data;
           eventName = 'setClass';
         });
 
-        $animate.on('animate', element, function(element, phase, data) {
+        $animate.on('animate', element, (element, phase, data) => {
           eventData = data;
           eventName = 'animate';
         });
 
         $rootElement.append(element);
-        var runner = $animate.animate(element, {opacity: 0}, {opacity: 1}, null, {
+        let runner = $animate.animate(element, { opacity: 0 }, { opacity: 1 }, null, {
           addClass: 'red blue',
           removeClass: 'yellow green'
         });
@@ -3019,12 +3041,12 @@ describe('animations', function() {
         expect(eventData).toEqual({
           addClass: 'red blue',
           removeClass: 'yellow green',
-          from: {opacity: 0},
-          to: {opacity: 1}
+          from: { opacity: 0 },
+          to: { opacity: 1 }
         });
 
         eventData = eventName = null;
-        runner = $animate.animate(element, {opacity: 0}, {opacity: 1}, null, {
+        runner = $animate.animate(element, { opacity: 0 }, { opacity: 1 }, null, {
           addClass: 'yellow green'
         });
 
@@ -3035,12 +3057,12 @@ describe('animations', function() {
         expect(eventData).toEqual({
           addClass: 'yellow green',
           removeClass: null,
-          from: {opacity: 0},
-          to: {opacity: 1}
+          from: { opacity: 0 },
+          to: { opacity: 1 }
         });
 
         eventData = eventName = null;
-        runner = $animate.animate(element, {opacity: 0}, {opacity: 1}, null, {
+        runner = $animate.animate(element, { opacity: 0 }, { opacity: 1 }, null, {
           removeClass: 'yellow green'
         });
 
@@ -3051,32 +3073,32 @@ describe('animations', function() {
         expect(eventData).toEqual({
           addClass: null,
           removeClass: 'yellow green',
-          from: {opacity: 0},
-          to: {opacity: 1}
+          from: { opacity: 0 },
+          to: { opacity: 1 }
         });
       }));
     });
 
     they('should trigger a callback for a $prop animation if the listener is on the document',
-      ['enter', 'leave'], function($event) {
-        module(function($provide) {
-          $provide.factory('$rootElement', function($document) {
+      ['enter', 'leave'], $event => {
+        angular.mock.module($provide => {
+          $provide.factory('$rootElement', $document => {
             // Since we listen on document, $document must be the $rootElement for animations to work
             return $document;
           });
         });
 
-        inject(function($animate, $rootScope, $document) {
+        angular.mock.inject(($animate, $rootScope, $document) => {
 
-          var callbackTriggered = false;
+          let callbackTriggered = false;
 
-          $animate.on($event, $document[0], function() {
+          $animate.on($event, $document[0], () => {
             callbackTriggered = true;
           });
 
-          var container = jqLite('<div></div>');
-          jqLite($document[0].body).append(container);
-          element = jqLite('<div></div>');
+          const container = angular.element('<div></div>');
+          angular.element($document[0].body).append(container);
+          element = angular.element('<div></div>');
 
           if ($event === 'leave') {
             container.append(element);
@@ -3089,33 +3111,33 @@ describe('animations', function() {
 
           expect(callbackTriggered).toBe(true);
         });
-    });
+      });
 
-    describe('when animations are skipped, disabled, or invalid', function() {
+    describe('when animations are skipped, disabled, or invalid', () => {
 
-      var overriddenAnimationRunner;
-      var capturedAnimation;
-      var capturedAnimationHistory;
-      var defaultFakeAnimationRunner;
-      var parent;
-      var parent2;
+      let overriddenAnimationRunner;
+      let capturedAnimation;
+      let capturedAnimationHistory;
+      let defaultFakeAnimationRunner;
+      let parent;
+      let parent2;
 
-      beforeEach(module(function($provide) {
+      beforeEach(angular.mock.module($provide => {
         overriddenAnimationRunner = null;
         capturedAnimation = null;
         capturedAnimationHistory = [];
 
-        $provide.value('$$animation', function() {
+        $provide.value('$$animation', function () {
           capturedAnimationHistory.push(capturedAnimation = arguments);
           return overriddenAnimationRunner || defaultFakeAnimationRunner;
         });
 
-        return function($rootElement, $q, $animate, $$AnimateRunner, $document) {
+        return ($rootElement, $q, $animate, $$AnimateRunner, $document) => {
           defaultFakeAnimationRunner = new $$AnimateRunner();
 
-          element = jqLite('<div class="element">element</div>');
-          parent = jqLite('<div class="parent1">parent</div>');
-          parent2 = jqLite('<div class="parent2">parent</div>');
+          element = angular.element('<div class="element">element</div>');
+          parent = angular.element('<div class="parent1">parent</div>');
+          parent2 = angular.element('<div class="parent2">parent</div>');
 
           $rootElement.append(parent);
           $rootElement.append(parent2);
@@ -3124,131 +3146,131 @@ describe('animations', function() {
 
 
       it('should trigger all callbacks if a follow-up structural animation takes over a running animation',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        parent.append(element);
-        var moveSpy = jasmine.createSpy();
-        var leaveSpy = jasmine.createSpy();
+          parent.append(element);
+          const moveSpy = jest.fn();
+          const leaveSpy = jest.fn();
 
-        $animate.on('move', parent2, moveSpy);
-        $animate.on('leave', parent2, leaveSpy);
+          $animate.on('move', parent2, moveSpy);
+          $animate.on('leave', parent2, leaveSpy);
 
-        $animate.move(element, parent2);
+          $animate.move(element, parent2);
 
-        $rootScope.$digest();
-        $animate.flush();
+          $rootScope.$digest();
+          $animate.flush();
 
-        expect(moveSpy.calls.count()).toBe(1);
-        expect(moveSpy.calls.mostRecent().args[1]).toBe('start');
+          expect(moveSpy.mock.calls.length).toBe(1);
+          expect(moveSpy.mock.calls[moveSpy.mock.calls.length - 1][1]).toBe('start');
 
-        $animate.leave(element);
-        $rootScope.$digest();
-        $animate.flush();
+          $animate.leave(element);
+          $rootScope.$digest();
+          $animate.flush();
 
-        expect(moveSpy.calls.count()).toBe(2);
-        expect(moveSpy.calls.mostRecent().args[1]).toBe('close');
+          expect(moveSpy.mock.calls.length).toBe(2);
+          expect(moveSpy.mock.calls[moveSpy.mock.calls.length - 1][1]).toBe('close');
 
-        expect(leaveSpy.calls.count()).toBe(2);
-        expect(leaveSpy.calls.argsFor(0)[1]).toBe('start');
-        expect(leaveSpy.calls.argsFor(1)[1]).toBe('close');
-      }));
+          expect(leaveSpy.mock.calls.length).toBe(2);
+          expect(leaveSpy.mock.calls[0][1]).toBe('start');
+          expect(leaveSpy.mock.calls[1][1]).toBe('close');
+        }));
 
 
       it('should not trigger callbacks for the previous structural animation if a follow-up structural animation takes over before the postDigest',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        var enterDone = jasmine.createSpy('enter animation done');
+          const enterDone = jest.fn();
 
-        var enterSpy = jasmine.createSpy();
-        var leaveSpy = jasmine.createSpy();
+          const enterSpy = jest.fn();
+          const leaveSpy = jest.fn();
 
-        $animate.on('enter', parent, enterSpy);
-        $animate.on('leave', parent, leaveSpy);
+          $animate.on('enter', parent, enterSpy);
+          $animate.on('leave', parent, leaveSpy);
 
-        $animate.enter(element, parent).done(enterDone);
-        expect(enterDone).not.toHaveBeenCalled();
+          $animate.enter(element, parent).done(enterDone);
+          expect(enterDone).not.toHaveBeenCalled();
 
-        var runner = $animate.leave(element);
-        $animate.flush();
-        expect(enterDone).toHaveBeenCalled();
+          const runner = $animate.leave(element);
+          $animate.flush();
+          expect(enterDone).toHaveBeenCalled();
 
-        expect(enterSpy).not.toHaveBeenCalled();
-        expect(leaveSpy.calls.count()).toBe(1);
-        expect(leaveSpy.calls.mostRecent().args[1]).toBe('start');
+          expect(enterSpy).not.toHaveBeenCalled();
+          expect(leaveSpy.mock.calls.length).toBe(1);
+          expect(leaveSpy.mock.calls[leaveSpy.mock.calls.length - 1][1]).toBe('start');
 
-        leaveSpy.calls.reset();
-        runner.end();
-        $animate.flush();
+          leaveSpy.mockClear();
+          runner.end();
+          $animate.flush();
 
-        expect(enterSpy).not.toHaveBeenCalled();
-        expect(leaveSpy.calls.count()).toBe(1);
-        expect(leaveSpy.calls.mostRecent().args[1]).toBe('close');
-      }));
+          expect(enterSpy).not.toHaveBeenCalled();
+          expect(leaveSpy.mock.calls.length).toBe(1);
+          expect(leaveSpy.mock.calls[leaveSpy.mock.calls.length - 1][1]).toBe('close');
+        }));
 
 
       it('should not trigger the callback if animations are disabled on the element',
-        inject(function($animate, $rootScope, $rootElement, $document) {
+        angular.mock.inject(($animate, $rootScope, $rootElement, $document) => {
 
-        var callbackTriggered = false;
-        var spy = jasmine.createSpy('enter');
-        $animate.on('enter', jqLite($document[0].body), spy);
+          const callbackTriggered = false;
+          const spy = jest.fn();
+          $animate.on('enter', angular.element($document[0].body), spy);
 
-        element = jqLite('<div></div>');
-        $animate.enabled(element, false);
-        var runner = $animate.enter(element, $rootElement);
-        $rootScope.$digest();
+          element = angular.element('<div></div>');
+          $animate.enabled(element, false);
+          const runner = $animate.enter(element, $rootElement);
+          $rootScope.$digest();
 
-        $animate.flush(); // Flushes the animation frames for the callbacks
+          $animate.flush(); // Flushes the animation frames for the callbacks
 
-        expect(spy).not.toHaveBeenCalled();
-      }));
+          expect(spy).not.toHaveBeenCalled();
+        }));
 
 
       it('should not trigger the callbacks if the animation is skipped because there are no class-based animations and no structural animation',
-        inject(function($animate, $rootScope) {
+        angular.mock.inject(($animate, $rootScope) => {
 
-        parent.append(element);
-        var classSpy = jasmine.createSpy('classChange');
-        $animate.on('addClass', element, classSpy);
-        $animate.on('removeClass', element, classSpy);
-        element.addClass('one three');
+          parent.append(element);
+          const classSpy = jest.fn();
+          $animate.on('addClass', element, classSpy);
+          $animate.on('removeClass', element, classSpy);
+          element.addClass('one three');
 
-        $animate.addClass(element, 'one');
-        $animate.removeClass(element, 'four');
+          $animate.addClass(element, 'one');
+          $animate.removeClass(element, 'four');
 
-        $rootScope.$digest();
-        $animate.flush();
-        expect(classSpy).not.toHaveBeenCalled();
-      }));
+          $rootScope.$digest();
+          $animate.flush();
+          expect(classSpy).not.toHaveBeenCalled();
+        }));
 
 
-      describe('because the document is hidden', function() {
-        var hidden = true;
+      describe('because the document is hidden', () => {
+        const hidden = true;
 
-        beforeEach(function() {
-          module(function($provide) {
-            $provide.value('$$isDocumentHidden', function() {
+        beforeEach(() => {
+          angular.mock.module($provide => {
+            $provide.value('$$isDocumentHidden', () => {
               return hidden;
             });
           });
         });
 
         it('should trigger callbacks for an enter animation',
-          inject(function($animate, $rootScope, $rootElement, $document) {
+          angular.mock.inject(($animate, $rootScope, $rootElement, $document) => {
 
-          var spy = jasmine.createSpy();
-          $animate.on('enter', jqLite($document[0].body), spy);
+            const spy = jest.fn();
+            $animate.on('enter', angular.element($document[0].body), spy);
 
-          element = jqLite('<div></div>');
-          var runner = $animate.enter(element, $rootElement);
-          $rootScope.$digest();
+            element = angular.element('<div></div>');
+            const runner = $animate.enter(element, $rootElement);
+            $rootScope.$digest();
 
-          $animate.flush(); // Flushes the animation frames for the callbacks
+            $animate.flush(); // Flushes the animation frames for the callbacks
 
-          expect(spy.calls.count()).toBe(2);
-          expect(spy.calls.argsFor(0)[1]).toBe('start');
-          expect(spy.calls.argsFor(1)[1]).toBe('close');
-        }));
+            expect(spy.mock.calls.length).toBe(2);
+            expect(spy.mock.calls[0][1]).toBe('start');
+            expect(spy.mock.calls[1][1]).toBe('close');
+          }));
       });
 
 

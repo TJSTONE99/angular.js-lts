@@ -1,23 +1,23 @@
 'use strict';
 
-describe('$sniffer', function() {
+describe('$sniffer', () => {
   function sniffer($window, $document) {
-    /* global $SnifferProvider: false */
+    /* global ngInternals.$SnifferProvider: false */
     $window.navigator = $window.navigator || {};
-    $document = jqLite($document || {});
+    $document = angular.element($document || {});
     if (!$document[0].body) {
       $document[0].body = window.document.body;
     }
-    return new $SnifferProvider().$get[2]($window, $document);
+    return new ngInternals.$SnifferProvider().$get[2]($window, $document);
   }
 
 
-  describe('history', function() {
-    it('should be true if history.pushState defined', function() {
-      var mockWindow = {
+  describe('history', () => {
+    it('should be true if history.pushState defined', () => {
+      const mockWindow = {
         history: {
-          pushState: noop,
-          replaceState: noop
+          pushState: angular.noop,
+          replaceState: angular.noop
         }
       };
 
@@ -25,16 +25,16 @@ describe('$sniffer', function() {
     });
 
 
-    it('should be false if history or pushState not defined', function() {
+    it('should be false if history or pushState not defined', () => {
       expect(sniffer({}).history).toBe(false);
-      expect(sniffer({history: {}}).history).toBe(false);
+      expect(sniffer({ history: {} }).history).toBe(false);
     });
 
 
-    it('should be false on Boxee box with an older version of Webkit', function() {
-      var mockWindow = {
+    it('should be false on Boxee box with an older version of Webkit', () => {
+      const mockWindow = {
         history: {
-          pushState: noop
+          pushState: angular.noop
         },
         navigator: {
           userAgent: 'boxee (alpha/Darwin 8.7.1 i386 - 0.9.11.5591)'
@@ -45,10 +45,10 @@ describe('$sniffer', function() {
     });
 
 
-    it('should be true on NW.js apps (which look similar to Chrome Packaged Apps)', function() {
-      var mockWindow = {
+    it('should be true on NW.js apps (which look similar to Chrome Packaged Apps)', () => {
+      const mockWindow = {
         history: {
-          pushState: noop
+          pushState: angular.noop
         },
         chrome: {
           app: {
@@ -64,7 +64,7 @@ describe('$sniffer', function() {
     });
 
 
-    it('should be false on Chrome Packaged Apps', function() {
+    it('should be false on Chrome Packaged Apps', () => {
       // Chrome Packaged Apps are not allowed to access `window.history.pushState`.
       // In Chrome, `window.app` might be available in "normal" webpages, but `window.app.runtime`
       // only exists in the context of a packaged app.
@@ -74,15 +74,15 @@ describe('$sniffer', function() {
       expect(sniffer(createMockWindow(true, true)).history).toBe(false);
 
       function createMockWindow(isChrome, isPackagedApp) {
-        var mockWindow = {
+        const mockWindow = {
           history: {
-            pushState: noop
+            pushState: angular.noop
           }
         };
 
         if (isChrome) {
-          var chromeAppObj = isPackagedApp ? {runtime: {}} : {};
-          mockWindow.chrome = {app: chromeAppObj};
+          const chromeAppObj = isPackagedApp ? { runtime: {} } : {};
+          mockWindow.chrome = { app: chromeAppObj };
         }
 
         return mockWindow;
@@ -90,13 +90,13 @@ describe('$sniffer', function() {
     });
 
 
-    it('should not try to access `history.pushState` in Chrome Packaged Apps', function() {
-      var pushStateAccessCount = 0;
+    it('should not try to access `history.pushState` in Chrome Packaged Apps', () => {
+      let pushStateAccessCount = 0;
 
-      var mockHistory = Object.create(Object.prototype, {
-        pushState: {get: function() { pushStateAccessCount++; return noop; }}
+      const mockHistory = Object.create(Object.prototype, {
+        pushState: { get: function () { pushStateAccessCount++; return angular.noop; } }
       });
-      var mockWindow = {
+      const mockWindow = {
         chrome: {
           app: {
             runtime: {}
@@ -111,13 +111,13 @@ describe('$sniffer', function() {
     });
 
     it('should not try to access `history.pushState` in sandboxed Chrome Packaged Apps',
-      function() {
-        var pushStateAccessCount = 0;
+      () => {
+        let pushStateAccessCount = 0;
 
-        var mockHistory = Object.create(Object.prototype, {
-          pushState: {get: function() { pushStateAccessCount++; return noop; }}
+        const mockHistory = Object.create(Object.prototype, {
+          pushState: { get: function () { pushStateAccessCount++; return angular.noop; } }
         });
-        var mockWindow = {
+        const mockWindow = {
           chrome: {
             runtime: {
               id: 'x'
@@ -134,72 +134,72 @@ describe('$sniffer', function() {
   });
 
 
-  describe('hasEvent', function() {
-    var mockDocument, mockDivElement, $sniffer;
+  describe('hasEvent', () => {
+    let mockDocument, mockDivElement, $sniffer;
 
-    beforeEach(function() {
-      var mockCreateElementFn = function(elm) { if (elm === 'div') return mockDivElement; };
-      var createElementSpy = jasmine.createSpy('createElement').and.callFake(mockCreateElementFn);
+    beforeEach(() => {
+      const mockCreateElementFn = elm => { if (elm === 'div') return mockDivElement; };
+      const createElementSpy = jest.fn(mockCreateElementFn);
 
-      mockDocument = {createElement: createElementSpy};
+      mockDocument = { createElement: createElementSpy };
       $sniffer = sniffer({}, mockDocument);
     });
 
 
-    it('should return true if "onchange" is present in a div element', function() {
-      mockDivElement = {onchange: noop};
+    it('should return true if "onchange" is present in a div element', () => {
+      mockDivElement = { onchange: angular.noop };
 
       expect($sniffer.hasEvent('change')).toBe(true);
     });
 
 
-    it('should return false if "oninput" is not present in a div element', function() {
+    it('should return false if "oninput" is not present in a div element', () => {
       mockDivElement = {};
 
       expect($sniffer.hasEvent('input')).toBe(false);
     });
 
 
-    it('should only create the element once', function() {
+    it('should only create the element once', () => {
       mockDivElement = {};
 
       $sniffer.hasEvent('change');
       $sniffer.hasEvent('change');
       $sniffer.hasEvent('change');
 
-      expect(mockDocument.createElement).toHaveBeenCalledOnce();
+      expect(mockDocument.createElement).toHaveBeenCalledTimes(1);
     });
 
 
-    it('should claim that IE9 doesn\'t have support for "oninput"', function() {
+    it('should claim that IE9 doesn\'t have support for "oninput"', () => {
       // Support: IE 9-11 only
       // IE9 implementation is fubared, so it's better to pretend that it doesn't have the support
       // IE10+ implementation is fubared when mixed with placeholders
-      mockDivElement = {oninput: noop};
+      mockDivElement = { oninput: angular.noop };
 
-      expect($sniffer.hasEvent('input')).toBe(!msie);
+      expect($sniffer.hasEvent('input')).toBe(!ngInternals.msie);
     });
   });
 
 
-  describe('csp', function() {
-    it('should have all rules set to false by default', function() {
-      var csp = sniffer({}).csp;
-      forEach(Object.keys(csp), function(key) {
+  describe('csp', () => {
+    it('should have all rules set to false by default', () => {
+      const csp = sniffer({}).csp;
+      angular.forEach(Object.keys(csp), key => {
         expect(csp[key]).toEqual(false);
       });
     });
   });
 
 
-  describe('animations', function() {
-    it('should be either true or false', inject(function($sniffer) {
+  describe('animations', () => {
+    it('should be either true or false', angular.mock.inject($sniffer => {
       expect($sniffer.animations).toBeDefined();
     }));
 
 
-    it('should be false when there is no animation style', function() {
-      var mockDocument = {
+    it('should be false when there is no animation style', () => {
+      const mockDocument = {
         body: {
           style: {}
         }
@@ -209,9 +209,9 @@ describe('$sniffer', function() {
     });
 
 
-    it('should be true with -webkit-prefixed animations', function() {
-      var animationStyle = 'some_animation 2s linear';
-      var mockDocument = {
+    it('should be true with -webkit-prefixed animations', () => {
+      const animationStyle = 'some_animation 2s linear';
+      const mockDocument = {
         body: {
           style: {
             webkitAnimation: animationStyle
@@ -223,8 +223,8 @@ describe('$sniffer', function() {
     });
 
 
-    it('should be true with w3c-style animations', function() {
-      var mockDocument = {
+    it('should be true with w3c-style animations', () => {
+      const mockDocument = {
         body: {
           style: {
             animation: 'some_animation 2s linear'
@@ -236,13 +236,13 @@ describe('$sniffer', function() {
     });
 
 
-    it('should be true on android with older body style properties', function() {
-      var mockWindow = {
+    it('should be true on android with older body style properties', () => {
+      const mockWindow = {
         navigator: {
           userAgent: 'android 2'
         }
       };
-      var mockDocument = {
+      const mockDocument = {
         body: {
           style: {
             webkitAnimation: ''
@@ -254,8 +254,8 @@ describe('$sniffer', function() {
     });
 
 
-    it('should be true when an older version of Webkit is used', function() {
-      var mockDocument = {
+    it('should be true when an older version of Webkit is used', () => {
+      const mockDocument = {
         body: {
           style: {
             WebkitOpacity: '0'
@@ -268,14 +268,14 @@ describe('$sniffer', function() {
   });
 
 
-  describe('transitions', function() {
-    it('should be either true or false', inject(function($sniffer) {
+  describe('transitions', () => {
+    it('should be either true or false', angular.mock.inject($sniffer => {
       expect($sniffer.transitions).toBeOneOf(true, false);
     }));
 
 
-    it('should be false when there is no transition style', function() {
-      var mockDocument = {
+    it('should be false when there is no transition style', () => {
+      const mockDocument = {
         body: {
           style: {}
         }
@@ -285,9 +285,9 @@ describe('$sniffer', function() {
     });
 
 
-    it('should be true with -webkit-prefixed transitions', function() {
-      var transitionStyle = '1s linear all';
-      var mockDocument = {
+    it('should be true with -webkit-prefixed transitions', () => {
+      const transitionStyle = '1s linear all';
+      const mockDocument = {
         body: {
           style: {
             webkitTransition: transitionStyle
@@ -299,8 +299,8 @@ describe('$sniffer', function() {
     });
 
 
-    it('should be true with w3c-style transitions', function() {
-      var mockDocument = {
+    it('should be true with w3c-style transitions', () => {
+      const mockDocument = {
         body: {
           style: {
             transition: '1s linear all'
@@ -312,13 +312,13 @@ describe('$sniffer', function() {
     });
 
 
-    it('should be true on android with older body style properties', function() {
-      var mockWindow = {
+    it('should be true on android with older body style properties', () => {
+      const mockWindow = {
         navigator: {
           userAgent: 'android 2'
         }
       };
-      var mockDocument = {
+      const mockDocument = {
         body: {
           style: {
             webkitTransition: ''
@@ -331,9 +331,9 @@ describe('$sniffer', function() {
   });
 
 
-  describe('android', function() {
-    it('should provide the android version', function() {
-      var mockWindow = {
+  describe('android', () => {
+    it('should provide the android version', () => {
+      const mockWindow = {
         navigator: {
           userAgent: 'android 2'
         }

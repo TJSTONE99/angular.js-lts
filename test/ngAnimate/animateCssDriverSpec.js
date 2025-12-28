@@ -1,54 +1,54 @@
 'use strict';
 
-describe('ngAnimate $$animateCssDriver', function() {
+describe('ngAnimate $$animateCssDriver', () => {
 
-  beforeEach(module('ngAnimate'));
-  beforeEach(module('ngAnimateMock'));
+  beforeEach(angular.mock.module('ngAnimate'));
+  beforeEach(angular.mock.module('ngAnimateMock'));
 
   function int(x) {
     return parseInt(x, 10);
   }
 
   function hasAll(array, vals) {
-    for (var i = 0; i < vals.length; i++) {
+    for (let i = 0; i < vals.length; i++) {
       if (array.indexOf(vals[i]) === -1) return false;
     }
     return true;
   }
 
-  it('should return a noop driver handler if the browser does not support CSS transitions and keyframes', function() {
-    module(function($provide) {
+  it('should return a noop driver handler if the browser does not support CSS transitions and keyframes', () => {
+    angular.mock.module($provide => {
       $provide.value('$sniffer', {});
     });
-    inject(function($$animateCssDriver) {
-      expect($$animateCssDriver).toBe(noop);
+    angular.mock.inject($$animateCssDriver => {
+      expect($$animateCssDriver).toBe(angular.noop);
     });
   });
 
-  describe('when active', function() {
+  describe('when active', () => {
     if (!browserSupportsCssAnimations()) return;
 
-    var element;
-    var ss;
-    afterEach(function() {
+    let element;
+    let ss;
+    afterEach(() => {
       dealoc(element);
       if (ss) {
         ss.destroy();
       }
     });
 
-    var capturedAnimation;
-    var captureLog;
-    var driver;
-    var captureFn;
-    beforeEach(module(function($provide) {
+    let capturedAnimation;
+    let captureLog;
+    let driver;
+    let captureFn;
+    beforeEach(angular.mock.module($provide => {
       capturedAnimation = null;
       captureLog = [];
-      captureFn = noop;
+      captureFn = angular.noop;
 
-      $provide.factory('$animateCss', function($$AnimateRunner) {
-        return function() {
-          var runner = new $$AnimateRunner();
+      $provide.factory('$animateCss', $$AnimateRunner => {
+        return function () {
+          const runner = new $$AnimateRunner();
 
           capturedAnimation = arguments;
           captureFn.apply(null, arguments);
@@ -60,47 +60,47 @@ describe('ngAnimate $$animateCssDriver', function() {
 
           return {
             $$willAnimate: true,
-            start: function() {
+            start: function () {
               return runner;
             }
           };
         };
       });
 
-      element = jqLite('<div></div>');
+      element = angular.element('<div></div>');
 
-      return function($$animateCssDriver, $document) {
-        driver = function(details, cb) {
-          return $$animateCssDriver(details, cb || noop);
+      return ($$animateCssDriver, $document) => {
+        driver = (details, cb) => {
+          return $$animateCssDriver(details, cb || angular.noop);
         };
         ss = createMockStyleSheet($document);
       };
     }));
 
     it('should register the $$animateCssDriver into the list of drivers found in $animateProvider',
-      module(function($animateProvider) {
+      angular.mock.module($animateProvider => {
 
-      expect($animateProvider.drivers).toContain('$$animateCssDriver');
-    }));
+        expect($animateProvider.drivers).toContain('$$animateCssDriver');
+      }));
 
     it('should register the $$animateCssDriver into the list of drivers found in $animateProvider',
-      module(function($animateProvider) {
+      angular.mock.module($animateProvider => {
 
-      expect($animateProvider.drivers).toContain('$$animateCssDriver');
-    }));
+        expect($animateProvider.drivers).toContain('$$animateCssDriver');
+      }));
 
-    describe('regular animations', function() {
-      it('should render an animation on the given element', inject(function() {
+    describe('regular animations', () => {
+      it('should render an animation on the given element', angular.mock.inject(() => {
         driver({ element: element });
         expect(capturedAnimation[0]).toBe(element);
       }));
 
-      it('should return an object with a start function', inject(function() {
-        var runner = driver({ element: element });
-        expect(isFunction(runner.start)).toBeTruthy();
+      it('should return an object with a start function', angular.mock.inject(() => {
+        const runner = driver({ element: element });
+        expect(angular.isFunction(runner.start)).toBeTruthy();
       }));
 
-      it('should not signal $animateCss to apply the classes early when animation is structural', inject(function() {
+      it('should not signal $animateCss to apply the classes early when animation is structural', angular.mock.inject(() => {
         driver({ element: element });
         expect(capturedAnimation[1].applyClassesEarly).toBeFalsy();
 
@@ -108,7 +108,7 @@ describe('ngAnimate $$animateCssDriver', function() {
         expect(capturedAnimation[1].applyClassesEarly).toBeTruthy();
       }));
 
-      it('should only set the event value if the animation is structural', inject(function() {
+      it('should only set the event value if the animation is structural', angular.mock.inject(() => {
         driver({ element: element, structural: true, event: 'superman' });
         expect(capturedAnimation[1].event).toBe('superman');
 
@@ -117,37 +117,37 @@ describe('ngAnimate $$animateCssDriver', function() {
       }));
     });
 
-    describe('anchored animations', function() {
-      var from, to, fromAnimation, toAnimation;
+    describe('anchored animations', () => {
+      let from, to, fromAnimation, toAnimation;
 
-      beforeEach(module(function() {
-        return function($rootElement, $document) {
+      beforeEach(angular.mock.module(() => {
+        return ($rootElement, $document) => {
           from = element;
-          to = jqLite('<div></div>');
+          to = angular.element('<div></div>');
           fromAnimation = { element: from, event: 'enter' };
           toAnimation = { element: to, event: 'leave' };
           $rootElement.append(from);
           $rootElement.append(to);
 
-          var doc = $document[0];
+          const doc = $document[0];
 
           // there is one test in here that expects the rootElement
           // to supersede the body node
           if (!$rootElement[0].contains(doc.body)) {
             // we need to do this so that style detection works
-            jqLite(doc.body).append($rootElement);
+            angular.element(doc.body).append($rootElement);
           }
         };
       }));
 
-      it('should not return anything if no animation is detected', function() {
-        module(function($provide) {
-          $provide.value('$animateCss', function() {
+      it('should not return anything if no animation is detected', () => {
+        angular.mock.module($provide => {
+          $provide.value('$animateCss', () => {
             return { $$willAnimate: false };
           });
         });
-        inject(function() {
-          var runner = driver({
+        angular.mock.inject(() => {
+          const runner = driver({
             from: fromAnimation,
             to: toAnimation
           });
@@ -155,66 +155,66 @@ describe('ngAnimate $$animateCssDriver', function() {
         });
       });
 
-      it('should return a start method', inject(function() {
-        var animator = driver({
+      it('should return a start method', angular.mock.inject(() => {
+        const animator = driver({
           from: fromAnimation,
           to: toAnimation
         });
-        expect(isFunction(animator.start)).toBeTruthy();
+        expect(angular.isFunction(animator.start)).toBeTruthy();
       }));
 
       they('should return a runner with a $prop() method which will end the animation',
-        ['end', 'cancel'], function(method) {
+        ['end', 'cancel'], method => {
 
-        var closeAnimation;
-        module(function($provide) {
-          $provide.factory('$animateCss', function($q, $$AnimateRunner) {
-            return function() {
-              return {
-                $$willAnimate: true,
-                start: function() {
-                  return new $$AnimateRunner({
-                    end: function() {
-                      closeAnimation();
-                    }
-                  });
-                }
+          let closeAnimation;
+          angular.mock.module($provide => {
+            $provide.factory('$animateCss', ($q, $$AnimateRunner) => {
+              return () => {
+                return {
+                  $$willAnimate: true,
+                  start: function () {
+                    return new $$AnimateRunner({
+                      end: function () {
+                        closeAnimation();
+                      }
+                    });
+                  }
+                };
               };
+            });
+          });
+
+          angular.mock.inject(() => {
+            const animator = driver({
+              from: fromAnimation,
+              to: toAnimation
+            });
+
+            let animationClosed = false;
+            closeAnimation = () => {
+              animationClosed = true;
             };
+
+            const runner = animator.start();
+
+            expect(angular.isFunction(runner[method])).toBe(true);
+            runner[method]();
+            expect(animationClosed).toBe(true);
           });
         });
 
-        inject(function() {
-          var animator = driver({
-            from: fromAnimation,
-            to: toAnimation
-          });
-
-          var animationClosed = false;
-          closeAnimation = function() {
-            animationClosed = true;
-          };
-
-          var runner = animator.start();
-
-          expect(isFunction(runner[method])).toBe(true);
-          runner[method]();
-          expect(animationClosed).toBe(true);
-        });
-      });
-
-      it('should end the animation for each of the from and to elements as well as all the anchors', function() {
-        var closeLog = {};
-        module(function($provide) {
-          $provide.factory('$animateCss', function($q, $$AnimateRunner) {
-            return function(element, options) {
-              var type = options.event || 'anchor';
+      it('should end the animation for each of the from and to elements as well as all the anchors', () => {
+        const closeLog = {};
+        angular.mock.module($provide => {
+          $provide.factory('$animateCss', ($q, $$AnimateRunner) => {
+            return (element, options) => {
+              const type = options.event || 'anchor';
               closeLog[type] = closeLog[type] || [];
               return {
                 $$willAnimate: true,
-                start: function() {
+                start: function () {
                   return new $$AnimateRunner({
-                    end: function() {
+                    end: function () {
                       closeLog[type].push(element);
                     }
                   });
@@ -224,11 +224,11 @@ describe('ngAnimate $$animateCssDriver', function() {
           });
         });
 
-        inject(function() {
+        angular.mock.inject(() => {
           //we'll just use one animation to make the test smaller
-          var anchorAnimation = {
-            'in': jqLite('<div></div>'),
-            'out': jqLite('<div></div>')
+          const anchorAnimation = {
+            'in': angular.element('<div></div>'),
+            'out': angular.element('<div></div>')
           };
 
           fromAnimation.structural = true;
@@ -236,7 +236,7 @@ describe('ngAnimate $$animateCssDriver', function() {
           toAnimation.structural = true;
           toAnimation.element.append(anchorAnimation['in']);
 
-          var animator = driver({
+          const animator = driver({
             from: fromAnimation,
             to: toAnimation,
             anchors: [
@@ -246,7 +246,7 @@ describe('ngAnimate $$animateCssDriver', function() {
             ]
           });
 
-          var runner = animator.start();
+          const runner = animator.start();
           runner.end();
 
           expect(closeLog.enter[0]).toEqual(fromAnimation.element);
@@ -255,15 +255,15 @@ describe('ngAnimate $$animateCssDriver', function() {
         });
       });
 
-      it('should render an animation on both the from and to elements', inject(function() {
-        captureFn = function(element, details) {
+      it('should render an animation on both the from and to elements', angular.mock.inject(() => {
+        captureFn = (element, details) => {
           element.addClass(details.event);
         };
 
         fromAnimation.structural = true;
         toAnimation.structural = true;
 
-        var runner = driver({
+        const runner = driver({
           from: fromAnimation,
           to: toAnimation
         });
@@ -273,14 +273,14 @@ describe('ngAnimate $$animateCssDriver', function() {
         expect(toAnimation.element).toHaveClass('leave');
       }));
 
-      it('should start the animations on the from and to elements in parallel', function() {
-        var animationLog = [];
-        module(function($provide) {
-          $provide.factory('$animateCss', function($$AnimateRunner) {
-            return function(element, details) {
+      it('should start the animations on the from and to elements in parallel', () => {
+        const animationLog = [];
+        angular.mock.module($provide => {
+          $provide.factory('$animateCss', $$AnimateRunner => {
+            return (element, details) => {
               return {
                 $$willAnimate: true,
-                start: function() {
+                start: function () {
                   animationLog.push([element, details.event]);
                   return new $$AnimateRunner();
                 }
@@ -288,11 +288,11 @@ describe('ngAnimate $$animateCssDriver', function() {
             };
           });
         });
-        inject(function() {
+        angular.mock.inject(() => {
           fromAnimation.structural = true;
           toAnimation.structural = true;
 
-          var runner = driver({
+          const runner = driver({
             from: fromAnimation,
             to: toAnimation
           });
@@ -306,28 +306,28 @@ describe('ngAnimate $$animateCssDriver', function() {
         });
       });
 
-      it('should start an animation for each anchor', inject(function() {
-        var o1 = jqLite('<div></div>');
+      it('should start an animation for each anchor', angular.mock.inject(() => {
+        const o1 = angular.element('<div></div>');
         from.append(o1);
-        var o2 = jqLite('<div></div>');
+        const o2 = angular.element('<div></div>');
         from.append(o2);
-        var o3 = jqLite('<div></div>');
+        const o3 = angular.element('<div></div>');
         from.append(o3);
 
-        var i1 = jqLite('<div></div>');
+        const i1 = angular.element('<div></div>');
         to.append(i1);
-        var i2 = jqLite('<div></div>');
+        const i2 = angular.element('<div></div>');
         to.append(i2);
-        var i3 = jqLite('<div></div>');
+        const i3 = angular.element('<div></div>');
         to.append(i3);
 
-        var anchors = [
+        const anchors = [
           { 'out': o1, 'in': i1, classes: 'red' },
           { 'out': o2, 'in': i2, classes: 'blue' },
           { 'out': o2, 'in': i2, classes: 'green' }
         ];
 
-        var runner = driver({
+        const runner = driver({
           from: fromAnimation,
           to: toAnimation,
           anchors: anchors
@@ -336,30 +336,30 @@ describe('ngAnimate $$animateCssDriver', function() {
         expect(captureLog.length).toBe(5);
       }));
 
-      it('should create a clone of the starting element for each anchor animation', inject(function() {
-        var o1 = jqLite('<div class="out1"></div>');
+      it('should create a clone of the starting element for each anchor animation', angular.mock.inject(() => {
+        const o1 = angular.element('<div class="out1"></div>');
         from.append(o1);
-        var o2 = jqLite('<div class="out2"></div>');
+        const o2 = angular.element('<div class="out2"></div>');
         from.append(o2);
 
-        var i1 = jqLite('<div class="in1"></div>');
+        const i1 = angular.element('<div class="in1"></div>');
         to.append(i1);
-        var i2 = jqLite('<div class="in2"></div>');
+        const i2 = angular.element('<div class="in2"></div>');
         to.append(i2);
 
-        var anchors = [
+        const anchors = [
           { 'out': o1, 'in': i1 },
           { 'out': o2, 'in': i2 }
         ];
 
-        var runner = driver({
+        const runner = driver({
           from: fromAnimation,
           to: toAnimation,
           anchors: anchors
         });
 
-        var a2 = captureLog.pop().element;
-        var a1 = captureLog.pop().element;
+        const a2 = captureLog.pop().element;
+        const a1 = captureLog.pop().element;
 
         expect(a1).not.toEqual(o1);
         expect(a1.attr('class')).toMatch(/\bout1\b/);
@@ -368,45 +368,45 @@ describe('ngAnimate $$animateCssDriver', function() {
       }));
 
       it('should create a clone of the starting element and place it at the end of the $rootElement container',
-        inject(function($rootElement) {
+        angular.mock.inject($rootElement => {
 
-        //stick some garbage into the rootElement
-        $rootElement.append(jqLite('<div></div>'));
-        $rootElement.append(jqLite('<div></div>'));
-        $rootElement.append(jqLite('<div></div>'));
+          //stick some garbage into the rootElement
+          $rootElement.append(angular.element('<div></div>'));
+          $rootElement.append(angular.element('<div></div>'));
+          $rootElement.append(angular.element('<div></div>'));
 
-        var fromAnchor = jqLite('<div class="out"></div>');
+          const fromAnchor = angular.element('<div class="out"></div>');
+          from.append(fromAnchor);
+          const toAnchor = angular.element('<div class="in"></div>');
+          to.append(toAnchor);
+
+          const runner = driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'in': fromAnchor,
+              'out': toAnchor
+            }]
+          });
+
+          const anchor = captureLog.pop().element;
+          const anchorNode = anchor[0];
+          const contents = $rootElement.contents();
+
+          expect(contents.length).toBeGreaterThan(1);
+          expect(contents[contents.length - 1]).toEqual(anchorNode);
+        }));
+
+      it('should first do an addClass(\'ng-anchor-out\') animation on the cloned anchor', angular.mock.inject($rootElement => {
+        const fromAnchor = angular.element('<div></div>');
         from.append(fromAnchor);
-        var toAnchor = jqLite('<div class="in"></div>');
-        to.append(toAnchor);
-
-        var runner = driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'in': fromAnchor,
-            'out': toAnchor
-          }]
-        });
-
-        var anchor = captureLog.pop().element;
-        var anchorNode = anchor[0];
-        var contents = $rootElement.contents();
-
-        expect(contents.length).toBeGreaterThan(1);
-        expect(contents[contents.length - 1]).toEqual(anchorNode);
-      }));
-
-      it('should first do an addClass(\'ng-anchor-out\') animation on the cloned anchor', inject(function($rootElement) {
-        var fromAnchor = jqLite('<div></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div></div>');
+        const toAnchor = angular.element('<div></div>');
         to.append(toAnchor);
 
         $rootElement.append(fromAnchor);
         $rootElement.append(toAnchor);
 
-        var runner = driver({
+        const runner = driver({
           from: fromAnimation,
           to: toAnimation,
           anchors: [{
@@ -415,163 +415,163 @@ describe('ngAnimate $$animateCssDriver', function() {
           }]
         });
 
-        var anchorDetails = captureLog.pop().args[1];
+        const anchorDetails = captureLog.pop().args[1];
         expect(anchorDetails.addClass).toBe('ng-anchor-out');
         expect(anchorDetails.event).toBeFalsy();
       }));
 
       it('should then do an addClass(\'ng-anchor-in\') animation on the cloned anchor and remove the old class',
-        inject(function($rootElement) {
+        angular.mock.inject($rootElement => {
 
-        var fromAnchor = jqLite('<div></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        var runner = driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start();
-
-        captureLog.pop().runner.end();
-
-        var anchorDetails = captureLog.pop().args[1];
-        expect(anchorDetails.removeClass.trim()).toBe('ng-anchor-out');
-        expect(anchorDetails.addClass.trim()).toBe('ng-anchor-in');
-        expect(anchorDetails.event).toBeFalsy();
-      }));
-
-      they('should only fire the ng-anchor-$prop animation if only a $prop animation is defined',
-        ['out', 'in'], function(direction) {
-
-        var expectedClass = 'ng-anchor-' + direction;
-        var animationStarted;
-        var runner;
-
-        module(function($provide) {
-          $provide.factory('$animateCss', function($$AnimateRunner) {
-            return function(element, options) {
-              var addClass = (options.addClass || '').trim();
-              return {
-                $$willAnimate: addClass === expectedClass,
-                start: function() {
-                  animationStarted = addClass;
-                  runner = new $$AnimateRunner();
-                  return runner;
-                }
-              };
-            };
-          });
-        });
-
-        inject(function($rootElement, $animate) {
-          var fromAnchor = jqLite('<div></div>');
+          const fromAnchor = angular.element('<div></div>');
           from.append(fromAnchor);
-          var toAnchor = jqLite('<div></div>');
+          const toAnchor = angular.element('<div></div>');
           to.append(toAnchor);
 
           $rootElement.append(fromAnchor);
           $rootElement.append(toAnchor);
 
-          var complete = false;
-
-          driver({
+          const runner = driver({
             from: fromAnimation,
             to: toAnimation,
             anchors: [{
               'out': fromAnchor,
               'in': toAnchor
             }]
-          }).start().done(function() {
-            complete = true;
+          }).start();
+
+          captureLog.pop().runner.end();
+
+          const anchorDetails = captureLog.pop().args[1];
+          expect(anchorDetails.removeClass.trim()).toBe('ng-anchor-out');
+          expect(anchorDetails.addClass.trim()).toBe('ng-anchor-in');
+          expect(anchorDetails.event).toBeFalsy();
+        }));
+
+      they('should only fire the ng-anchor-$prop animation if only a $prop animation is defined',
+        ['out', 'in'], direction => {
+
+          const expectedClass = 'ng-anchor-' + direction;
+          let animationStarted;
+          let runner;
+
+          angular.mock.module($provide => {
+            $provide.factory('$animateCss', $$AnimateRunner => {
+              return (element, options) => {
+                const addClass = (options.addClass || '').trim();
+                return {
+                  $$willAnimate: addClass === expectedClass,
+                  start: function () {
+                    animationStarted = addClass;
+                    runner = new $$AnimateRunner();
+                    return runner;
+                  }
+                };
+              };
+            });
           });
 
-          expect(animationStarted).toBe(expectedClass);
-          runner.end();
-          $animate.flush();
-          expect(complete).toBe(true);
+          angular.mock.inject(($rootElement, $animate) => {
+            const fromAnchor = angular.element('<div></div>');
+            from.append(fromAnchor);
+            const toAnchor = angular.element('<div></div>');
+            to.append(toAnchor);
+
+            $rootElement.append(fromAnchor);
+            $rootElement.append(toAnchor);
+
+            let complete = false;
+
+            driver({
+              from: fromAnimation,
+              to: toAnimation,
+              anchors: [{
+                'out': fromAnchor,
+                'in': toAnchor
+              }]
+            }).start().done(() => {
+              complete = true;
+            });
+
+            expect(animationStarted).toBe(expectedClass);
+            runner.end();
+            $animate.flush();
+            expect(complete).toBe(true);
+          });
         });
-      });
 
 
       it('should provide an explicit delay setting in the options provided to $animateCss for anchor animations',
-        inject(function($rootElement) {
+        angular.mock.inject($rootElement => {
 
-        var fromAnchor = jqLite('<div></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div></div>');
-        to.append(toAnchor);
+          const fromAnchor = angular.element('<div></div>');
+          from.append(fromAnchor);
+          const toAnchor = angular.element('<div></div>');
+          to.append(toAnchor);
 
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
 
-        var runner = driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        });
+          const runner = driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          });
 
-        expect(capturedAnimation[1].delay).toBeTruthy();
-      }));
+          expect(capturedAnimation[1].delay).toBeTruthy();
+        }));
 
       it('should begin the anchor animation by seeding the from styles based on where the from anchor element is positioned',
-        inject(function($rootElement) {
+        angular.mock.inject($rootElement => {
 
-        ss.addRule('.starting-element', 'width:200px; height:100px; display:block;');
+          ss.addRule('.starting-element', 'width:200px; height:100px; display:block;');
 
-        var fromAnchor = jqLite('<div class="starting-element"' +
-                                    ' style="margin-top:500px; margin-left:150px;"></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div></div>');
-        to.append(toAnchor);
+          const fromAnchor = angular.element('<div class="starting-element"' +
+            ' style="margin-top:500px; margin-left:150px;"></div>');
+          from.append(fromAnchor);
+          const toAnchor = angular.element('<div></div>');
+          to.append(toAnchor);
 
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
 
-        var runner = driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        });
+          const runner = driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          });
 
-        var anchorAnimation = captureLog.pop();
-        var anchorElement = anchorAnimation.element;
-        var anchorDetails = anchorAnimation.args[1];
+          const anchorAnimation = captureLog.pop();
+          const anchorElement = anchorAnimation.element;
+          const anchorDetails = anchorAnimation.args[1];
 
-        var fromStyles = anchorDetails.from;
-        expect(int(fromStyles.width)).toBe(200);
-        expect(int(fromStyles.height)).toBe(100);
-        // some browsers have their own body margin defaults
-        expect(int(fromStyles.top)).toBeGreaterThan(499);
-        expect(int(fromStyles.left)).toBeGreaterThan(149);
-      }));
+          const fromStyles = anchorDetails.from;
+          expect(int(fromStyles.width)).toBe(200);
+          expect(int(fromStyles.height)).toBe(100);
+          // some browsers have their own body margin defaults
+          expect(int(fromStyles.top)).toBeGreaterThan(499);
+          expect(int(fromStyles.left)).toBeGreaterThan(149);
+        }));
 
-      it('should append a `px` value for all seeded animation styles', inject(function($rootElement) {
+      it('should append a `px` value for all seeded animation styles', angular.mock.inject($rootElement => {
         ss.addRule('.starting-element', 'width:10px; height:20px; display:inline-block;');
 
-        var fromAnchor = jqLite('<div class="starting-element"' +
-                                    ' style="margin-top:30px; margin-left:40px;"></div>');
+        const fromAnchor = angular.element('<div class="starting-element"' +
+          ' style="margin-top:30px; margin-left:40px;"></div>');
         from.append(fromAnchor);
-        var toAnchor = jqLite('<div></div>');
+        const toAnchor = angular.element('<div></div>');
         to.append(toAnchor);
 
         $rootElement.append(fromAnchor);
         $rootElement.append(toAnchor);
 
-        var runner = driver({
+        const runner = driver({
           from: fromAnimation,
           to: toAnimation,
           anchors: [{
@@ -580,10 +580,10 @@ describe('ngAnimate $$animateCssDriver', function() {
           }]
         });
 
-        var anchorAnimation = captureLog.pop();
-        var anchorDetails = anchorAnimation.args[1];
+        let anchorAnimation = captureLog.pop();
+        let anchorDetails = anchorAnimation.args[1];
 
-        forEach(anchorDetails.from, function(value) {
+        angular.forEach(anchorDetails.from, value => {
           expect(value.substr(value.length - 2)).toBe('px');
         });
 
@@ -593,415 +593,22 @@ describe('ngAnimate $$animateCssDriver', function() {
         anchorAnimation = captureLog.pop();
         anchorDetails = anchorAnimation.args[1];
 
-        forEach(anchorDetails.to, function(value) {
+        angular.forEach(anchorDetails.to, value => {
           expect(value.substr(value.length - 2)).toBe('px');
         });
       }));
 
       it('should then do an removeClass(\'out\') + addClass(\'in\') animation on the cloned anchor',
-        inject(function($rootElement) {
+        angular.mock.inject($rootElement => {
 
-        var fromAnchor = jqLite('<div></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start();
-
-        // the out animation goes first
-        captureLog.pop().runner.end();
-
-        var anchorDetails = captureLog.pop().args[1];
-        expect(anchorDetails.removeClass).toMatch(/\bout\b/);
-        expect(anchorDetails.addClass).toMatch(/\bin\b/);
-        expect(anchorDetails.event).toBeFalsy();
-      }));
-
-      it('should add the `ng-anchor` class to the cloned anchor element',
-        inject(function($rootElement) {
-
-        var fromAnchor = jqLite('<div></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start();
-
-        var clonedAnchor = captureLog.pop().element;
-        expect(clonedAnchor).toHaveClass('ng-anchor');
-      }));
-
-      it('should add and remove the `ng-animate-shim` class on the in anchor element during the animation',
-        inject(function($rootElement) {
-
-        var fromAnchor = jqLite('<div></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start();
-
-        expect(fromAnchor).toHaveClass('ng-animate-shim');
-
-        // the out animation goes first
-        captureLog.pop().runner.end();
-        captureLog.pop().runner.end();
-
-        expect(fromAnchor).not.toHaveClass('ng-animate-shim');
-      }));
-
-      it('should add and remove the `ng-animate-shim` class on the out anchor element during the animation',
-        inject(function($rootElement) {
-
-        var fromAnchor = jqLite('<div></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start();
-
-        expect(toAnchor).toHaveClass('ng-animate-shim');
-
-        // the out animation goes first
-        captureLog.pop().runner.end();
-
-        expect(toAnchor).toHaveClass('ng-animate-shim');
-        captureLog.pop().runner.end();
-
-        expect(toAnchor).not.toHaveClass('ng-animate-shim');
-      }));
-
-      it('should create the cloned anchor with all of the classes from the from anchor element',
-        inject(function($rootElement) {
-
-        var fromAnchor = jqLite('<div class="yes no maybe"></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start();
-
-        var addedClasses = captureLog.pop().element.attr('class').split(' ');
-        expect(hasAll(addedClasses, ['yes', 'no', 'maybe'])).toBe(true);
-      }));
-
-      it('should remove the classes of the starting anchor from the cloned anchor node during the in animation and also add the classes of the destination anchor within the same animation',
-        inject(function($rootElement) {
-
-        var fromAnchor = jqLite('<div class="yes no maybe"></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div class="why ok so-what"></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start();
-
-        // the out animation goes first
-        captureLog.pop().runner.end();
-
-        var anchorDetails = captureLog.pop().args[1];
-        var removedClasses = anchorDetails.removeClass.split(' ');
-        var addedClasses = anchorDetails.addClass.split(' ');
-
-        expect(hasAll(removedClasses, ['yes', 'no', 'maybe'])).toBe(true);
-        expect(hasAll(addedClasses, ['why', 'ok', 'so-what'])).toBe(true);
-      }));
-
-      it('should not attempt to add/remove any classes that contain a `ng-` prefix',
-        inject(function($rootElement) {
-
-        var fromAnchor = jqLite('<div class="ng-yes ng-no sure"></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div class="ng-bar ng-foo maybe"></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start();
-
-        // the out animation goes first
-        captureLog.pop().runner.end();
-
-        var inAnimation = captureLog.pop();
-        var details = inAnimation.args[1];
-
-        var addedClasses = details.addClass.split(' ');
-        var removedClasses = details.removeClass.split(' ');
-
-        expect(addedClasses).not.toContain('ng-foo');
-        expect(addedClasses).not.toContain('ng-bar');
-
-        expect(removedClasses).not.toContain('ng-yes');
-        expect(removedClasses).not.toContain('ng-no');
-      }));
-
-      it('should not remove any shared CSS classes between the starting and destination anchor element during the in animation',
-        inject(function($rootElement) {
-
-        var fromAnchor = jqLite('<div class="blue green red"></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div class="blue brown red black"></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start();
-
-        // the out animation goes first
-        captureLog.pop().runner.end();
-
-        var inAnimation = captureLog.pop();
-        var clonedAnchor = inAnimation.element;
-        var details = inAnimation.args[1];
-
-        var addedClasses = details.addClass.split(' ');
-        var removedClasses = details.removeClass.split(' ');
-
-        expect(hasAll(addedClasses, ['brown', 'black'])).toBe(true);
-        expect(hasAll(removedClasses, ['green'])).toBe(true);
-
-        expect(addedClasses).not.toContain('red');
-        expect(addedClasses).not.toContain('blue');
-
-        expect(removedClasses).not.toContain('brown');
-        expect(removedClasses).not.toContain('black');
-
-        expect(removedClasses).not.toContain('red');
-        expect(removedClasses).not.toContain('blue');
-
-        inAnimation.runner.end();
-
-        expect(clonedAnchor).toHaveClass('red');
-        expect(clonedAnchor).toHaveClass('blue');
-      }));
-
-      it('should continue the anchor animation by seeding the to styles based on where the final anchor element will be positioned',
-      inject(function($rootElement) {
-        ss.addRule('.ending-element', 'width:9999px; height:6666px; display:inline-block;');
-
-        var fromAnchor = jqLite('<div></div>');
-        from.append(fromAnchor);
-
-        var toAnchor = jqLite('<div class="ending-element"' +
-                                  ' style="margin-top:300px; margin-left:20px;"></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start();
-
-        captureLog.pop().runner.end();
-
-        var anchorAnimation = captureLog.pop();
-        var anchorElement = anchorAnimation.element;
-        var anchorDetails = anchorAnimation.args[1];
-
-        var toStyles = anchorDetails.to;
-        expect(int(toStyles.width)).toBe(9999);
-        expect(int(toStyles.height)).toBe(6666);
-        // some browsers have their own body margin defaults
-        expect(int(toStyles.top)).toBeGreaterThan(300);
-        expect(int(toStyles.left)).toBeGreaterThan(20);
-      }));
-
-      it('should remove the cloned anchor node from the DOM once the \'in\' animation is complete',
-        inject(function($rootElement) {
-
-        var fromAnchor = jqLite('<div class="blue green red"></div>');
-        from.append(fromAnchor);
-        var toAnchor = jqLite('<div class="blue brown red black"></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start();
-
-        // the out animation goes first
-        var inAnimation = captureLog.pop();
-        var clonedAnchor = inAnimation.element;
-        expect(clonedAnchor.parent().length).toBe(1);
-        inAnimation.runner.end();
-
-        // now the in animation completes
-        expect(clonedAnchor.parent().length).toBe(1);
-        captureLog.pop().runner.end();
-
-        expect(clonedAnchor.parent().length).toBe(0);
-      }));
-
-      it('should pass the provided domOperation into $animateCss to be run right after the element is animated if a leave animation is present',
-        inject(function($rootElement) {
-
-        toAnimation.structural = true;
-        toAnimation.event = 'enter';
-        toAnimation.options = {};
-
-        fromAnimation.structural = true;
-        fromAnimation.event = 'leave';
-        fromAnimation.options = {};
-
-        var leaveOp = function() { };
-        fromAnimation.options.domOperation = leaveOp;
-
-        driver({
-          from: fromAnimation,
-          to: toAnimation
-        }).start();
-
-        var leaveAnimation = captureLog.shift();
-        var enterAnimation = captureLog.shift();
-
-        expect(leaveAnimation.args[1].onDone).toBe(leaveOp);
-        expect(enterAnimation.args[1].onDone).toBeUndefined();
-      }));
-
-      it('should fire the returned runner promise when the from, to and anchor animations are all complete',
-        inject(function($rootElement, $rootScope, $animate) {
-
-        ss.addRule('.ending-element', 'width:9999px; height:6666px; display:inline-block;');
-
-        var fromAnchor = jqLite('<div></div>');
-        from.append(fromAnchor);
-
-        var toAnchor = jqLite('<div></div>');
-        to.append(toAnchor);
-
-        $rootElement.append(fromAnchor);
-        $rootElement.append(toAnchor);
-
-        var completed = false;
-        driver({
-          from: fromAnimation,
-          to: toAnimation,
-          anchors: [{
-            'out': fromAnchor,
-            'in': toAnchor
-          }]
-        }).start().then(function() {
-          completed = true;
-        });
-
-        captureLog.pop().runner.end(); //from
-        captureLog.pop().runner.end(); //to
-        captureLog.pop().runner.end(); //anchor(out)
-        captureLog.pop().runner.end(); //anchor(in)
-
-        $animate.flush();
-        $rootScope.$digest();
-
-        expect(completed).toBe(true);
-      }));
-
-      it('should use <body> as the element container if the rootElement exists outside of the <body> tag', function() {
-        module(function($provide) {
-          $provide.factory('$rootElement', function($document) {
-            return jqLite($document[0].querySelector('html'));
-          });
-        });
-        inject(function($rootElement, $rootScope, $animate, $document) {
-          ss.addRule('.ending-element', 'width:9999px; height:6666px; display:inline-block;');
-
-          var fromAnchor = jqLite('<div></div>');
+          const fromAnchor = angular.element('<div></div>');
           from.append(fromAnchor);
-
-          var toAnchor = jqLite('<div></div>');
+          const toAnchor = angular.element('<div></div>');
           to.append(toAnchor);
 
           $rootElement.append(fromAnchor);
           $rootElement.append(toAnchor);
 
-          var completed = false;
           driver({
             from: fromAnimation,
             to: toAnimation,
@@ -1011,7 +618,400 @@ describe('ngAnimate $$animateCssDriver', function() {
             }]
           }).start();
 
-          var clone = captureLog[2].element[0];
+          // the out animation goes first
+          captureLog.pop().runner.end();
+
+          const anchorDetails = captureLog.pop().args[1];
+          expect(anchorDetails.removeClass).toMatch(/\bout\b/);
+          expect(anchorDetails.addClass).toMatch(/\bin\b/);
+          expect(anchorDetails.event).toBeFalsy();
+        }));
+
+      it('should add the `ng-anchor` class to the cloned anchor element',
+        angular.mock.inject($rootElement => {
+
+          const fromAnchor = angular.element('<div></div>');
+          from.append(fromAnchor);
+          const toAnchor = angular.element('<div></div>');
+          to.append(toAnchor);
+
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
+
+          driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          }).start();
+
+          const clonedAnchor = captureLog.pop().element;
+          expect(clonedAnchor).toHaveClass('ng-anchor');
+        }));
+
+      it('should add and remove the `ng-animate-shim` class on the in anchor element during the animation',
+        angular.mock.inject($rootElement => {
+
+          const fromAnchor = angular.element('<div></div>');
+          from.append(fromAnchor);
+          const toAnchor = angular.element('<div></div>');
+          to.append(toAnchor);
+
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
+
+          driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          }).start();
+
+          expect(fromAnchor).toHaveClass('ng-animate-shim');
+
+          // the out animation goes first
+          captureLog.pop().runner.end();
+          captureLog.pop().runner.end();
+
+          expect(fromAnchor).not.toHaveClass('ng-animate-shim');
+        }));
+
+      it('should add and remove the `ng-animate-shim` class on the out anchor element during the animation',
+        angular.mock.inject($rootElement => {
+
+          const fromAnchor = angular.element('<div></div>');
+          from.append(fromAnchor);
+          const toAnchor = angular.element('<div></div>');
+          to.append(toAnchor);
+
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
+
+          driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          }).start();
+
+          expect(toAnchor).toHaveClass('ng-animate-shim');
+
+          // the out animation goes first
+          captureLog.pop().runner.end();
+
+          expect(toAnchor).toHaveClass('ng-animate-shim');
+          captureLog.pop().runner.end();
+
+          expect(toAnchor).not.toHaveClass('ng-animate-shim');
+        }));
+
+      it('should create the cloned anchor with all of the classes from the from anchor element',
+        angular.mock.inject($rootElement => {
+
+          const fromAnchor = angular.element('<div class="yes no maybe"></div>');
+          from.append(fromAnchor);
+          const toAnchor = angular.element('<div></div>');
+          to.append(toAnchor);
+
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
+
+          driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          }).start();
+
+          const addedClasses = captureLog.pop().element.attr('class').split(' ');
+          expect(hasAll(addedClasses, ['yes', 'no', 'maybe'])).toBe(true);
+        }));
+
+      it('should remove the classes of the starting anchor from the cloned anchor node during the in animation and also add the classes of the destination anchor within the same animation',
+        angular.mock.inject($rootElement => {
+
+          const fromAnchor = angular.element('<div class="yes no maybe"></div>');
+          from.append(fromAnchor);
+          const toAnchor = angular.element('<div class="why ok so-what"></div>');
+          to.append(toAnchor);
+
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
+
+          driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          }).start();
+
+          // the out animation goes first
+          captureLog.pop().runner.end();
+
+          const anchorDetails = captureLog.pop().args[1];
+          const removedClasses = anchorDetails.removeClass.split(' ');
+          const addedClasses = anchorDetails.addClass.split(' ');
+
+          expect(hasAll(removedClasses, ['yes', 'no', 'maybe'])).toBe(true);
+          expect(hasAll(addedClasses, ['why', 'ok', 'so-what'])).toBe(true);
+        }));
+
+      it('should not attempt to add/remove any classes that contain a `ng-` prefix',
+        angular.mock.inject($rootElement => {
+
+          const fromAnchor = angular.element('<div class="ng-yes ng-no sure"></div>');
+          from.append(fromAnchor);
+          const toAnchor = angular.element('<div class="ng-bar ng-foo maybe"></div>');
+          to.append(toAnchor);
+
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
+
+          driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          }).start();
+
+          // the out animation goes first
+          captureLog.pop().runner.end();
+
+          const inAnimation = captureLog.pop();
+          const details = inAnimation.args[1];
+
+          const addedClasses = details.addClass.split(' ');
+          const removedClasses = details.removeClass.split(' ');
+
+          expect(addedClasses).not.toContain('ng-foo');
+          expect(addedClasses).not.toContain('ng-bar');
+
+          expect(removedClasses).not.toContain('ng-yes');
+          expect(removedClasses).not.toContain('ng-no');
+        }));
+
+      it('should not remove any shared CSS classes between the starting and destination anchor element during the in animation',
+        angular.mock.inject($rootElement => {
+
+          const fromAnchor = angular.element('<div class="blue green red"></div>');
+          from.append(fromAnchor);
+          const toAnchor = angular.element('<div class="blue brown red black"></div>');
+          to.append(toAnchor);
+
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
+
+          driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          }).start();
+
+          // the out animation goes first
+          captureLog.pop().runner.end();
+
+          const inAnimation = captureLog.pop();
+          const clonedAnchor = inAnimation.element;
+          const details = inAnimation.args[1];
+
+          const addedClasses = details.addClass.split(' ');
+          const removedClasses = details.removeClass.split(' ');
+
+          expect(hasAll(addedClasses, ['brown', 'black'])).toBe(true);
+          expect(hasAll(removedClasses, ['green'])).toBe(true);
+
+          expect(addedClasses).not.toContain('red');
+          expect(addedClasses).not.toContain('blue');
+
+          expect(removedClasses).not.toContain('brown');
+          expect(removedClasses).not.toContain('black');
+
+          expect(removedClasses).not.toContain('red');
+          expect(removedClasses).not.toContain('blue');
+
+          inAnimation.runner.end();
+
+          expect(clonedAnchor).toHaveClass('red');
+          expect(clonedAnchor).toHaveClass('blue');
+        }));
+
+      it('should continue the anchor animation by seeding the to styles based on where the final anchor element will be positioned',
+        angular.mock.inject($rootElement => {
+          ss.addRule('.ending-element', 'width:9999px; height:6666px; display:inline-block;');
+
+          const fromAnchor = angular.element('<div></div>');
+          from.append(fromAnchor);
+
+          const toAnchor = angular.element('<div class="ending-element"' +
+            ' style="margin-top:300px; margin-left:20px;"></div>');
+          to.append(toAnchor);
+
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
+
+          driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          }).start();
+
+          captureLog.pop().runner.end();
+
+          const anchorAnimation = captureLog.pop();
+          const anchorElement = anchorAnimation.element;
+          const anchorDetails = anchorAnimation.args[1];
+
+          const toStyles = anchorDetails.to;
+          expect(int(toStyles.width)).toBe(9999);
+          expect(int(toStyles.height)).toBe(6666);
+          // some browsers have their own body margin defaults
+          expect(int(toStyles.top)).toBeGreaterThan(300);
+          expect(int(toStyles.left)).toBeGreaterThan(20);
+        }));
+
+      it('should remove the cloned anchor node from the DOM once the \'in\' animation is complete',
+        angular.mock.inject($rootElement => {
+
+          const fromAnchor = angular.element('<div class="blue green red"></div>');
+          from.append(fromAnchor);
+          const toAnchor = angular.element('<div class="blue brown red black"></div>');
+          to.append(toAnchor);
+
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
+
+          driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          }).start();
+
+          // the out animation goes first
+          const inAnimation = captureLog.pop();
+          const clonedAnchor = inAnimation.element;
+          expect(clonedAnchor.parent().length).toBe(1);
+          inAnimation.runner.end();
+
+          // now the in animation completes
+          expect(clonedAnchor.parent().length).toBe(1);
+          captureLog.pop().runner.end();
+
+          expect(clonedAnchor.parent().length).toBe(0);
+        }));
+
+      it('should pass the provided domOperation into $animateCss to be run right after the element is animated if a leave animation is present',
+        angular.mock.inject($rootElement => {
+
+          toAnimation.structural = true;
+          toAnimation.event = 'enter';
+          toAnimation.options = {};
+
+          fromAnimation.structural = true;
+          fromAnimation.event = 'leave';
+          fromAnimation.options = {};
+
+          const leaveOp = () => { };
+          fromAnimation.options.domOperation = leaveOp;
+
+          driver({
+            from: fromAnimation,
+            to: toAnimation
+          }).start();
+
+          const leaveAnimation = captureLog.shift();
+          const enterAnimation = captureLog.shift();
+
+          expect(leaveAnimation.args[1].onDone).toBe(leaveOp);
+          expect(enterAnimation.args[1].onDone).toBeUndefined();
+        }));
+
+      it('should fire the returned runner promise when the from, to and anchor animations are all complete',
+        angular.mock.inject(($rootElement, $rootScope, $animate) => {
+
+          ss.addRule('.ending-element', 'width:9999px; height:6666px; display:inline-block;');
+
+          const fromAnchor = angular.element('<div></div>');
+          from.append(fromAnchor);
+
+          const toAnchor = angular.element('<div></div>');
+          to.append(toAnchor);
+
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
+
+          let completed = false;
+          driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          }).start().then(() => {
+            completed = true;
+          });
+
+          captureLog.pop().runner.end(); //from
+          captureLog.pop().runner.end(); //to
+          captureLog.pop().runner.end(); //anchor(out)
+          captureLog.pop().runner.end(); //anchor(in)
+
+          $animate.flush();
+          $rootScope.$digest();
+
+          expect(completed).toBe(true);
+        }));
+
+      it('should use <body> as the element container if the rootElement exists outside of the <body> tag', () => {
+        angular.mock.module($provide => {
+          $provide.factory('$rootElement', $document => {
+            return angular.element($document[0].querySelector('html'));
+          });
+        });
+        angular.mock.inject(($rootElement, $rootScope, $animate, $document) => {
+          ss.addRule('.ending-element', 'width:9999px; height:6666px; display:inline-block;');
+
+          const fromAnchor = angular.element('<div></div>');
+          from.append(fromAnchor);
+
+          const toAnchor = angular.element('<div></div>');
+          to.append(toAnchor);
+
+          $rootElement.append(fromAnchor);
+          $rootElement.append(toAnchor);
+
+          const completed = false;
+          driver({
+            from: fromAnimation,
+            to: toAnimation,
+            anchors: [{
+              'out': fromAnchor,
+              'in': toAnchor
+            }]
+          }).start();
+
+          const clone = captureLog[2].element[0];
           expect(clone.parentNode).toBe($document[0].body);
         });
       });

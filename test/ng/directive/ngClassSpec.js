@@ -1,18 +1,18 @@
 'use strict';
 
-describe('ngClass', function() {
-  var element;
+describe('ngClass', () => {
+  let element;
 
-  beforeEach(module(function($compileProvider) {
+  beforeEach(angular.mock.module($compileProvider => {
     $compileProvider.debugInfoEnabled(false);
   }));
 
-  afterEach(function() {
+  afterEach(() => {
     dealoc(element);
   });
 
 
-  it('should add new and remove old classes dynamically', inject(function($rootScope, $compile) {
+  it('should add new and remove old classes dynamically', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div class="existing" ng-class="dynClass"></div>')($rootScope);
     $rootScope.dynClass = 'A';
     $rootScope.$digest();
@@ -33,7 +33,7 @@ describe('ngClass', function() {
   }));
 
 
-  it('should add new and remove old classes with same names as Object.prototype properties dynamically', inject(function($rootScope, $compile) {
+  it('should add new and remove old classes with same names as Object.prototype properties dynamically', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div class="existing" ng-class="dynClass"></div>')($rootScope);
     $rootScope.dynClass = { watch: true, hasOwnProperty: true, isPrototypeOf: true };
     $rootScope.$digest();
@@ -58,7 +58,7 @@ describe('ngClass', function() {
   }));
 
 
-  it('should support adding multiple classes via an array', inject(function($rootScope, $compile) {
+  it('should support adding multiple classes via an array', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div class="existing" ng-class="[\'A\', \'B\']"></div>')($rootScope);
     $rootScope.$digest();
     expect(element.hasClass('existing')).toBeTruthy();
@@ -68,33 +68,33 @@ describe('ngClass', function() {
 
 
   it('should support adding multiple classes conditionally via a map of class names to boolean ' +
-      'expressions', inject(function($rootScope, $compile) {
-    element = $compile(
+    'expressions', angular.mock.inject(($rootScope, $compile) => {
+      element = $compile(
         '<div class="existing" ' +
-            'ng-class="{A: conditionA, B: conditionB(), AnotB: conditionA&&!conditionB()}">' +
+        'ng-class="{A: conditionA, B: conditionB(), AnotB: conditionA&&!conditionB()}">' +
         '</div>')($rootScope);
-    $rootScope.conditionA = true;
-    $rootScope.$digest();
-    expect(element.hasClass('existing')).toBeTruthy();
-    expect(element.hasClass('A')).toBeTruthy();
-    expect(element.hasClass('B')).toBeFalsy();
-    expect(element.hasClass('AnotB')).toBeTruthy();
+      $rootScope.conditionA = true;
+      $rootScope.$digest();
+      expect(element.hasClass('existing')).toBeTruthy();
+      expect(element.hasClass('A')).toBeTruthy();
+      expect(element.hasClass('B')).toBeFalsy();
+      expect(element.hasClass('AnotB')).toBeTruthy();
 
-    $rootScope.conditionB = function() { return true; };
-    $rootScope.$digest();
-    expect(element.hasClass('existing')).toBeTruthy();
-    expect(element.hasClass('A')).toBeTruthy();
-    expect(element.hasClass('B')).toBeTruthy();
-    expect(element.hasClass('AnotB')).toBeFalsy();
-  }));
+      $rootScope.conditionB = () => { return true; };
+      $rootScope.$digest();
+      expect(element.hasClass('existing')).toBeTruthy();
+      expect(element.hasClass('A')).toBeTruthy();
+      expect(element.hasClass('B')).toBeTruthy();
+      expect(element.hasClass('AnotB')).toBeFalsy();
+    }));
 
-  it('should not break when passed non-string/array/object, truthy values', inject(function($rootScope, $compile) {
+  it('should not break when passed non-string/array/object, truthy values', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div ng-class="42"></div>')($rootScope);
     $rootScope.$digest();
     expect(element.hasClass('42')).toBeTruthy();
   }));
 
-  it('should support adding multiple classes via an array mixed with conditionally via a map', inject(function($rootScope, $compile) {
+  it('should support adding multiple classes via an array mixed with conditionally via a map', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div class="existing" ng-class="[\'A\', {\'B\': condition}]"></div>')($rootScope);
     $rootScope.$digest();
     expect(element.hasClass('existing')).toBeTruthy();
@@ -107,7 +107,7 @@ describe('ngClass', function() {
   }));
 
   it('should remove classes when the referenced object is the same but its property is changed',
-    inject(function($rootScope, $compile) {
+    angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-class="classes"></div>')($rootScope);
       $rootScope.classes = { A: true, B: true };
       $rootScope.$digest();
@@ -121,7 +121,7 @@ describe('ngClass', function() {
   );
 
 
-  it('should support adding multiple classes via a space delimited string', inject(function($rootScope, $compile) {
+  it('should support adding multiple classes via a space delimited string', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div class="existing" ng-class="\'A B\'"></div>')($rootScope);
     $rootScope.$digest();
     expect(element.hasClass('existing')).toBeTruthy();
@@ -130,7 +130,7 @@ describe('ngClass', function() {
   }));
 
 
-  it('should support adding multiple classes via a space delimited string inside an array', inject(function($rootScope, $compile) {
+  it('should support adding multiple classes via a space delimited string inside an array', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div class="existing" ng-class="[\'A B\', \'C\']"></div>')($rootScope);
     $rootScope.$digest();
     expect(element.hasClass('existing')).toBeTruthy();
@@ -140,7 +140,7 @@ describe('ngClass', function() {
   }));
 
 
-  it('should preserve class added post compilation with pre-existing classes', inject(function($rootScope, $compile) {
+  it('should preserve class added post compilation with pre-existing classes', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div class="existing" ng-class="dynClass"></div>')($rootScope);
     $rootScope.dynClass = 'A';
     $rootScope.$digest();
@@ -157,7 +157,7 @@ describe('ngClass', function() {
   }));
 
 
-  it('should preserve class added post compilation without pre-existing classes"', inject(function($rootScope, $compile) {
+  it('should preserve class added post compilation without pre-existing classes"', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div ng-class="dynClass"></div>')($rootScope);
     $rootScope.dynClass = 'A';
     $rootScope.$digest();
@@ -173,7 +173,7 @@ describe('ngClass', function() {
   }));
 
 
-  it('should preserve other classes with similar name"', inject(function($rootScope, $compile) {
+  it('should preserve other classes with similar name"', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div class="ui-panel ui-selected" ng-class="dynCls"></div>')($rootScope);
     $rootScope.dynCls = 'panel';
     $rootScope.$digest();
@@ -183,7 +183,7 @@ describe('ngClass', function() {
   }));
 
 
-  it('should not add duplicate classes', inject(function($rootScope, $compile) {
+  it('should not add duplicate classes', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div class="panel bar" ng-class="dynCls"></div>')($rootScope);
     $rootScope.dynCls = 'panel';
     $rootScope.$digest();
@@ -191,7 +191,7 @@ describe('ngClass', function() {
   }));
 
 
-  it('should remove classes even if it was specified via class attribute', inject(function($rootScope, $compile) {
+  it('should remove classes even if it was specified via class attribute', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div class="panel bar" ng-class="dynCls"></div>')($rootScope);
     $rootScope.dynCls = 'panel';
     $rootScope.$digest();
@@ -201,7 +201,7 @@ describe('ngClass', function() {
   }));
 
 
-  it('should remove classes even if they were added by another code', inject(function($rootScope, $compile) {
+  it('should remove classes even if they were added by another code', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div ng-class="dynCls"></div>')($rootScope);
     $rootScope.dynCls = 'foo';
     $rootScope.$digest();
@@ -212,7 +212,7 @@ describe('ngClass', function() {
   }));
 
 
-  it('should convert undefined and null values to an empty string', inject(function($rootScope, $compile) {
+  it('should convert undefined and null values to an empty string', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div ng-class="dynCls"></div>')($rootScope);
     $rootScope.dynCls = [undefined, null];
     $rootScope.$digest();
@@ -220,11 +220,11 @@ describe('ngClass', function() {
   }));
 
 
-  it('should ngClass odd/even', inject(function($rootScope, $compile) {
+  it('should ngClass odd/even', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<ul><li ng-repeat="i in [0,1]" class="existing" ng-class-odd="\'odd\'" ng-class-even="\'even\'"></li><ul>')($rootScope);
     $rootScope.$digest();
-    var e1 = jqLite(element[0].childNodes[1]);
-    var e2 = jqLite(element[0].childNodes[3]);
+    const e1 = angular.element(element[0].childNodes[1]);
+    const e2 = angular.element(element[0].childNodes[3]);
     expect(e1.hasClass('existing')).toBeTruthy();
     expect(e1.hasClass('odd')).toBeTruthy();
     expect(e2.hasClass('existing')).toBeTruthy();
@@ -232,14 +232,14 @@ describe('ngClass', function() {
   }));
 
 
-  it('should allow both ngClass and ngClassOdd/Even on the same element', inject(function($rootScope, $compile) {
+  it('should allow both ngClass and ngClassOdd/Even on the same element', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<ul>' +
       '<li ng-repeat="i in [0,1]" ng-class="\'plainClass\'" ' +
       'ng-class-odd="\'odd\'" ng-class-even="\'even\'"></li>' +
       '<ul>')($rootScope);
     $rootScope.$apply();
-    var e1 = jqLite(element[0].childNodes[1]);
-    var e2 = jqLite(element[0].childNodes[3]);
+    const e1 = angular.element(element[0].childNodes[1]);
+    const e2 = angular.element(element[0].childNodes[3]);
 
     expect(e1.hasClass('plainClass')).toBeTruthy();
     expect(e1.hasClass('odd')).toBeTruthy();
@@ -251,19 +251,19 @@ describe('ngClass', function() {
 
 
   it('should allow ngClassOdd/Even on the same element with overlapping classes',
-    inject(function($compile, $rootScope) {
+    angular.mock.inject(($compile, $rootScope) => {
       element = $compile(
-          '<ul>' +
-            '<li ng-repeat="i in [0,1,2]" ' +
-                'ng-class-odd="\'same odd\'" ' +
-                'ng-class-even="\'same even\'">' +
-            '</li>' +
-          '<ul>')($rootScope);
+        '<ul>' +
+        '<li ng-repeat="i in [0,1,2]" ' +
+        'ng-class-odd="\'same odd\'" ' +
+        'ng-class-even="\'same even\'">' +
+        '</li>' +
+        '<ul>')($rootScope);
       $rootScope.$digest();
 
-      var e1 = element.children().eq(0);
-      var e2 = element.children().eq(1);
-      var e3 = element.children().eq(2);
+      const e1 = element.children().eq(0);
+      const e2 = element.children().eq(1);
+      const e3 = element.children().eq(2);
 
       expect(e1).toHaveClass('same');
       expect(e1).toHaveClass('odd');
@@ -277,7 +277,7 @@ describe('ngClass', function() {
     })
   );
 
-  it('should allow ngClass with overlapping classes', inject(function($rootScope, $compile) {
+  it('should allow ngClass with overlapping classes', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<div ng-class="{\'same yes\': test, \'same no\': !test}"></div>')($rootScope);
     $rootScope.$digest();
 
@@ -292,14 +292,14 @@ describe('ngClass', function() {
     expect(element).not.toHaveClass('no');
   }));
 
-  it('should allow both ngClass and ngClassOdd/Even with multiple classes', inject(function($rootScope, $compile) {
+  it('should allow both ngClass and ngClassOdd/Even with multiple classes', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<ul>' +
       '<li ng-repeat="i in [0,1]" ng-class="[\'A\', \'B\']" ' +
       'ng-class-odd="[\'C\', \'D\']" ng-class-even="[\'E\', \'F\']"></li>' +
       '<ul>')($rootScope);
     $rootScope.$apply();
-    var e1 = jqLite(element[0].childNodes[1]);
-    var e2 = jqLite(element[0].childNodes[3]);
+    const e1 = angular.element(element[0].childNodes[1]);
+    const e2 = angular.element(element[0].childNodes[3]);
 
     expect(e1.hasClass('A')).toBeTruthy();
     expect(e1.hasClass('B')).toBeTruthy();
@@ -317,14 +317,14 @@ describe('ngClass', function() {
   }));
 
   it('should reapply ngClass when interpolated class attribute changes',
-    inject(function($compile, $rootScope) {
+    angular.mock.inject(($compile, $rootScope) => {
       element = $compile(
         '<div>' +
-          '<div class="one {{two}} three" ng-class="{five: five}"></div>' +
-          '<div class="one {{two}} three {{four}}" ng-class="{five: five}"></div>' +
+        '<div class="one {{two}} three" ng-class="{five: five}"></div>' +
+        '<div class="one {{two}} three {{four}}" ng-class="{five: five}"></div>' +
         '</div>')($rootScope);
-      var e1 = element.children().eq(0);
-      var e2 = element.children().eq(1);
+      const e1 = element.children().eq(0);
+      const e2 = element.children().eq(1);
 
       $rootScope.$apply('two = "two"; five = true');
 
@@ -391,9 +391,9 @@ describe('ngClass', function() {
   );
 
 
-  it('should not mess up class value due to observing an interpolated class attribute', inject(function($rootScope, $compile) {
+  it('should not mess up class value due to observing an interpolated class attribute', angular.mock.inject(($rootScope, $compile) => {
     $rootScope.foo = true;
-    $rootScope.$watch('anything', function() {
+    $rootScope.$watch('anything', () => {
       $rootScope.foo = false;
     });
     element = $compile('<div ng-class="{foo:foo}"></div>')($rootScope);
@@ -402,19 +402,19 @@ describe('ngClass', function() {
   }));
 
 
-  it('should update ngClassOdd/Even when an item is added to the model', inject(function($rootScope, $compile) {
+  it('should update ngClassOdd/Even when an item is added to the model', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<ul>' +
       '<li ng-repeat="i in items" ' +
       'ng-class-odd="\'odd\'" ng-class-even="\'even\'">i</li>' +
       '<ul>')($rootScope);
-    $rootScope.items = ['b','c','d'];
+    $rootScope.items = ['b', 'c', 'd'];
     $rootScope.$digest();
 
     $rootScope.items.unshift('a');
     $rootScope.$digest();
 
-    var e1 = jqLite(element[0].childNodes[1]);
-    var e4 = jqLite(element[0].childNodes[7]);
+    const e1 = angular.element(element[0].childNodes[1]);
+    const e4 = angular.element(element[0].childNodes[7]);
 
     expect(e1.hasClass('odd')).toBeTruthy();
     expect(e1.hasClass('even')).toBeFalsy();
@@ -424,19 +424,19 @@ describe('ngClass', function() {
   }));
 
 
-  it('should update ngClassOdd/Even when model is changed by filtering', inject(function($rootScope, $compile) {
+  it('should update ngClassOdd/Even when model is changed by filtering', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<ul>' +
       '<li ng-repeat="i in items track by $index" ' +
       'ng-class-odd="\'odd\'" ng-class-even="\'even\'"></li>' +
       '<ul>')($rootScope);
-    $rootScope.items = ['a','b','a'];
+    $rootScope.items = ['a', 'b', 'a'];
     $rootScope.$digest();
 
-    $rootScope.items = ['a','a'];
+    $rootScope.items = ['a', 'a'];
     $rootScope.$digest();
 
-    var e1 = jqLite(element[0].childNodes[1]);
-    var e2 = jqLite(element[0].childNodes[3]);
+    const e1 = angular.element(element[0].childNodes[1]);
+    const e2 = angular.element(element[0].childNodes[3]);
 
     expect(e1.hasClass('odd')).toBeTruthy();
     expect(e1.hasClass('even')).toBeFalsy();
@@ -446,19 +446,19 @@ describe('ngClass', function() {
   }));
 
 
-  it('should update ngClassOdd/Even when model is changed by sorting', inject(function($rootScope, $compile) {
+  it('should update ngClassOdd/Even when model is changed by sorting', angular.mock.inject(($rootScope, $compile) => {
     element = $compile('<ul>' +
       '<li ng-repeat="i in items" ' +
       'ng-class-odd="\'odd\'" ng-class-even="\'even\'">i</li>' +
       '<ul>')($rootScope);
-    $rootScope.items = ['a','b'];
+    $rootScope.items = ['a', 'b'];
     $rootScope.$digest();
 
-    $rootScope.items = ['b','a'];
+    $rootScope.items = ['b', 'a'];
     $rootScope.$digest();
 
-    var e1 = jqLite(element[0].childNodes[1]);
-    var e2 = jqLite(element[0].childNodes[3]);
+    const e1 = angular.element(element[0].childNodes[1]);
+    const e2 = angular.element(element[0].childNodes[3]);
 
     expect(e1.hasClass('odd')).toBeTruthy();
     expect(e1.hasClass('even')).toBeFalsy();
@@ -469,14 +469,14 @@ describe('ngClass', function() {
 
 
   it('should add/remove the correct classes when the expression and `$index` change simultaneously',
-    inject(function($compile, $rootScope) {
+    angular.mock.inject(($compile, $rootScope) => {
       element = $compile(
-          '<div>' +
-            '<div ng-class-odd="foo"></div>' +
-            '<div ng-class-even="foo"></div>' +
-          '</div>')($rootScope);
-      var odd = element.children().eq(0);
-      var even = element.children().eq(1);
+        '<div>' +
+        '<div ng-class-odd="foo"></div>' +
+        '<div ng-class-even="foo"></div>' +
+        '</div>')($rootScope);
+      const odd = element.children().eq(0);
+      const even = element.children().eq(1);
 
       $rootScope.$apply('$index = 0; foo = "class1"');
 
@@ -509,10 +509,10 @@ describe('ngClass', function() {
   );
 
   it('should support mixed array/object variable with a mutating object',
-    inject(function($rootScope, $compile) {
+    angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-class="classVar"></div>')($rootScope);
 
-      $rootScope.classVar = [{orange: true}];
+      $rootScope.classVar = [{ orange: true }];
       $rootScope.$digest();
       expect(element).toHaveClass('orange');
 
@@ -524,37 +524,37 @@ describe('ngClass', function() {
   );
 
   // https://github.com/angular/angular.js/issues/15905
-  it('should support a mixed literal-array/object variable', inject(function($rootScope, $compile) {
-      element = $compile('<div ng-class="[classVar]"></div>')($rootScope);
+  it('should support a mixed literal-array/object variable', angular.mock.inject(($rootScope, $compile) => {
+    element = $compile('<div ng-class="[classVar]"></div>')($rootScope);
 
-      $rootScope.classVar = {orange: true};
-      $rootScope.$digest();
-      expect(element).toHaveClass('orange');
+    $rootScope.classVar = { orange: true };
+    $rootScope.$digest();
+    expect(element).toHaveClass('orange');
 
-      $rootScope.classVar.orange = false;
-      $rootScope.$digest();
+    $rootScope.classVar.orange = false;
+    $rootScope.$digest();
 
-      expect(element).not.toHaveClass('orange');
-    })
+    expect(element).not.toHaveClass('orange');
+  })
   );
 
-  it('should support a one-time mixed literal-array/object variable', inject(function($rootScope, $compile) {
-      element = $compile('<div ng-class="::[classVar1, classVar2]"></div>')($rootScope);
+  it('should support a one-time mixed literal-array/object variable', angular.mock.inject(($rootScope, $compile) => {
+    element = $compile('<div ng-class="::[classVar1, classVar2]"></div>')($rootScope);
 
-      $rootScope.classVar1 = {orange: true};
-      $rootScope.$digest();
-      expect(element).toHaveClass('orange');
+    $rootScope.classVar1 = { orange: true };
+    $rootScope.$digest();
+    expect(element).toHaveClass('orange');
 
-      $rootScope.classVar1.orange = false;
-      $rootScope.$digest();
+    $rootScope.classVar1.orange = false;
+    $rootScope.$digest();
 
-      expect(element).not.toHaveClass('orange');
-    })
+    expect(element).not.toHaveClass('orange');
+  })
   );
 
 
   it('should do value stabilization as expected when one-time binding',
-    inject(function($rootScope, $compile) {
+    angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-class="::className"></div>')($rootScope);
 
       $rootScope.$apply('className = "foo"');
@@ -566,7 +566,7 @@ describe('ngClass', function() {
   );
 
   it('should remove the watcher when static array one-time binding',
-    inject(function($rootScope, $compile) {
+    angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-class="::[className]"></div>')($rootScope);
 
       $rootScope.$apply('className = "foo"');
@@ -579,7 +579,7 @@ describe('ngClass', function() {
   );
 
   it('should remove the watcher when static map one-time binding',
-    inject(function($rootScope, $compile) {
+    angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-class="::{foo: fooPresent}"></div>')($rootScope);
 
       $rootScope.$apply('fooPresent = true');
@@ -591,8 +591,8 @@ describe('ngClass', function() {
   );
 
   it('should track changes of mutating object inside an array',
-    inject(function($rootScope, $compile) {
-      $rootScope.classVar = [{orange: true}];
+    angular.mock.inject(($rootScope, $compile) => {
+      $rootScope.classVar = [{ orange: true }];
       element = $compile('<div ng-class="classVar"></div>')($rootScope);
 
       $rootScope.$digest();
@@ -604,14 +604,14 @@ describe('ngClass', function() {
   );
 
   //https://github.com/angular/angular.js/issues/15960#issuecomment-299109412
-  it('should always reevaluate filters with non-primitive inputs within literals', function() {
-    module(function($filterProvider) {
-      $filterProvider.register('foo', valueFn(function(o) {
+  it('should always reevaluate filters with non-primitive inputs within literals', () => {
+    angular.mock.module($filterProvider => {
+      $filterProvider.register('foo', ngInternals.valueFn(o => {
         return o.a || o.b;
       }));
     });
 
-    inject(function($rootScope, $compile) {
+    angular.mock.inject(($rootScope, $compile) => {
       $rootScope.testObj = {};
       element = $compile('<div ng-class="{x: (testObj | foo)}">')($rootScope);
 
@@ -623,12 +623,12 @@ describe('ngClass', function() {
     });
   });
 
-  describe('large objects', function() {
-    var getProp;
-    var veryLargeObj;
+  describe('large objects', () => {
+    let getProp;
+    let veryLargeObj;
 
-    beforeEach(function() {
-      getProp = jasmine.createSpy('getProp');
+    beforeEach(() => {
+      getProp = jest.fn();
       veryLargeObj = {};
 
       Object.defineProperty(veryLargeObj, 'prop', {
@@ -637,16 +637,16 @@ describe('ngClass', function() {
       });
     });
 
-    it('should not be copied when using an expression', inject(function($compile, $rootScope) {
+    it('should not be copied when using an expression', angular.mock.inject(($compile, $rootScope) => {
       element = $compile('<div ng-class="fooClass"></div>')($rootScope);
-      $rootScope.fooClass = {foo: veryLargeObj};
+      $rootScope.fooClass = { foo: veryLargeObj };
       $rootScope.$digest();
 
       expect(element).toHaveClass('foo');
       expect(getProp).not.toHaveBeenCalled();
     }));
 
-    it('should not be copied when using a literal', inject(function($compile, $rootScope) {
+    it('should not be copied when using a literal', angular.mock.inject(($compile, $rootScope) => {
       element = $compile('<div ng-class="{foo: veryLargeObj}"></div>')($rootScope);
       $rootScope.veryLargeObj = veryLargeObj;
       $rootScope.$digest();
@@ -655,7 +655,7 @@ describe('ngClass', function() {
       expect(getProp).not.toHaveBeenCalled();
     }));
 
-    it('should not be copied when inside an array', inject(function($compile, $rootScope) {
+    it('should not be copied when inside an array', angular.mock.inject(($compile, $rootScope) => {
       element = $compile('<div ng-class="[{foo: veryLargeObj}]"></div>')($rootScope);
       $rootScope.veryLargeObj = veryLargeObj;
       $rootScope.$digest();
@@ -664,7 +664,7 @@ describe('ngClass', function() {
       expect(getProp).not.toHaveBeenCalled();
     }));
 
-    it('should not be copied when using one-time binding', inject(function($compile, $rootScope) {
+    it('should not be copied when using one-time binding', angular.mock.inject(($compile, $rootScope) => {
       element = $compile('<div ng-class="::{foo: veryLargeObj, bar: bar}"></div>')($rootScope);
       $rootScope.veryLargeObj = veryLargeObj;
       $rootScope.$digest();
@@ -694,18 +694,18 @@ describe('ngClass', function() {
   });
 });
 
-describe('ngClass animations', function() {
-  var body, element, $rootElement;
+describe('ngClass animations', () => {
+  let body, element, $rootElement;
 
-  afterEach(function() {
+  afterEach(() => {
     dealoc(element);
   });
 
-  it('should avoid calling addClass accidentally when removeClass is going on', function() {
-    module('ngAnimateMock');
-    inject(function($compile, $rootScope, $animate, $timeout) {
+  it('should avoid calling addClass accidentally when removeClass is going on', () => {
+    angular.mock.module('ngAnimateMock');
+    angular.mock.inject(($compile, $rootScope, $animate, $timeout) => {
       element = angular.element('<div ng-class="val"></div>');
-      var body = jqLite(window.document.body);
+      const body = angular.element(window.document.body);
       body.append(element);
       $compile(element)($rootScope);
 
@@ -734,34 +734,34 @@ describe('ngClass animations', function() {
     });
   });
 
-  it('should combine the ngClass evaluation with the enter animation', function() {
+  it('should combine the ngClass evaluation with the enter animation', () => {
 
     //mocks are not used since the enter delegation method is called before addClass and
     //it makes it impossible to test to see that addClass is called first
-    module('ngAnimate');
-    module('ngAnimateMock');
+    angular.mock.module('ngAnimate');
+    angular.mock.module('ngAnimateMock');
 
-    module(function($animateProvider) {
-      $animateProvider.register('.crazy', function() {
+    angular.mock.module($animateProvider => {
+      $animateProvider.register('.crazy', () => {
         return {
-          enter: function(element, done) {
+          enter: function (element, done) {
             element.data('state', 'crazy-enter');
             done();
           }
         };
       });
     });
-    inject(function($compile, $rootScope, $browser, $rootElement, $animate, $document) {
+    angular.mock.inject(($compile, $rootScope, $browser, $rootElement, $animate, $document) => {
       $animate.enabled(true);
 
       $rootScope.val = 'crazy';
       element = angular.element('<div ng-class="val"></div>');
-      jqLite($document[0].body).append($rootElement);
+      angular.element($document[0].body).append($rootElement);
 
       $compile(element)($rootScope);
 
-      var enterComplete = false;
-      $animate.enter(element, $rootElement, null).then(function() {
+      let enterComplete = false;
+      $animate.enter(element, $rootElement, null).then(() => {
         enterComplete = true;
       });
 
@@ -780,11 +780,11 @@ describe('ngClass animations', function() {
     });
   });
 
-  it('should not remove classes if they\'re going to be added back right after', function() {
-    module('ngAnimateMock');
+  it('should not remove classes if they\'re going to be added back right after', () => {
+    angular.mock.module('ngAnimateMock');
 
-    inject(function($rootScope, $compile, $animate) {
-      var className;
+    angular.mock.inject(($rootScope, $compile, $animate) => {
+      let className;
 
       $rootScope.one = true;
       $rootScope.two = true;
@@ -795,7 +795,7 @@ describe('ngClass animations', function() {
       $rootScope.$digest();
 
       //this fires twice due to the class observer firing
-      var item = $animate.queue.shift();
+      let item = $animate.queue.shift();
       expect(item.event).toBe('addClass');
       expect(item.args[1]).toBe('one two three');
 

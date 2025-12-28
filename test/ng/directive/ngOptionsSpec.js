@@ -1,11 +1,11 @@
 'use strict';
 
-describe('ngOptions', function() {
+describe('ngOptions', () => {
 
-  var scope, formElement, element, $compile, linkLog, childListMutationObserver, ngModelCtrl;
+  let scope, formElement, element, $compile, linkLog, childListMutationObserver, ngModelCtrl;
 
   function compile(html) {
-    formElement = jqLite('<form name="form">' + html + '</form>');
+    formElement = angular.element('<form name="form">' + html + '</form>');
     element = formElement.find('select');
     $compile(formElement)(scope);
     ngModelCtrl = element.controller('ngModel');
@@ -13,123 +13,107 @@ describe('ngOptions', function() {
   }
 
   function setSelectValue(selectElement, optionIndex) {
-    var option = selectElement.find('option').eq(optionIndex);
+    const option = selectElement.find('option').eq(optionIndex);
     selectElement.val(option.val());
     browserTrigger(element, 'change');
   }
 
 
-  beforeEach(function() {
-    jasmine.addMatchers({
-      toEqualSelectValue: function() {
+  beforeEach(() => {
+    expect.extend({
+      toEqualSelectValue(received, value, multiple) {
+        const errors = [];
+        let actual = received.val();
+
+        if (multiple) {
+          value = value.map((val) => ngInternals.hashKey(val));
+          actual = actual || [];
+        } else {
+          value = ngInternals.hashKey(value);
+        }
+
+        if (!angular.equals(actual, value)) {
+          errors.push(`Expected select value "${actual}" to equal "${value}"`);
+        }
+
         return {
-          compare: function(_actual_, value, multiple) {
-            var errors = [];
-            var actual = _actual_.val();
-
-            if (multiple) {
-              value = value.map(function(val) { return hashKey(val); });
-              actual = actual || [];
-            } else {
-              value = hashKey(value);
-            }
-
-            if (!equals(actual, value)) {
-              errors.push('Expected select value "' + actual + '" to equal "' + value + '"');
-            }
-            var message = function() {
-              return errors.join('\n');
-            };
-
-            return { pass: errors.length === 0, message: message };
-          }
+          pass: errors.length === 0,
+          message: () => errors.join('\n'),
         };
       },
-      toEqualOption: function() {
+
+      toEqualOption(received, value, text, label) {
+        const errors = [];
+        const hash = ngInternals.hashKey(value);
+
+        if (received.attr('value') !== hash) {
+          errors.push(`Expected option value "${received.attr('value')}" to equal "${hash}"`);
+        }
+        if (text && received.text() !== text) {
+          errors.push(`Expected option text "${received.text()}" to equal "${text}"`);
+        }
+        if (label && received.attr('label') !== label) {
+          errors.push(`Expected option label "${received.attr('label')}" to equal "${label}"`);
+        }
+
         return {
-          compare: function(actual, value, text, label) {
-            var errors = [];
-            var hash = hashKey(value);
-            if (actual.attr('value') !== hash) {
-              errors.push('Expected option value "' + actual.attr('value') + '" to equal "' + hash + '"');
-            }
-            if (text && actual.text() !== text) {
-              errors.push('Expected option text "' + actual.text() + '" to equal "' + text + '"');
-            }
-            if (label && actual.attr('label') !== label) {
-              errors.push('Expected option label "' + actual.attr('label') + '" to equal "' + label + '"');
-            }
-
-            var message = function() {
-              return errors.join('\n');
-            };
-
-            return { pass: errors.length === 0, message: message };
-          }
+          pass: errors.length === 0,
+          message: () => errors.join('\n'),
         };
       },
-      toEqualTrackedOption: function() {
+
+      toEqualTrackedOption(received, value, text, label) {
+        const errors = [];
+
+        if (received.attr('value') !== String(value)) {
+          errors.push(`Expected option value "${received.attr('value')}" to equal "${value}"`);
+        }
+        if (text && received.text() !== text) {
+          errors.push(`Expected option text "${received.text()}" to equal "${text}"`);
+        }
+        if (label && received.attr('label') !== label) {
+          errors.push(`Expected option label "${received.attr('label')}" to equal "${label}"`);
+        }
+
         return {
-          compare: function(actual, value, text, label) {
-            var errors = [];
-            if (actual.attr('value') !== '' + value) {
-              errors.push('Expected option value "' + actual.attr('value') + '" to equal "' + value + '"');
-            }
-            if (text && actual.text() !== text) {
-              errors.push('Expected option text "' + actual.text() + '" to equal "' + text + '"');
-            }
-            if (label && actual.attr('label') !== label) {
-              errors.push('Expected option label "' + actual.attr('label') + '" to equal "' + label + '"');
-            }
-
-            var message = function() {
-              return errors.join('\n');
-            };
-
-            return { pass: errors.length === 0, message: message };
-          }
+          pass: errors.length === 0,
+          message: () => errors.join('\n'),
         };
       },
-      toEqualUnknownOption: function() {
+
+      toEqualUnknownOption(received) {
+        const errors = [];
+
+        if (received.attr('value') !== '?') {
+          errors.push(`Expected option value "${received.attr('value')}" to equal "?"`);
+        }
+
         return {
-          compare: function(actual) {
-            var errors = [];
-            if (actual.attr('value') !== '?') {
-              errors.push('Expected option value "' + actual.attr('value') + '" to equal "?"');
-            }
-
-            var message = function() {
-              return errors.join('\n');
-            };
-
-            return { pass: errors.length === 0, message: message };
-          }
+          pass: errors.length === 0,
+          message: () => errors.join('\n'),
         };
       },
-      toEqualUnknownValue: function() {
+
+      toEqualUnknownValue(actual /*, value */) {
+        const errors = [];
+
+        if (actual !== '?') {
+          errors.push(`Expected select value "${actual}" to equal "?"`);
+        }
+
         return {
-          compare: function(actual, value) {
-            var errors = [];
-            if (actual !== '?') {
-              errors.push('Expected select value "' + actual + '" to equal "?"');
-            }
-
-            var message = function() {
-              return errors.join('\n');
-            };
-
-            return { pass: errors.length === 0, message: message };
-          }
+          pass: errors.length === 0,
+          message: () => errors.join('\n'),
         };
-      }
+      },
     });
   });
 
-  beforeEach(module(function($compileProvider, $provide) {
+  beforeEach(angular.mock.module(($compileProvider, $provide) => {
     linkLog = [];
 
     $compileProvider
-      .directive('customSelect', function() {
+      .directive('customSelect', () => {
         return {
           restrict: 'E',
           replace: true,
@@ -138,41 +122,41 @@ describe('ngOptions', function() {
             options: '='
           },
           templateUrl: 'select_template.html',
-          link: function(scope, $element, attributes) {
+          link: function (scope, $element, attributes) {
             scope.selectable_options = scope.options;
           }
         };
       })
 
-      .directive('oCompileContents', function() {
+      .directive('oCompileContents', () => {
         return {
-          link: function(scope, element) {
+          link: function (scope, element) {
             linkLog.push('linkCompileContents');
             $compile(element.contents())(scope);
           }
         };
       })
 
-      .directive('observeChildList', function() {
+      .directive('observeChildList', () => {
         return {
-          link: function(scope, element) {
-            var config = { childList: true };
+          link: function (scope, element) {
+            const config = { childList: true };
 
-            childListMutationObserver = new window.MutationObserver(noop);
+            childListMutationObserver = new window.MutationObserver(angular.noop);
             childListMutationObserver.observe(element[0], config);
           }
         };
       });
 
-    $provide.decorator('ngOptionsDirective', function($delegate) {
+    $provide.decorator('ngOptionsDirective', $delegate => {
 
-      var origPreLink = $delegate[0].link.pre;
-      var origPostLink = $delegate[0].link.post;
+      const origPreLink = $delegate[0].link.pre;
+      const origPostLink = $delegate[0].link.post;
 
-      $delegate[0].compile = function() {
+      $delegate[0].compile = () => {
         return {
           pre: origPreLink,
-          post: function() {
+          post: function () {
             linkLog.push('linkNgOptions');
             origPostLink.apply(this, arguments);
           }
@@ -183,75 +167,75 @@ describe('ngOptions', function() {
     });
   }));
 
-  beforeEach(inject(function($rootScope, _$compile_) {
+  beforeEach(angular.mock.inject(($rootScope, _$compile_) => {
     scope = $rootScope.$new(); //create a child scope because the root scope can't be $destroy-ed
     $compile = _$compile_;
     formElement = element = null;
   }));
 
 
-  afterEach(function() {
+  afterEach(() => {
     scope.$destroy(); //disables unknown option work during destruction
     dealoc(formElement);
     ngModelCtrl = null;
   });
 
   function createSelect(attrs, blank, unknown) {
-    var html = '<select';
-    forEach(attrs, function(value, key) {
-      if (isBoolean(value)) {
+    let html = '<select';
+    angular.forEach(attrs, (value, key) => {
+      if (ngInternals.isBoolean(value)) {
         if (value) html += ' ' + key;
       } else {
         html += ' ' + key + '="' + value + '"';
       }
     });
     html += '>' +
-      (blank ? (isString(blank) ? blank : '<option value="">blank</option>') : '') +
-      (unknown ? (isString(unknown) ? unknown : '<option value="?">unknown</option>') : '') +
-    '</select>';
+      (blank ? (angular.isString(blank) ? blank : '<option value="">blank</option>') : '') +
+      (unknown ? (angular.isString(unknown) ? unknown : '<option value="?">unknown</option>') : '') +
+      '</select>';
 
     compile(html);
   }
 
   function createSingleSelect(blank, unknown) {
     createSelect({
-      'ng-model':'selected',
-      'ng-options':'value.name for value in values'
+      'ng-model': 'selected',
+      'ng-options': 'value.name for value in values'
     }, blank, unknown);
   }
 
   function createMultiSelect(blank, unknown) {
     createSelect({
-      'ng-model':'selected',
-      'multiple':true,
-      'ng-options':'value.name for value in values'
+      'ng-model': 'selected',
+      'multiple': true,
+      'ng-options': 'value.name for value in values'
     }, blank, unknown);
   }
 
 
-  it('should throw when not formated "? for ? in ?"', function() {
-    expect(function() {
-        compile('<select ng-model="selected" ng-options="i dont parse"></select>');
-      }).toThrowMinErr('ngOptions', 'iexp', /Expected expression in form of/);
+  it('should throw when not formated "? for ? in ?"', () => {
+    expect(() => {
+      compile('<select ng-model="selected" ng-options="i dont parse"></select>');
+    }).toThrowMinErr('ngOptions', 'iexp', /Expected expression in form of/);
   });
 
 
-  it('should have a dependency on ngModel', function() {
-    expect(function() {
+  it('should have a dependency on ngModel', () => {
+    expect(() => {
       compile('<select ng-options="item in items"></select>');
     }).toThrow();
   });
 
 
-  it('should render a list', function() {
+  it('should render a list', () => {
     createSingleSelect();
 
-    scope.$apply(function() {
-      scope.values = [{name: 'A'}, {name: 'B'}, {name: 'C'}];
+    scope.$apply(() => {
+      scope.values = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
       scope.selected = scope.values[1];
     });
 
-    var options = element.find('option');
+    const options = element.find('option');
     expect(options.length).toEqual(3);
     expect(options.eq(0)).toEqualOption(scope.values[0], 'A');
     expect(options.eq(1)).toEqualOption(scope.values[1], 'B');
@@ -260,18 +244,18 @@ describe('ngOptions', function() {
   });
 
 
-  it('should not include properties with non-numeric keys in array-like collections when using array syntax', function() {
+  it('should not include properties with non-numeric keys in array-like collections when using array syntax', () => {
     createSelect({
-      'ng-model':'selected',
-      'ng-options':'value for value in values'
+      'ng-model': 'selected',
+      'ng-options': 'value for value in values'
     });
 
-    scope.$apply(function() {
-      scope.values = { 0: 'X', 1: 'Y', 2: 'Z', 'a': 'A', length: 3};
+    scope.$apply(() => {
+      scope.values = { 0: 'X', 1: 'Y', 2: 'Z', 'a': 'A', length: 3 };
       scope.selected = scope.values[1];
     });
 
-    var options = element.find('option');
+    const options = element.find('option');
     expect(options.length).toEqual(3);
     expect(options.eq(0)).toEqualOption('X');
     expect(options.eq(1)).toEqualOption('Y');
@@ -280,18 +264,18 @@ describe('ngOptions', function() {
   });
 
 
-  it('should include properties with non-numeric keys in array-like collections when using object syntax', function() {
+  it('should include properties with non-numeric keys in array-like collections when using object syntax', () => {
     createSelect({
-      'ng-model':'selected',
-      'ng-options':'value for (key, value) in values'
+      'ng-model': 'selected',
+      'ng-options': 'value for (key, value) in values'
     });
 
-    scope.$apply(function() {
-      scope.values = { 0: 'X', 1: 'Y', 2: 'Z', 'a': 'A', length: 3};
+    scope.$apply(() => {
+      scope.values = { 0: 'X', 1: 'Y', 2: 'Z', 'a': 'A', length: 3 };
       scope.selected = scope.values[1];
     });
 
-    var options = element.find('option');
+    const options = element.find('option');
     expect(options.length).toEqual(5);
     expect(options.eq(0)).toEqualOption('X');
     expect(options.eq(1)).toEqualOption('Y');
@@ -301,18 +285,18 @@ describe('ngOptions', function() {
   });
 
 
-  it('should render an object', function() {
+  it('should render an object', () => {
     createSelect({
       'ng-model': 'selected',
       'ng-options': 'value as key for (key, value) in object'
     });
 
-    scope.$apply(function() {
-      scope.object = {'red': 'FF0000', 'green': '00FF00', 'blue': '0000FF'};
+    scope.$apply(() => {
+      scope.object = { 'red': 'FF0000', 'green': '00FF00', 'blue': '0000FF' };
       scope.selected = scope.object.green;
     });
 
-    var options = element.find('option');
+    let options = element.find('option');
     expect(options.length).toEqual(3);
     expect(options.eq(0)).toEqualOption('FF0000', 'red');
     expect(options.eq(1)).toEqualOption('00FF00', 'green');
@@ -331,7 +315,7 @@ describe('ngOptions', function() {
 
   });
 
-  it('should set the "selected" attribute and property on selected options', function() {
+  it('should set the "selected" attribute and property on selected options', () => {
     scope.values = [{
       id: 'FF0000',
       display: 'red'
@@ -347,7 +331,7 @@ describe('ngOptions', function() {
     });
     scope.$digest();
 
-    var options = element.find('option');
+    const options = element.find('option');
     expect(options.length).toEqual(2);
     expect(options.eq(0)).toEqualOption('FF0000', 'red');
     expect(options.eq(1)).toEqualOption('0000FF', 'blue');
@@ -366,15 +350,15 @@ describe('ngOptions', function() {
     expect(options.eq(1).prop('selected')).toBe(true);
   });
 
-  it('should render zero as a valid display value', function() {
+  it('should render zero as a valid display value', () => {
     createSingleSelect();
 
-    scope.$apply(function() {
-      scope.values = [{name: 0}, {name: 1}, {name: 2}];
+    scope.$apply(() => {
+      scope.values = [{ name: 0 }, { name: 1 }, { name: 2 }];
       scope.selected = scope.values[0];
     });
 
-    var options = element.find('option');
+    const options = element.find('option');
     expect(options.length).toEqual(3);
     expect(options.eq(0)).toEqualOption(scope.values[0], '0');
     expect(options.eq(1)).toEqualOption(scope.values[1], '1');
@@ -383,24 +367,24 @@ describe('ngOptions', function() {
 
 
   it('should not be set when an option is selected and options are set asynchronously',
-    inject(function($timeout) {
+    angular.mock.inject($timeout => {
       compile('<select ng-model="model" ng-options="opt.id as opt.label for opt in options">' +
-                  '</select>');
+        '</select>');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.model = 0;
       });
 
-      $timeout(function() {
+      $timeout(() => {
         scope.options = [
-          {id: 0, label: 'x'},
-          {id: 1, label: 'y'}
+          { id: 0, label: 'x' },
+          { id: 1, label: 'y' }
         ];
       }, 0);
 
       $timeout.flush();
 
-      var options = element.find('option');
+      const options = element.find('option');
 
       expect(options.length).toEqual(2);
       expect(options.eq(0)).toEqualOption(0, 'x');
@@ -409,26 +393,26 @@ describe('ngOptions', function() {
   );
 
 
-  it('should grow list', function() {
+  it('should grow list', () => {
     createSingleSelect();
 
-    scope.$apply(function() {
+    scope.$apply(() => {
       scope.values = [];
     });
 
     expect(element.find('option').length).toEqual(1); // because we add special unknown option
     expect(element.find('option').eq(0)).toEqualUnknownOption();
 
-    scope.$apply(function() {
-      scope.values.push({name:'A'});
+    scope.$apply(() => {
+      scope.values.push({ name: 'A' });
       scope.selected = scope.values[0];
     });
 
     expect(element.find('option').length).toEqual(1);
     expect(element.find('option')).toEqualOption(scope.values[0], 'A');
 
-    scope.$apply(function() {
-      scope.values.push({name:'B'});
+    scope.$apply(() => {
+      scope.values.push({ name: 'B' });
     });
 
     expect(element.find('option').length).toEqual(2);
@@ -437,17 +421,17 @@ describe('ngOptions', function() {
   });
 
 
-  it('should shrink list', function() {
+  it('should shrink list', () => {
     createSingleSelect();
 
-    scope.$apply(function() {
-      scope.values = [{name:'A'}, {name:'B'}, {name:'C'}];
+    scope.$apply(() => {
+      scope.values = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
       scope.selected = scope.values[0];
     });
 
     expect(element.find('option').length).toEqual(3);
 
-    scope.$apply(function() {
+    scope.$apply(() => {
       scope.values.pop();
     });
 
@@ -455,14 +439,14 @@ describe('ngOptions', function() {
     expect(element.find('option').eq(0)).toEqualOption(scope.values[0], 'A');
     expect(element.find('option').eq(1)).toEqualOption(scope.values[1], 'B');
 
-    scope.$apply(function() {
+    scope.$apply(() => {
       scope.values.pop();
     });
 
     expect(element.find('option').length).toEqual(1);
     expect(element.find('option')).toEqualOption(scope.values[0], 'A');
 
-    scope.$apply(function() {
+    scope.$apply(() => {
       scope.values.pop();
       scope.selected = null;
     });
@@ -471,25 +455,25 @@ describe('ngOptions', function() {
   });
 
 
-  it('should shrink and then grow list', function() {
+  it('should shrink and then grow list', () => {
     createSingleSelect();
 
-    scope.$apply(function() {
-      scope.values = [{name:'A'}, {name:'B'}, {name:'C'}];
+    scope.$apply(() => {
+      scope.values = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
       scope.selected = scope.values[0];
     });
 
     expect(element.find('option').length).toEqual(3);
 
-    scope.$apply(function() {
-      scope.values = [{name: '1'}, {name: '2'}];
+    scope.$apply(() => {
+      scope.values = [{ name: '1' }, { name: '2' }];
       scope.selected = scope.values[0];
     });
 
     expect(element.find('option').length).toEqual(2);
 
-    scope.$apply(function() {
-      scope.values = [{name: 'A'}, {name: 'B'}, {name: 'C'}];
+    scope.$apply(() => {
+      scope.values = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
       scope.selected = scope.values[0];
     });
 
@@ -497,20 +481,20 @@ describe('ngOptions', function() {
   });
 
 
-  it('should update list', function() {
+  it('should update list', () => {
     createSingleSelect();
 
-    scope.$apply(function() {
-      scope.values = [{name: 'A'}, {name: 'B'}, {name: 'C'}];
+    scope.$apply(() => {
+      scope.values = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
       scope.selected = scope.values[0];
     });
 
-    scope.$apply(function() {
-      scope.values = [{name: 'B'}, {name: 'C'}, {name: 'D'}];
+    scope.$apply(() => {
+      scope.values = [{ name: 'B' }, { name: 'C' }, { name: 'D' }];
       scope.selected = scope.values[0];
     });
 
-    var options = element.find('option');
+    const options = element.find('option');
     expect(options.length).toEqual(3);
     expect(options.eq(0)).toEqualOption(scope.values[0], 'B');
     expect(options.eq(1)).toEqualOption(scope.values[1], 'C');
@@ -518,61 +502,61 @@ describe('ngOptions', function() {
   });
 
 
-  it('should preserve pre-existing empty option', function() {
+  it('should preserve pre-existing empty option', () => {
     createSingleSelect(true);
 
-    scope.$apply(function() {
+    scope.$apply(() => {
       scope.values = [];
     });
     expect(element.find('option').length).toEqual(1);
 
-    scope.$apply(function() {
-      scope.values = [{name: 'A'}];
+    scope.$apply(() => {
+      scope.values = [{ name: 'A' }];
       scope.selected = scope.values[0];
     });
 
     expect(element.find('option').length).toEqual(2);
-    expect(jqLite(element.find('option')[0]).text()).toEqual('blank');
-    expect(jqLite(element.find('option')[1]).text()).toEqual('A');
+    expect(angular.element(element.find('option')[0]).text()).toEqual('blank');
+    expect(angular.element(element.find('option')[1]).text()).toEqual('A');
 
-    scope.$apply(function() {
+    scope.$apply(() => {
       scope.values = [];
       scope.selected = null;
     });
 
     expect(element.find('option').length).toEqual(1);
-    expect(jqLite(element.find('option')[0]).text()).toEqual('blank');
+    expect(angular.element(element.find('option')[0]).text()).toEqual('blank');
   });
 
 
-  it('should ignore $ and $$ properties', function() {
+  it('should ignore $ and $$ properties', () => {
     createSelect({
       'ng-options': 'key as value for (key, value) in object',
       'ng-model': 'selected'
     });
 
-    scope.$apply(function() {
-      scope.object = {'regularProperty': 'visible', '$$private': 'invisible', '$property': 'invisible'};
+    scope.$apply(() => {
+      scope.object = { 'regularProperty': 'visible', '$$private': 'invisible', '$property': 'invisible' };
       scope.selected = 'regularProperty';
     });
 
-    var options = element.find('option');
+    const options = element.find('option');
     expect(options.length).toEqual(1);
     expect(options.eq(0)).toEqualOption('regularProperty', 'visible');
   });
 
 
-  it('should not watch non-numeric array properties', function() {
+  it('should not watch non-numeric array properties', () => {
     createSelect({
       'ng-options': 'value as createLabel(value) for value in array',
       'ng-model': 'selected'
     });
-    scope.createLabel = jasmine.createSpy('createLabel').and.callFake(function(value) { return value; });
+    scope.createLabel = jest.fn((value) => { return value; });
     scope.array = ['a', 'b', 'c'];
     scope.array.$$private = 'do not watch';
     scope.array.$property = 'do not watch';
     scope.array.other = 'do not watch';
-    scope.array.fn = function() {};
+    scope.array.fn = () => { };
     scope.selected = 'b';
     scope.$digest();
 
@@ -580,17 +564,17 @@ describe('ngOptions', function() {
     expect(scope.createLabel).toHaveBeenCalledWith('b');
     expect(scope.createLabel).toHaveBeenCalledWith('c');
     expect(scope.createLabel).not.toHaveBeenCalledWith('do not watch');
-    expect(scope.createLabel).not.toHaveBeenCalledWith(jasmine.any(Function));
+    expect(scope.createLabel).not.toHaveBeenCalledWith(expect.any(Function));
   });
 
 
-  it('should not watch object properties that start with $ or $$', function() {
+  it('should not watch object properties that start with $ or $$', () => {
     createSelect({
       'ng-options': 'key as createLabel(key) for (key, value) in object',
       'ng-model': 'selected'
     });
-    scope.createLabel = jasmine.createSpy('createLabel').and.callFake(function(value) { return value; });
-    scope.object = {'regularProperty': 'visible', '$$private': 'invisible', '$property': 'invisible'};
+    scope.createLabel = jest.fn((value) => { return value; });
+    scope.object = { 'regularProperty': 'visible', '$$private': 'invisible', '$property': 'invisible' };
     scope.selected = 'regularProperty';
     scope.$digest();
 
@@ -599,8 +583,8 @@ describe('ngOptions', function() {
     expect(scope.createLabel).not.toHaveBeenCalledWith('$property');
   });
 
-  it('should allow expressions over multiple lines', function() {
-    scope.isNotFoo = function(item) {
+  it('should allow expressions over multiple lines', () => {
+    scope.isNotFoo = item => {
       return item.name !== 'Foo';
     };
 
@@ -611,14 +595,14 @@ describe('ngOptions', function() {
       'ng-model': 'selected'
     });
 
-    scope.$apply(function() {
-      scope.values = [{'id': 1, 'name': 'Foo'},
-                      {'id': 2, 'name': 'Bar'},
-                      {'id': 3, 'name': 'Baz'}];
+    scope.$apply(() => {
+      scope.values = [{ 'id': 1, 'name': 'Foo' },
+      { 'id': 2, 'name': 'Bar' },
+      { 'id': 3, 'name': 'Baz' }];
       scope.selected = scope.values[0];
     });
 
-    var options = element.find('option');
+    const options = element.find('option');
     expect(options.length).toEqual(3);
     expect(options.eq(1)).toEqualOption(scope.values[1], '2');
     expect(options.eq(2)).toEqualOption(scope.values[2], '3');
@@ -626,63 +610,63 @@ describe('ngOptions', function() {
 
 
   it('should not update selected property of an option element on digest with no change event',
-      function() {
-    // ng-options="value.name for value in values"
-    // ng-model="selected"
-    createSingleSelect();
+    () => {
+      // ng-options="value.name for value in values"
+      // ng-model="selected"
+      createSingleSelect();
 
-    scope.$apply(function() {
-      scope.values = [{name: 'A'}, {name: 'B'}, {name: 'C'}];
-      scope.selected = scope.values[0];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
+        scope.selected = scope.values[0];
+      });
+
+      const options = element.find('option');
+
+      expect(scope.selected).toEqual(expect.objectContaining({ name: 'A' }));
+      expect(options.eq(0).prop('selected')).toBe(true);
+      expect(options.eq(1).prop('selected')).toBe(false);
+
+      const optionToSelect = options.eq(1);
+
+      expect(optionToSelect.text()).toBe('B');
+
+      optionToSelect.prop('selected', true);
+      scope.$digest();
+
+      expect(optionToSelect.prop('selected')).toBe(true);
+      expect(scope.selected).toBe(scope.values[0]);
     });
-
-    var options = element.find('option');
-
-    expect(scope.selected).toEqual(jasmine.objectContaining({ name: 'A' }));
-    expect(options.eq(0).prop('selected')).toBe(true);
-    expect(options.eq(1).prop('selected')).toBe(false);
-
-    var optionToSelect = options.eq(1);
-
-    expect(optionToSelect.text()).toBe('B');
-
-    optionToSelect.prop('selected', true);
-    scope.$digest();
-
-    expect(optionToSelect.prop('selected')).toBe(true);
-    expect(scope.selected).toBe(scope.values[0]);
-  });
 
 
   // bug fix #9621
-  it('should update the label property', function() {
+  it('should update the label property', () => {
     // ng-options="value.name for value in values"
     // ng-model="selected"
     createSingleSelect();
 
-    scope.$apply(function() {
-      scope.values = [{name: 'A'}, {name: 'B'}, {name: 'C'}];
+    scope.$apply(() => {
+      scope.values = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
       scope.selected = scope.values[0];
     });
 
-    var options = element.find('option');
+    const options = element.find('option');
     expect(options.eq(0).prop('label')).toEqual('A');
     expect(options.eq(1).prop('label')).toEqual('B');
     expect(options.eq(2).prop('label')).toEqual('C');
   });
 
 
-  it('should update the label if only the property has changed', function() {
+  it('should update the label if only the property has changed', () => {
     // ng-options="value.name for value in values"
     // ng-model="selected"
     createSingleSelect();
 
-    scope.$apply(function() {
-      scope.values = [{name: 'A'}, {name: 'B'}, {name: 'C'}];
+    scope.$apply(() => {
+      scope.values = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
       scope.selected = scope.values[0];
     });
 
-    var options = element.find('option');
+    let options = element.find('option');
     expect(options.eq(0).prop('label')).toEqual('A');
     expect(options.eq(1).prop('label')).toEqual('B');
     expect(options.eq(2).prop('label')).toEqual('C');
@@ -697,7 +681,7 @@ describe('ngOptions', function() {
 
 
   // bug fix #9714
-  it('should select the matching option when the options are updated', function() {
+  it('should select the matching option when the options are updated', () => {
 
     // first set up a select with no options
     scope.selected = '';
@@ -705,7 +689,7 @@ describe('ngOptions', function() {
       'ng-options': 'val.id as val.label for val in values',
       'ng-model': 'selected'
     });
-    var options = element.find('option');
+    let options = element.find('option');
     // we expect the selected option to be the "unknown" option
     expect(options.eq(0)).toEqualUnknownOption('');
     expect(options.eq(0).prop('selected')).toEqual(true);
@@ -717,26 +701,26 @@ describe('ngOptions', function() {
     // and for the unknown option to have been removed
     options = element.find('option');
     expect(element).toEqualSelectValue('');
-    expect(options.eq(0)).toEqualOption('','A');
+    expect(options.eq(0)).toEqualOption('', 'A');
   });
 
 
 
-  it('should be possible to use one-time binding on the expression', function() {
+  it('should be possible to use one-time binding on the expression', () => {
     createSelect({
       'ng-model': 'someModel',
       'ng-options': 'o as o for o in ::arr'
     });
 
-    var options;
+    let options;
 
     // Initially the options list is just the unknown option
     options = element.find('option');
     expect(options.length).toEqual(1);
 
     // Now initialize the scope and the options should be updated
-    scope.$apply(function() {
-      scope.arr = ['a','b','c'];
+    scope.$apply(() => {
+      scope.arr = ['a', 'b', 'c'];
     });
     options = element.find('option');
     expect(options.length).toEqual(4);
@@ -757,15 +741,15 @@ describe('ngOptions', function() {
   });
 
 
-  it('should remove the "selected" attribute from the previous option when the model changes', function() {
-    scope.values = [{id: 10, label: 'ten'}, {id:20, label: 'twenty'}];
+  it('should remove the "selected" attribute from the previous option when the model changes', () => {
+    scope.values = [{ id: 10, label: 'ten' }, { id: 20, label: 'twenty' }];
 
     createSelect({
       'ng-model': 'selected',
       'ng-options': 'item.label for item in values'
     }, true);
 
-    var options = element.find('option');
+    let options = element.find('option');
     expect(options[0]).toBeMarkedAsSelected();
     expect(options[1]).not.toBeMarkedAsSelected();
     expect(options[2]).not.toBeMarkedAsSelected();
@@ -816,30 +800,30 @@ describe('ngOptions', function() {
   if (window.MutationObserver) {
     //IE9 and IE10 do not support MutationObserver
     //Since the feature is only needed for a test, it's okay to skip these browsers
-    it('should render the initial options only one time', function() {
+    it('should render the initial options only one time', () => {
       scope.value = 'black';
       scope.values = ['black', 'white', 'red'];
       // observe-child-list adds a MutationObserver that we will read out after ngOptions
       // has been compiled
       createSelect({
-        'ng-model':'value',
-        'ng-options':'value.name for value in values',
+        'ng-model': 'value',
+        'ng-options': 'value.name for value in values',
         'observe-child-list': ''
       });
 
-      var optionEls = element[0].querySelectorAll('option');
-      var records = childListMutationObserver.takeRecords();
+      const optionEls = element[0].querySelectorAll('option');
+      const records = childListMutationObserver.takeRecords();
 
       expect(records.length).toBe(1);
       expect(records[0].addedNodes).toEqual(optionEls);
     });
   }
 
-  describe('disableWhen expression', function() {
+  describe('disableWhen expression', () => {
 
-    describe('on single select', function() {
+    describe('on single select', () => {
 
-      it('should disable options', function() {
+      it('should disable options', () => {
 
         scope.selected = '';
         scope.options = [
@@ -852,7 +836,7 @@ describe('ngOptions', function() {
           'ng-options': 'o.value as o.name disable when o.unavailable for o in options',
           'ng-model': 'selected'
         });
-        var options = element.find('option');
+        const options = element.find('option');
 
         expect(options.length).toEqual(5);
         expect(options.eq(1).prop('disabled')).toEqual(false);
@@ -862,7 +846,7 @@ describe('ngOptions', function() {
       });
 
 
-      it('should select disabled options when model changes', function() {
+      it('should select disabled options when model changes', () => {
         scope.options = [
           { name: 'white', value: '#FFFFFF' },
           { name: 'one', value: 1, unavailable: true },
@@ -876,7 +860,7 @@ describe('ngOptions', function() {
 
         // Initially the model is set to an enabled option
         scope.$apply('selected = 30');
-        var options = element.find('option');
+        let options = element.find('option');
         expect(options.eq(3).prop('selected')).toEqual(true);
 
         // Now set the model to a disabled option
@@ -894,7 +878,7 @@ describe('ngOptions', function() {
       });
 
 
-      it('should select options in model when they become enabled', function() {
+      it('should select options in model when they become enabled', () => {
         scope.options = [
           { name: 'white', value: '#FFFFFF' },
           { name: 'one', value: 1, unavailable: true },
@@ -908,7 +892,7 @@ describe('ngOptions', function() {
 
         // Set the model to a disabled option
         scope.$apply('selected = 1');
-        var options = element.find('option');
+        let options = element.find('option');
 
         // jQuery returns null for val() when the option is disabled, see
         // https://bugs.jquery.com/ticket/13097
@@ -920,7 +904,7 @@ describe('ngOptions', function() {
         expect(options.eq(3).prop('selected')).toEqual(false);
 
         // Now enable that option
-        scope.$apply(function() {
+        scope.$apply(() => {
           scope.options[1].unavailable = false;
         });
 
@@ -933,9 +917,9 @@ describe('ngOptions', function() {
     });
 
 
-    describe('on multi select', function() {
+    describe('on multi select', () => {
 
-      it('should disable options', function() {
+      it('should disable options', () => {
 
         scope.selected = [];
         scope.options = [
@@ -949,7 +933,7 @@ describe('ngOptions', function() {
           'multiple': true,
           'ng-model': 'selected'
         });
-        var options = element.find('option');
+        const options = element.find('option');
 
         expect(options.eq(0).prop('disabled')).toEqual(false);
         expect(options.eq(1).prop('disabled')).toEqual(true);
@@ -958,7 +942,7 @@ describe('ngOptions', function() {
       });
 
 
-      it('should select disabled options when model changes', function() {
+      it('should select disabled options when model changes', () => {
         scope.options = [
           { name: 'a', value: 0 },
           { name: 'b', value: 1, unavailable: true },
@@ -973,7 +957,7 @@ describe('ngOptions', function() {
 
         // Initially the model is set to an enabled option
         scope.$apply('selected = [3]');
-        var options = element.find('option');
+        let options = element.find('option');
         expect(options.eq(0).prop('selected')).toEqual(false);
         expect(options.eq(1).prop('selected')).toEqual(false);
         expect(options.eq(2).prop('selected')).toEqual(false);
@@ -996,7 +980,7 @@ describe('ngOptions', function() {
       });
 
 
-      it('should select options in model when they become enabled', function() {
+      it('should select options in model when they become enabled', () => {
         scope.options = [
           { name: 'a', value: 0 },
           { name: 'b', value: 1, unavailable: true },
@@ -1011,7 +995,7 @@ describe('ngOptions', function() {
 
         // Set the model to a disabled option
         scope.$apply('selected = [1]');
-        var options = element.find('option');
+        let options = element.find('option');
 
         expect(options.eq(0).prop('selected')).toEqual(false);
         expect(options.eq(1).prop('selected')).toEqual(true);
@@ -1019,7 +1003,7 @@ describe('ngOptions', function() {
         expect(options.eq(3).prop('selected')).toEqual(false);
 
         // Now enable that option
-        scope.$apply(function() {
+        scope.$apply(() => {
           scope.options[1].unavailable = false;
         });
 
@@ -1034,19 +1018,19 @@ describe('ngOptions', function() {
   });
 
 
-  describe('selectAs expression', function() {
-    beforeEach(function() {
-      scope.arr = [{id: 10, label: 'ten'}, {id:20, label: 'twenty'}];
-      scope.obj = {'10': {score: 10, label: 'ten'}, '20': {score: 20, label: 'twenty'}};
+  describe('selectAs expression', () => {
+    beforeEach(() => {
+      scope.arr = [{ id: 10, label: 'ten' }, { id: 20, label: 'twenty' }];
+      scope.obj = { '10': { score: 10, label: 'ten' }, '20': { score: 20, label: 'twenty' } };
     });
 
-    it('should support single select with array source', function() {
+    it('should support single select with array source', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.id as item.label for item in arr'
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = 10;
       });
       expect(element).toEqualSelectValue(10);
@@ -1056,18 +1040,18 @@ describe('ngOptions', function() {
     });
 
 
-    it('should support multi select with array source', function() {
+    it('should support multi select with array source', () => {
       createSelect({
         'ng-model': 'selected',
         'multiple': true,
         'ng-options': 'item.id as item.label for item in arr'
       });
 
-      scope.$apply(function() {
-        scope.selected = [10,20];
+      scope.$apply(() => {
+        scope.selected = [10, 20];
       });
-      expect(element).toEqualSelectValue([10,20], true);
-      expect(scope.selected).toEqual([10,20]);
+      expect(element).toEqualSelectValue([10, 20], true);
+      expect(scope.selected).toEqual([10, 20]);
 
       element.children()[0].selected = false;
       browserTrigger(element, 'change');
@@ -1076,32 +1060,32 @@ describe('ngOptions', function() {
     });
 
 
-    it('should re-render if an item in an array source is added/removed', function() {
+    it('should re-render if an item in an array source is added/removed', () => {
       createSelect({
         'ng-model': 'selected',
         'multiple': true,
         'ng-options': 'item.id as item.label for item in arr'
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = [10];
       });
       expect(element).toEqualSelectValue([10], true);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected.push(20);
       });
       expect(element).toEqualSelectValue([10, 20], true);
 
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected.shift();
       });
       expect(element).toEqualSelectValue([20], true);
     });
 
 
-    it('should handle a options containing circular references', function() {
+    it('should handle a options containing circular references', () => {
       scope.arr[0].ref = scope.arr[0];
       scope.selected = [scope.arr[0]];
       createSelect({
@@ -1111,26 +1095,26 @@ describe('ngOptions', function() {
       });
       expect(element).toEqualSelectValue([scope.arr[0]], true);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected.push(scope.arr[1]);
       });
       expect(element).toEqualSelectValue([scope.arr[0], scope.arr[1]], true);
 
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected.pop();
       });
       expect(element).toEqualSelectValue([scope.arr[0]], true);
     });
 
 
-    it('should support single select with object source', function() {
+    it('should support single select with object source', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'val.score as val.label for (key, val) in obj'
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = 10;
       });
       expect(element).toEqualSelectValue(10);
@@ -1140,17 +1124,17 @@ describe('ngOptions', function() {
     });
 
 
-    it('should support multi select with object source', function() {
+    it('should support multi select with object source', () => {
       createSelect({
         'ng-model': 'selected',
         'multiple': true,
         'ng-options': 'val.score as val.label for (key, val) in obj'
       });
 
-      scope.$apply(function() {
-        scope.selected = [10,20];
+      scope.$apply(() => {
+        scope.selected = [10, 20];
       });
-      expect(element).toEqualSelectValue([10,20], true);
+      expect(element).toEqualSelectValue([10, 20], true);
 
       element.children()[0].selected = false;
       browserTrigger(element, 'change');
@@ -1160,14 +1144,14 @@ describe('ngOptions', function() {
   });
 
 
-  describe('trackBy expression', function() {
-    beforeEach(function() {
-      scope.arr = [{id: 10, label: 'ten'}, {id:20, label: 'twenty'}];
-      scope.obj = {'1': {score: 10, label: 'ten'}, '2': {score: 20, label: 'twenty'}};
+  describe('trackBy expression', () => {
+    beforeEach(() => {
+      scope.arr = [{ id: 10, label: 'ten' }, { id: 20, label: 'twenty' }];
+      scope.obj = { '1': { score: 10, label: 'ten' }, '2': { score: 20, label: 'twenty' } };
     });
 
 
-    it('should set the result of track by expression to element value', function() {
+    it('should set the result of track by expression to element value', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.label for item in arr track by item.id'
@@ -1175,13 +1159,13 @@ describe('ngOptions', function() {
 
       expect(element.val()).toEqualUnknownValue();
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.arr[0];
       });
       expect(element.val()).toBe('10');
 
-      scope.$apply(function() {
-        scope.arr[0] = {id: 10, label: 'new ten'};
+      scope.$apply(() => {
+        scope.arr[0] = { id: 10, label: 'new ten' };
       });
       expect(element.val()).toBe('10');
 
@@ -1191,13 +1175,13 @@ describe('ngOptions', function() {
     });
 
 
-    it('should use the tracked expression as option value', function() {
+    it('should use the tracked expression as option value', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.label for item in arr track by item.id'
       });
 
-      var options = element.find('option');
+      const options = element.find('option');
       expect(options.length).toEqual(3);
       expect(options.eq(0)).toEqualUnknownOption();
       expect(options.eq(1)).toEqualTrackedOption(10, 'ten');
@@ -1205,20 +1189,20 @@ describe('ngOptions', function() {
     });
 
 
-    it('should update the selected option even if only the tracked property on the selected object changes (single)', function() {
+    it('should update the selected option even if only the tracked property on the selected object changes (single)', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.label for item in arr track by item.id'
       });
 
-      scope.$apply(function() {
-        scope.selected = {id: 10, label: 'ten'};
+      scope.$apply(() => {
+        scope.selected = { id: 10, label: 'ten' };
       });
 
       expect(element.val()).toEqual('10');
 
       // Update the properties on the selected object, rather than replacing the whole object
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected.id = 20;
         scope.selected.label = 'new twenty';
       });
@@ -1227,42 +1211,42 @@ describe('ngOptions', function() {
       expect(element.val()).toEqual('20');
 
       // But the label of the selected option does not change
-      var option = element.find('option').eq(1);
+      const option = element.find('option').eq(1);
       expect(option.prop('selected')).toEqual(true);
       expect(option.text()).toEqual('twenty'); // not 'new twenty'
     });
 
 
     it('should update the selected options even if only the tracked properties on the objects in the ' +
-        'selected collection change (multi)', function() {
-      createSelect({
-        'ng-model': 'selected',
-        'multiple': true,
-        'ng-options': 'item.label for item in arr track by item.id'
+      'selected collection change (multi)', () => {
+        createSelect({
+          'ng-model': 'selected',
+          'multiple': true,
+          'ng-options': 'item.label for item in arr track by item.id'
+        });
+
+        scope.$apply(() => {
+          scope.selected = [{ id: 10, label: 'ten' }];
+        });
+
+        expect(element.val()).toEqual(['10']);
+
+        // Update the tracked property on the object in the selected array, rather than replacing the whole object
+        scope.$apply(() => {
+          scope.selected[0].id = 20;
+        });
+
+        // The value of the select should change since the id property changed
+        expect(element.val()).toEqual(['20']);
+
+        // But the label of the selected option does not change
+        const option = element.find('option').eq(1);
+        expect(option.prop('selected')).toEqual(true);
+        expect(option.text()).toEqual('twenty'); // not 'new twenty'
       });
 
-      scope.$apply(function() {
-        scope.selected = [{id: 10, label: 'ten'}];
-      });
 
-      expect(element.val()).toEqual(['10']);
-
-      // Update the tracked property on the object in the selected array, rather than replacing the whole object
-      scope.$apply(function() {
-        scope.selected[0].id = 20;
-      });
-
-      // The value of the select should change since the id property changed
-      expect(element.val()).toEqual(['20']);
-
-      // But the label of the selected option does not change
-      var option = element.find('option').eq(1);
-      expect(option.prop('selected')).toEqual(true);
-      expect(option.text()).toEqual('twenty'); // not 'new twenty'
-    });
-
-
-    it('should prevent changes to the selected object from modifying the options objects (single)', function() {
+    it('should prevent changes to the selected object from modifying the options objects (single)', () => {
 
       createSelect({
         'ng-model': 'selected',
@@ -1274,29 +1258,29 @@ describe('ngOptions', function() {
 
       expect(scope.selected).toEqual(scope.arr[0]);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected.id = 20;
       });
 
       expect(scope.selected).not.toEqual(scope.arr[0]);
       expect(element.val()).toEqual('20');
-      expect(scope.arr).toEqual([{id: 10, label: 'ten'}, {id:20, label: 'twenty'}]);
+      expect(scope.arr).toEqual([{ id: 10, label: 'ten' }, { id: 20, label: 'twenty' }]);
     });
 
 
-    it('should preserve value even when reference has changed (single&array)', function() {
+    it('should preserve value even when reference has changed (single&array)', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.label for item in arr track by item.id'
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.arr[0];
       });
       expect(element.val()).toBe('10');
 
-      scope.$apply(function() {
-        scope.arr[0] = {id: 10, label: 'new ten'};
+      scope.$apply(() => {
+        scope.arr[0] = { id: 10, label: 'new ten' };
       });
       expect(element.val()).toBe('10');
 
@@ -1306,22 +1290,22 @@ describe('ngOptions', function() {
     });
 
 
-    it('should preserve value even when reference has changed (multi&array)', function() {
+    it('should preserve value even when reference has changed (multi&array)', () => {
       createSelect({
         'ng-model': 'selected',
         'multiple': true,
         'ng-options': 'item.label for item in arr track by item.id'
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.arr;
       });
-      expect(element.val()).toEqual(['10','20']);
+      expect(element.val()).toEqual(['10', '20']);
 
-      scope.$apply(function() {
-        scope.arr[0] = {id: 10, label: 'new ten'};
+      scope.$apply(() => {
+        scope.arr[0] = { id: 10, label: 'new ten' };
       });
-      expect(element.val()).toEqual(['10','20']);
+      expect(element.val()).toEqual(['10', '20']);
 
       element.children()[0].selected = false;
       browserTrigger(element, 'change');
@@ -1329,19 +1313,19 @@ describe('ngOptions', function() {
     });
 
 
-    it('should preserve value even when reference has changed (single&object)', function() {
+    it('should preserve value even when reference has changed (single&object)', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'val.label for (key, val) in obj track by val.score'
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.obj['1'];
       });
       expect(element.val()).toBe('10');
 
-      scope.$apply(function() {
-        scope.obj['1'] = {score: 10, label: 'ten'};
+      scope.$apply(() => {
+        scope.obj['1'] = { score: 10, label: 'ten' };
       });
       expect(element.val()).toBe('10');
 
@@ -1350,20 +1334,20 @@ describe('ngOptions', function() {
     });
 
 
-    it('should preserve value even when reference has changed (multi&object)', function() {
+    it('should preserve value even when reference has changed (multi&object)', () => {
       createSelect({
         'ng-model': 'selected',
         'multiple': true,
         'ng-options': 'val.label for (key, val) in obj track by val.score'
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = [scope.obj['1']];
       });
       expect(element.val()).toEqual(['10']);
 
-      scope.$apply(function() {
-        scope.obj['1'] = {score: 10, label: 'ten'};
+      scope.$apply(() => {
+        scope.obj['1'] = { score: 10, label: 'ten' };
       });
       expect(element.val()).toEqual(['10']);
 
@@ -1372,16 +1356,16 @@ describe('ngOptions', function() {
       expect(scope.selected).toEqual([scope.obj['1'], scope.obj['2']]);
     });
 
-    it('should prevent infinite digest if track by expression is stable', function() {
-      scope.makeOptions = function() {
-          var options = [];
-          for (var i = 0; i < 5; i++) {
-              options.push({ label: 'Value = ' + i, value: i });
-          }
-          return options;
+    it('should prevent infinite digest if track by expression is stable', () => {
+      scope.makeOptions = () => {
+        const options = [];
+        for (let i = 0; i < 5; i++) {
+          options.push({ label: 'Value = ' + i, value: i });
+        }
+        return options;
       };
       scope.selected = { label: 'Value = 1', value: 1 };
-      expect(function() {
+      expect(() => {
         createSelect({
           'ng-model': 'selected',
           'ng-options': 'item.label for item in makeOptions() track by item.value'
@@ -1389,20 +1373,20 @@ describe('ngOptions', function() {
       }).not.toThrow();
     });
 
-    it('should re-render if the tracked property of the model is changed when using trackBy', function() {
+    it('should re-render if the tracked property of the model is changed when using trackBy', () => {
 
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item for item in arr track by item.id'
       });
 
-      scope.$apply(function() {
-        scope.selected = {id: 10, label: 'ten'};
+      scope.$apply(() => {
+        scope.selected = { id: 10, label: 'ten' };
       });
 
-      spyOn(element.controller('ngModel'), '$render');
+      jest.spyOn(element.controller('ngModel'), '$render');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.arr[0].id = 20;
       });
 
@@ -1411,40 +1395,40 @@ describe('ngOptions', function() {
 
     });
 
-    it('should not set view value again if the tracked property of the model has not changed when using trackBy', function() {
+    it('should not set view value again if the tracked property of the model has not changed when using trackBy', () => {
 
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item for item in arr track by item.id'
       });
 
-      scope.$apply(function() {
-        scope.selected = {id: 10, label: 'ten'};
+      scope.$apply(() => {
+        scope.selected = { id: 10, label: 'ten' };
       });
 
-      spyOn(element.controller('ngModel'), '$setViewValue');
+      jest.spyOn(element.controller('ngModel'), '$setViewValue');
 
-      scope.$apply(function() {
-        scope.arr[0] = {id: 10, label: 'ten'};
+      scope.$apply(() => {
+        scope.arr[0] = { id: 10, label: 'ten' };
       });
 
       expect(element.controller('ngModel').$setViewValue).not.toHaveBeenCalled();
     });
 
-    it('should not re-render if a property of the model is changed when not using trackBy', function() {
+    it('should not re-render if a property of the model is changed when not using trackBy', () => {
 
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item for item in arr'
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.arr[0];
       });
 
-      spyOn(element.controller('ngModel'), '$render');
+      jest.spyOn(element.controller('ngModel'), '$render');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected.label = 'changed';
       });
 
@@ -1453,22 +1437,22 @@ describe('ngOptions', function() {
     });
 
 
-    it('should handle options containing circular references (single)', function() {
+    it('should handle options containing circular references (single)', () => {
       scope.arr[0].ref = scope.arr[0];
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item for item in arr track by item.id'
       });
 
-      expect(function() {
-        scope.$apply(function() {
+      expect(() => {
+        scope.$apply(() => {
           scope.selected = scope.arr[0];
         });
       }).not.toThrow();
     });
 
 
-    it('should handle options containing circular references (multiple)', function() {
+    it('should handle options containing circular references (multiple)', () => {
       scope.arr[0].ref = scope.arr[0];
       createSelect({
         'ng-model': 'selected',
@@ -1476,24 +1460,24 @@ describe('ngOptions', function() {
         'ng-options': 'item for item in arr track by item.id'
       });
 
-      expect(function() {
-        scope.$apply(function() {
+      expect(() => {
+        scope.$apply(() => {
           scope.selected = [scope.arr[0]];
         });
 
-        scope.$apply(function() {
+        scope.$apply(() => {
           scope.selected.push(scope.arr[1]);
         });
       }).not.toThrow();
     });
 
-    it('should remove the "selected" attribute when the model changes', function() {
+    it('should remove the "selected" attribute when the model changes', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.label for item in arr track by item.id'
       });
 
-      var options = element.find('option');
+      const options = element.find('option');
       browserTrigger(options[2], 'click');
 
       expect(scope.selected).toEqual(scope.arr[1]);
@@ -1513,193 +1497,193 @@ describe('ngOptions', function() {
    * This behavior is broken and should probably be cleaned up later as track by and select as
    * aren't compatible.
    */
-  describe('selectAs+trackBy expression', function() {
-    beforeEach(function() {
-      scope.arr = [{subItem: {label: 'ten', id: 10}}, {subItem: {label: 'twenty', id: 20}}];
-      scope.obj = {'10': {subItem: {id: 10, label: 'ten'}}, '20': {subItem: {id: 20, label: 'twenty'}}};
+  describe('selectAs+trackBy expression', () => {
+    beforeEach(() => {
+      scope.arr = [{ subItem: { label: 'ten', id: 10 } }, { subItem: { label: 'twenty', id: 20 } }];
+      scope.obj = { '10': { subItem: { id: 10, label: 'ten' } }, '20': { subItem: { id: 20, label: 'twenty' } } };
     });
 
 
     it('It should use the "value" variable to represent items in the array as well as for the ' +
-        'selected values in track by expression (single&array)', function() {
-      createSelect({
-        'ng-model': 'selected',
-        'ng-options': 'item.subItem as item.subItem.label for item in arr track by (item.id || item.subItem.id)'
+      'selected values in track by expression (single&array)', () => {
+        createSelect({
+          'ng-model': 'selected',
+          'ng-options': 'item.subItem as item.subItem.label for item in arr track by (item.id || item.subItem.id)'
+        });
+
+        // First test model -> view
+
+        scope.$apply(() => {
+          scope.selected = scope.arr[0].subItem;
+        });
+        expect(element.val()).toEqual('10');
+
+        scope.$apply(() => {
+          scope.selected = scope.arr[1].subItem;
+        });
+        expect(element.val()).toEqual('20');
+
+        // Now test view -> model
+
+        element.val('10');
+        browserTrigger(element, 'change');
+        expect(scope.selected).toEqual(scope.arr[0].subItem);
+
+        // Now reload the array
+        scope.$apply(() => {
+          scope.arr = [{
+            subItem: { label: 'new ten', id: 10 }
+          }, {
+            subItem: { label: 'new twenty', id: 20 }
+          }];
+        });
+        expect(element.val()).toBe('10');
+        expect(scope.selected.id).toBe(10);
       });
-
-      // First test model -> view
-
-      scope.$apply(function() {
-        scope.selected = scope.arr[0].subItem;
-      });
-      expect(element.val()).toEqual('10');
-
-      scope.$apply(function() {
-        scope.selected = scope.arr[1].subItem;
-      });
-      expect(element.val()).toEqual('20');
-
-      // Now test view -> model
-
-      element.val('10');
-      browserTrigger(element, 'change');
-      expect(scope.selected).toEqual(scope.arr[0].subItem);
-
-      // Now reload the array
-      scope.$apply(function() {
-        scope.arr = [{
-          subItem: {label: 'new ten', id: 10}
-        },{
-          subItem: {label: 'new twenty', id: 20}
-        }];
-      });
-      expect(element.val()).toBe('10');
-      expect(scope.selected.id).toBe(10);
-    });
 
 
     it('It should use the "value" variable to represent items in the array as well as for the ' +
-        'selected values in track by expression (multiple&array)', function() {
-      createSelect({
-        'ng-model': 'selected',
-        'multiple': true,
-        'ng-options': 'item.subItem as item.subItem.label for item in arr track by (item.id || item.subItem.id)'
+      'selected values in track by expression (multiple&array)', () => {
+        createSelect({
+          'ng-model': 'selected',
+          'multiple': true,
+          'ng-options': 'item.subItem as item.subItem.label for item in arr track by (item.id || item.subItem.id)'
+        });
+
+        // First test model -> view
+
+        scope.$apply(() => {
+          scope.selected = [scope.arr[0].subItem];
+        });
+        expect(element.val()).toEqual(['10']);
+
+        scope.$apply(() => {
+          scope.selected = [scope.arr[1].subItem];
+        });
+        expect(element.val()).toEqual(['20']);
+
+        // Now test view -> model
+
+        element.find('option')[0].selected = true;
+        element.find('option')[1].selected = false;
+        browserTrigger(element, 'change');
+        expect(scope.selected).toEqual([scope.arr[0].subItem]);
+
+        // Now reload the array
+        scope.$apply(() => {
+          scope.arr = [{
+            subItem: { label: 'new ten', id: 10 }
+          }, {
+            subItem: { label: 'new twenty', id: 20 }
+          }];
+        });
+        expect(element.val()).toEqual(['10']);
+        expect(scope.selected[0].id).toEqual(10);
+        expect(scope.selected.length).toBe(1);
       });
-
-      // First test model -> view
-
-      scope.$apply(function() {
-        scope.selected = [scope.arr[0].subItem];
-      });
-      expect(element.val()).toEqual(['10']);
-
-      scope.$apply(function() {
-        scope.selected = [scope.arr[1].subItem];
-      });
-      expect(element.val()).toEqual(['20']);
-
-      // Now test view -> model
-
-      element.find('option')[0].selected = true;
-      element.find('option')[1].selected = false;
-      browserTrigger(element, 'change');
-      expect(scope.selected).toEqual([scope.arr[0].subItem]);
-
-      // Now reload the array
-      scope.$apply(function() {
-        scope.arr = [{
-          subItem: {label: 'new ten', id: 10}
-        },{
-          subItem: {label: 'new twenty', id: 20}
-        }];
-      });
-      expect(element.val()).toEqual(['10']);
-      expect(scope.selected[0].id).toEqual(10);
-      expect(scope.selected.length).toBe(1);
-    });
 
 
     it('It should use the "value" variable to represent items in the array as well as for the ' +
-        'selected values in track by expression (multiple&object)', function() {
-      createSelect({
-        'ng-model': 'selected',
-        'multiple': true,
-        'ng-options': 'val.subItem as val.subItem.label for (key, val) in obj track by (val.id || val.subItem.id)'
+      'selected values in track by expression (multiple&object)', () => {
+        createSelect({
+          'ng-model': 'selected',
+          'multiple': true,
+          'ng-options': 'val.subItem as val.subItem.label for (key, val) in obj track by (val.id || val.subItem.id)'
+        });
+
+        // First test model -> view
+
+        scope.$apply(() => {
+          scope.selected = [scope.obj['10'].subItem];
+        });
+        expect(element.val()).toEqual(['10']);
+
+
+        scope.$apply(() => {
+          scope.selected = [scope.obj['10'].subItem];
+        });
+        expect(element.val()).toEqual(['10']);
+
+        // Now test view -> model
+
+        element.find('option')[0].selected = true;
+        element.find('option')[1].selected = false;
+        browserTrigger(element, 'change');
+        expect(scope.selected).toEqual([scope.obj['10'].subItem]);
+
+        // Now reload the object
+        scope.$apply(() => {
+          scope.obj = {
+            '10': {
+              subItem: { label: 'new ten', id: 10 }
+            },
+            '20': {
+              subItem: { label: 'new twenty', id: 20 }
+            }
+          };
+        });
+        expect(element.val()).toEqual(['10']);
+        expect(scope.selected[0].id).toBe(10);
+        expect(scope.selected.length).toBe(1);
       });
-
-      // First test model -> view
-
-      scope.$apply(function() {
-        scope.selected = [scope.obj['10'].subItem];
-      });
-      expect(element.val()).toEqual(['10']);
-
-
-      scope.$apply(function() {
-        scope.selected = [scope.obj['10'].subItem];
-      });
-      expect(element.val()).toEqual(['10']);
-
-      // Now test view -> model
-
-      element.find('option')[0].selected = true;
-      element.find('option')[1].selected = false;
-      browserTrigger(element, 'change');
-      expect(scope.selected).toEqual([scope.obj['10'].subItem]);
-
-      // Now reload the object
-      scope.$apply(function() {
-        scope.obj = {
-          '10': {
-            subItem: {label: 'new ten', id: 10}
-          },
-          '20': {
-            subItem: {label: 'new twenty', id: 20}
-          }
-        };
-      });
-      expect(element.val()).toEqual(['10']);
-      expect(scope.selected[0].id).toBe(10);
-      expect(scope.selected.length).toBe(1);
-    });
 
 
     it('It should use the "value" variable to represent items in the array as well as for the ' +
-        'selected values in track by expression (single&object)', function() {
-      createSelect({
-        'ng-model': 'selected',
-        'ng-options': 'val.subItem as val.subItem.label for (key, val) in obj track by (val.id || val.subItem.id)'
+      'selected values in track by expression (single&object)', () => {
+        createSelect({
+          'ng-model': 'selected',
+          'ng-options': 'val.subItem as val.subItem.label for (key, val) in obj track by (val.id || val.subItem.id)'
+        });
+
+        // First test model -> view
+
+        scope.$apply(() => {
+          scope.selected = scope.obj['10'].subItem;
+        });
+        expect(element.val()).toEqual('10');
+
+
+        scope.$apply(() => {
+          scope.selected = scope.obj['10'].subItem;
+        });
+        expect(element.val()).toEqual('10');
+
+        // Now test view -> model
+
+        element.find('option')[0].selected = true;
+        browserTrigger(element, 'change');
+        expect(scope.selected).toEqual(scope.obj['10'].subItem);
+
+        // Now reload the object
+        scope.$apply(() => {
+          scope.obj = {
+            '10': {
+              subItem: { label: 'new ten', id: 10 }
+            },
+            '20': {
+              subItem: { label: 'new twenty', id: 20 }
+            }
+          };
+        });
+        expect(element.val()).toEqual('10');
+        expect(scope.selected.id).toBe(10);
       });
-
-      // First test model -> view
-
-      scope.$apply(function() {
-        scope.selected = scope.obj['10'].subItem;
-      });
-      expect(element.val()).toEqual('10');
-
-
-      scope.$apply(function() {
-        scope.selected = scope.obj['10'].subItem;
-      });
-      expect(element.val()).toEqual('10');
-
-      // Now test view -> model
-
-      element.find('option')[0].selected = true;
-      browserTrigger(element, 'change');
-      expect(scope.selected).toEqual(scope.obj['10'].subItem);
-
-      // Now reload the object
-      scope.$apply(function() {
-        scope.obj = {
-          '10': {
-            subItem: {label: 'new ten', id: 10}
-          },
-          '20': {
-            subItem: {label: 'new twenty', id: 20}
-          }
-        };
-      });
-      expect(element.val()).toEqual('10');
-      expect(scope.selected.id).toBe(10);
-    });
   });
 
 
-  describe('binding', function() {
+  describe('binding', () => {
 
-    it('should bind to scope value', function() {
+    it('should bind to scope value', () => {
       createSingleSelect();
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}, {name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }, { name: 'B' }];
         scope.selected = scope.values[0];
       });
 
       expect(element).toEqualSelectValue(scope.selected);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.values[1];
       });
 
@@ -1707,50 +1691,50 @@ describe('ngOptions', function() {
     });
 
 
-    it('should bind to scope value and group', function() {
+    it('should bind to scope value and group', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.name group by item.group for item in values'
       });
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'},
-                        {name: 'B', group: 0},
-                        {name: 'C', group: 'first'},
-                        {name: 'D', group: 'second'},
-                        {name: 'E', group: 0},
-                        {name: 'F', group: 'first'},
-                        {name: 'G', group: 'second'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' },
+        { name: 'B', group: 0 },
+        { name: 'C', group: 'first' },
+        { name: 'D', group: 'second' },
+        { name: 'E', group: 0 },
+        { name: 'F', group: 'first' },
+        { name: 'G', group: 'second' }];
         scope.selected = scope.values[3];
       });
 
       expect(element).toEqualSelectValue(scope.selected);
 
-      var optgroups = element.find('optgroup');
+      const optgroups = element.find('optgroup');
       expect(optgroups.length).toBe(3);
 
-      var zero = optgroups.eq(0);
-      var b = zero.find('option').eq(0);
-      var e = zero.find('option').eq(1);
+      const zero = optgroups.eq(0);
+      const b = zero.find('option').eq(0);
+      const e = zero.find('option').eq(1);
       expect(zero.attr('label')).toEqual('0');
       expect(b.text()).toEqual('B');
       expect(e.text()).toEqual('E');
 
-      var first = optgroups.eq(1);
-      var c = first.find('option').eq(0);
-      var f = first.find('option').eq(1);
+      const first = optgroups.eq(1);
+      const c = first.find('option').eq(0);
+      const f = first.find('option').eq(1);
       expect(first.attr('label')).toEqual('first');
       expect(c.text()).toEqual('C');
       expect(f.text()).toEqual('F');
 
-      var second = optgroups.eq(2);
-      var d = second.find('option').eq(0);
-      var g = second.find('option').eq(1);
+      const second = optgroups.eq(2);
+      const d = second.find('option').eq(0);
+      const g = second.find('option').eq(1);
       expect(second.attr('label')).toEqual('second');
       expect(d.text()).toEqual('D');
       expect(g.text()).toEqual('G');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.values[0];
       });
 
@@ -1758,11 +1742,11 @@ describe('ngOptions', function() {
     });
 
 
-    it('should group when the options are available on compile time', function() {
-      scope.values = [{name: 'C', group: 'first'},
-                      {name: 'D', group: 'second'},
-                      {name: 'F', group: 'first'},
-                      {name: 'G', group: 'second'}];
+    it('should group when the options are available on compile time', () => {
+      scope.values = [{ name: 'C', group: 'first' },
+      { name: 'D', group: 'second' },
+      { name: 'F', group: 'first' },
+      { name: 'G', group: 'second' }];
       scope.selected = scope.values[3];
 
       createSelect({
@@ -1772,24 +1756,24 @@ describe('ngOptions', function() {
 
       expect(element).toEqualSelectValue(scope.selected);
 
-      var optgroups = element.find('optgroup');
+      const optgroups = element.find('optgroup');
       expect(optgroups.length).toBe(2);
 
-      var first = optgroups.eq(0);
-      var c = first.find('option').eq(0);
-      var f = first.find('option').eq(1);
+      const first = optgroups.eq(0);
+      const c = first.find('option').eq(0);
+      const f = first.find('option').eq(1);
       expect(first.attr('label')).toEqual('first');
       expect(c.text()).toEqual('C');
       expect(f.text()).toEqual('F');
 
-      var second = optgroups.eq(1);
-      var d = second.find('option').eq(0);
-      var g = second.find('option').eq(1);
+      const second = optgroups.eq(1);
+      const d = second.find('option').eq(0);
+      const g = second.find('option').eq(1);
       expect(second.attr('label')).toEqual('second');
       expect(d.text()).toEqual('D');
       expect(g.text()).toEqual('G');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.values[0];
       });
 
@@ -1797,8 +1781,8 @@ describe('ngOptions', function() {
     });
 
 
-    it('should group when the options are updated', function() {
-      var optgroups, one, two, three, alpha, beta, gamma, delta, epsilon;
+    it('should group when the options are updated', () => {
+      let optgroups, one, two, three, alpha, beta, gamma, delta, epsilon;
 
       createSelect({
         'ng-model': 'selected',
@@ -1806,9 +1790,9 @@ describe('ngOptions', function() {
       });
 
       scope.list = [
-        {cls: 'one', name: 'Alpha'},
-        {cls: 'one', name: 'Beta'},
-        {cls: 'two', name: 'Gamma'}
+        { cls: 'one', name: 'Alpha' },
+        { cls: 'one', name: 'Beta' },
+        { cls: 'two', name: 'Gamma' }
       ];
       scope.$digest();
 
@@ -1834,8 +1818,8 @@ describe('ngOptions', function() {
       // Remove item from first group, add item to second group, add new group
       scope.list.shift();
       scope.list.push(
-        {cls: 'two', name: 'Delta'},
-        {cls: 'three', name: 'Epsilon'}
+        { cls: 'two', name: 'Delta' },
+        { cls: 'three', name: 'Epsilon' }
       );
       scope.$digest();
 
@@ -1870,53 +1854,53 @@ describe('ngOptions', function() {
       expect(epsilon.text()).toEqual('Epsilon');
     });
 
-    it('should place non-grouped items in the list where they appear', function() {
+    it('should place non-grouped items in the list where they appear', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.name group by item.group for item in values'
       });
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'},
-                        {name: 'B', group: 'first'},
-                        {name: 'C', group: 'second'},
-                        {name: 'D'},
-                        {name: 'E', group: 'first'},
-                        {name: 'F'},
-                        {name: 'G'},
-                        {name: 'H', group: 'second'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' },
+        { name: 'B', group: 'first' },
+        { name: 'C', group: 'second' },
+        { name: 'D' },
+        { name: 'E', group: 'first' },
+        { name: 'F' },
+        { name: 'G' },
+        { name: 'H', group: 'second' }];
         scope.selected = scope.values[0];
       });
 
-      var children = element.children();
+      const children = element.children();
       expect(children.length).toEqual(6);
 
-      expect(nodeName_(children[0])).toEqual('option');
-      expect(nodeName_(children[1])).toEqual('optgroup');
-      expect(nodeName_(children[2])).toEqual('optgroup');
-      expect(nodeName_(children[3])).toEqual('option');
-      expect(nodeName_(children[4])).toEqual('option');
-      expect(nodeName_(children[5])).toEqual('option');
+      expect(ngInternals.nodeName_(children[0])).toEqual('option');
+      expect(ngInternals.nodeName_(children[1])).toEqual('optgroup');
+      expect(ngInternals.nodeName_(children[2])).toEqual('optgroup');
+      expect(ngInternals.nodeName_(children[3])).toEqual('option');
+      expect(ngInternals.nodeName_(children[4])).toEqual('option');
+      expect(ngInternals.nodeName_(children[5])).toEqual('option');
     });
 
 
-    it('should group if the group has a falsy value (except undefined)', function() {
+    it('should group if the group has a falsy value (except undefined)', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.name group by item.group for item in values'
       });
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'},
-                        {name: 'B', group: ''},
-                        {name: 'C', group: null},
-                        {name: 'D', group: false},
-                        {name: 'E', group: 0}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' },
+        { name: 'B', group: '' },
+        { name: 'C', group: null },
+        { name: 'D', group: false },
+        { name: 'E', group: 0 }];
         scope.selected = scope.values[0];
       });
 
-      var optgroups = element.find('optgroup');
-      var options = element.find('option');
+      const optgroups = element.find('optgroup');
+      const options = element.find('option');
 
       expect(optgroups.length).toEqual(4);
       expect(options.length).toEqual(5);
@@ -1943,11 +1927,11 @@ describe('ngOptions', function() {
     });
 
 
-    it('should not duplicate a group with a falsy value when the options are updated', function() {
+    it('should not duplicate a group with a falsy value when the options are updated', () => {
 
-      scope.$apply(function() {
-        scope.values = [{value: 'A', group: ''},
-                        {value: 'B', group: 'First'}];
+      scope.$apply(() => {
+        scope.values = [{ value: 'A', group: '' },
+        { value: 'B', group: 'First' }];
         scope.selected = scope.values[0];
       });
 
@@ -1956,12 +1940,12 @@ describe('ngOptions', function() {
         'ng-options': 'item.value group by item.group for item in values'
       });
 
-      scope.$apply(function() {
-        scope.values.push({value: 'C', group: false});
+      scope.$apply(() => {
+        scope.values.push({ value: 'C', group: false });
       });
 
-      var optgroups = element.find('optgroup');
-      var options = element.find('option');
+      const optgroups = element.find('optgroup');
+      const options = element.find('option');
 
       expect(optgroups.length).toEqual(3);
       expect(options.length).toEqual(3);
@@ -1981,30 +1965,30 @@ describe('ngOptions', function() {
     });
 
 
-    it('should bind to scope value and track/identify objects', function() {
+    it('should bind to scope value and track/identify objects', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.name for item in values track by item.id'
       });
 
-      scope.$apply(function() {
-        scope.values = [{id: 1, name: 'first'},
-                        {id: 2, name: 'second'},
-                        {id: 3, name: 'third'},
-                        {id: 4, name: 'forth'}];
+      scope.$apply(() => {
+        scope.values = [{ id: 1, name: 'first' },
+        { id: 2, name: 'second' },
+        { id: 3, name: 'third' },
+        { id: 4, name: 'forth' }];
         scope.selected = scope.values[1];
       });
 
       expect(element.val()).toEqual('2');
 
-      var first = jqLite(element.find('option')[0]);
+      const first = angular.element(element.find('option')[0]);
       expect(first.text()).toEqual('first');
       expect(first.attr('value')).toEqual('1');
-      var forth = jqLite(element.find('option')[3]);
+      const forth = angular.element(element.find('option')[3]);
       expect(forth.text()).toEqual('forth');
       expect(forth.attr('value')).toEqual('4');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.values[3];
       });
 
@@ -2012,20 +1996,20 @@ describe('ngOptions', function() {
     });
 
 
-    it('should bind to scope value through expression', function() {
+    it('should bind to scope value through expression', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.id as item.name for item in values'
       });
 
-      scope.$apply(function() {
-        scope.values = [{id: 10, name: 'A'}, {id: 20, name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ id: 10, name: 'A' }, { id: 20, name: 'B' }];
         scope.selected = scope.values[0].id;
       });
 
       expect(element).toEqualSelectValue(scope.selected);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.values[1].id;
       });
 
@@ -2033,62 +2017,62 @@ describe('ngOptions', function() {
     });
 
 
-    it('should update options in the DOM', function() {
+    it('should update options in the DOM', () => {
       compile(
         '<select ng-model="selected" ng-options="item.id as item.name for item in values"></select>'
       );
 
-      scope.$apply(function() {
-        scope.values = [{id: 10, name: 'A'}, {id: 20, name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ id: 10, name: 'A' }, { id: 20, name: 'B' }];
         scope.selected = scope.values[0].id;
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values[0].name = 'C';
       });
 
-      var options = element.find('option');
+      const options = element.find('option');
       expect(options.length).toEqual(2);
       expect(options.eq(0)).toEqualOption(10, 'C');
       expect(options.eq(1)).toEqualOption(20, 'B');
     });
 
 
-    it('should update options in the DOM from object source', function() {
+    it('should update options in the DOM from object source', () => {
       compile(
         '<select ng-model="selected" ng-options="val.id as val.name for (key, val) in values"></select>'
       );
 
-      scope.$apply(function() {
-        scope.values = {a: {id: 10, name: 'A'}, b: {id: 20, name: 'B'}};
+      scope.$apply(() => {
+        scope.values = { a: { id: 10, name: 'A' }, b: { id: 20, name: 'B' } };
         scope.selected = scope.values.a.id;
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values.a.name = 'C';
       });
 
-      var options = element.find('option');
+      const options = element.find('option');
       expect(options.length).toEqual(2);
       expect(options.eq(0)).toEqualOption(10, 'C');
       expect(options.eq(1)).toEqualOption(20, 'B');
     });
 
 
-    it('should bind to object key', function() {
+    it('should bind to object key', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'key as value for (key, value) in object'
       });
 
-      scope.$apply(function() {
-        scope.object = {red: 'FF0000', green: '00FF00', blue: '0000FF'};
+      scope.$apply(() => {
+        scope.object = { red: 'FF0000', green: '00FF00', blue: '0000FF' };
         scope.selected = 'green';
       });
 
       expect(element).toEqualSelectValue(scope.selected);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = 'blue';
       });
 
@@ -2096,27 +2080,27 @@ describe('ngOptions', function() {
     });
 
 
-    it('should bind to object value', function() {
+    it('should bind to object value', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'value as key for (key, value) in object'
       });
 
-      scope.$apply(function() {
-        scope.object = {red: 'FF0000', green: '00FF00', blue:'0000FF'};
+      scope.$apply(() => {
+        scope.object = { red: 'FF0000', green: '00FF00', blue: '0000FF' };
         scope.selected = '00FF00';
       });
 
       expect(element).toEqualSelectValue(scope.selected);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = '0000FF';
       });
 
       expect(element).toEqualSelectValue(scope.selected);
     });
 
-    it('should bind to object disabled', function() {
+    it('should bind to object disabled', () => {
       scope.selected = 30;
       scope.options = [
         { name: 'white', value: '#FFFFFF' },
@@ -2129,12 +2113,12 @@ describe('ngOptions', function() {
         'ng-model': 'selected'
       });
 
-      var options = element.find('option');
+      let options = element.find('option');
 
       expect(scope.options[1].unavailable).toEqual(true);
       expect(options.eq(1).prop('disabled')).toEqual(true);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.options[1].unavailable = false;
       });
 
@@ -2144,19 +2128,19 @@ describe('ngOptions', function() {
       expect(options.eq(1).prop('disabled')).toEqual(false);
     });
 
-    it('should insert the unknown option if bound to null', function() {
+    it('should insert the unknown option if bound to null', () => {
       createSingleSelect();
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }];
         scope.selected = null;
       });
 
       expect(element.find('option').length).toEqual(2);
       expect(element.val()).toEqual('?');
-      expect(jqLite(element.find('option')[0]).val()).toEqual('?');
+      expect(angular.element(element.find('option')[0]).val()).toEqual('?');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.values[0];
       });
 
@@ -2164,41 +2148,41 @@ describe('ngOptions', function() {
       expect(element.find('option').length).toEqual(1);
     });
 
-    it('should select the provided empty option if bound to null', function() {
+    it('should select the provided empty option if bound to null', () => {
       createSingleSelect(true);
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }];
         scope.selected = null;
       });
 
       expect(element.find('option').length).toEqual(2);
       expect(element.val()).toEqual('');
-      expect(jqLite(element.find('option')[0]).val()).toEqual('');
+      expect(angular.element(element.find('option')[0]).val()).toEqual('');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.values[0];
       });
 
       expect(element).toEqualSelectValue(scope.selected);
-      expect(jqLite(element.find('option')[0]).val()).toEqual('');
+      expect(angular.element(element.find('option')[0]).val()).toEqual('');
       expect(element.find('option').length).toEqual(2);
     });
 
 
-    it('should reuse blank option if bound to null', function() {
+    it('should reuse blank option if bound to null', () => {
       createSingleSelect(true);
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }];
         scope.selected = null;
       });
 
       expect(element.find('option').length).toEqual(2);
       expect(element.val()).toEqual('');
-      expect(jqLite(element.find('option')[0]).val()).toEqual('');
+      expect(angular.element(element.find('option')[0]).val()).toEqual('');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.values[0];
       });
 
@@ -2207,16 +2191,16 @@ describe('ngOptions', function() {
     });
 
 
-    it('should not insert a blank option if one of the options maps to null', function() {
+    it('should not insert a blank option if one of the options maps to null', () => {
       createSelect({
         'ng-model': 'myColor',
         'ng-options': 'color.shade as color.name for color in colors'
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.colors = [
-          {name:'nothing', shade:null},
-          {name:'red', shade:'dark'}
+          { name: 'nothing', shade: null },
+          { name: 'red', shade: 'dark' }
         ];
         scope.myColor = null;
       });
@@ -2228,11 +2212,11 @@ describe('ngOptions', function() {
     });
 
 
-    it('should insert a unknown option if bound to something not in the list', function() {
+    it('should insert a unknown option if bound to something not in the list', () => {
       createSingleSelect();
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }];
         scope.selected = {};
       });
 
@@ -2240,7 +2224,7 @@ describe('ngOptions', function() {
       expect(element.val()).toEqualUnknownValue(scope.selected);
       expect(element.find('option').eq(0)).toEqualUnknownOption(scope.selected);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.values[0];
       });
 
@@ -2249,25 +2233,25 @@ describe('ngOptions', function() {
     });
 
 
-  it('should insert and select temporary unknown option when no options-model match, empty ' +
-        'option is present and model is defined', function() {
-      scope.selected = 'C';
-      scope.values = [{name: 'A'}, {name: 'B'}];
-      createSingleSelect(true);
+    it('should insert and select temporary unknown option when no options-model match, empty ' +
+      'option is present and model is defined', () => {
+        scope.selected = 'C';
+        scope.values = [{ name: 'A' }, { name: 'B' }];
+        createSingleSelect(true);
 
-      expect(element).toEqualSelect(['?'], '', 'object:3', 'object:4');
+        expect(element).toEqualSelect(['?'], '', 'object:3', 'object:4');
 
-      scope.$apply('selected = values[1]');
+        scope.$apply('selected = values[1]');
 
-      expect(element).toEqualSelect('', 'object:3', ['object:4']);
-    });
+        expect(element).toEqualSelect('', 'object:3', ['object:4']);
+      });
 
 
-    it('should select correct input if previously selected option was "?"', function() {
+    it('should select correct input if previously selected option was "?"', () => {
       createSingleSelect();
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}, {name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }, { name: 'B' }];
         scope.selected = {};
       });
 
@@ -2282,9 +2266,9 @@ describe('ngOptions', function() {
     });
 
 
-    it('should remove unknown option when empty option exists and model is undefined', function() {
+    it('should remove unknown option when empty option exists and model is undefined', () => {
       scope.selected = 'C';
-      scope.values = [{name: 'A'}, {name: 'B'}];
+      scope.values = [{ name: 'A' }, { name: 'B' }];
       createSingleSelect(true);
 
       expect(element).toEqualSelect(['?'], '', 'object:3', 'object:4');
@@ -2295,8 +2279,8 @@ describe('ngOptions', function() {
       expect(element).toEqualSelect([''], 'object:3', 'object:4');
     });
 
-    it('should use exact same values as values in scope with one-time bindings', function() {
-      scope.values = [{name: 'A'}, {name: 'B'}];
+    it('should use exact same values as values in scope with one-time bindings', () => {
+      scope.values = [{ name: 'A' }, { name: 'B' }];
       scope.selected = scope.values[0];
       createSelect({
         'ng-model': 'selected',
@@ -2309,19 +2293,19 @@ describe('ngOptions', function() {
     });
 
 
-    it('should ensure that at least one option element has the "selected" attribute', function() {
+    it('should ensure that at least one option element has the "selected" attribute', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.id as item.name for item in values'
       });
 
-      scope.$apply(function() {
-        scope.values = [{id: 10, name: 'A'}, {id: 20, name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ id: 10, name: 'A' }, { id: 20, name: 'B' }];
       });
       expect(element.val()).toEqualUnknownValue();
       expect(element.find('option').eq(0).attr('selected')).toEqual('selected');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = 10;
       });
       // Here the ? option should disappear and the first real option should have selected attribute
@@ -2329,20 +2313,20 @@ describe('ngOptions', function() {
       expect(element.find('option').eq(0).attr('selected')).toEqual('selected');
 
       // Here the selected value is changed and we change the selected attribute
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = 20;
       });
       expect(element).toEqualSelectValue(scope.selected);
       expect(element.find('option').eq(1).attr('selected')).toEqual('selected');
 
-      scope.$apply(function() {
-        scope.values.push({id: 30, name: 'C'});
+      scope.$apply(() => {
+        scope.values.push({ id: 30, name: 'C' });
       });
       expect(element).toEqualSelectValue(scope.selected);
       expect(element.find('option').eq(1).attr('selected')).toEqual('selected');
 
       // Here the ? option should reappear and have selected attribute
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = undefined;
       });
       expect(element.val()).toEqualUnknownValue();
@@ -2350,21 +2334,21 @@ describe('ngOptions', function() {
     });
 
 
-    it('should select the correct option for selectAs and falsy values', function() {
-      scope.values = [{value: 0, label: 'zero'}, {value: 1, label: 'one'}];
+    it('should select the correct option for selectAs and falsy values', () => {
+      scope.values = [{ value: 0, label: 'zero' }, { value: 1, label: 'one' }];
       scope.selected = '';
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'option.value as option.label for option in values'
       });
 
-      var option = element.find('option').eq(0);
+      const option = element.find('option').eq(0);
       expect(option).toEqualUnknownOption();
     });
 
 
-    it('should update the model if the selected option is removed', function() {
-      scope.values = [{value: 0, label: 'zero'}, {value: 1, label: 'one'}];
+    it('should update the model if the selected option is removed', () => {
+      scope.values = [{ value: 0, label: 'zero' }, { value: 1, label: 'one' }];
       scope.selected = 1;
       createSelect({
         'ng-model': 'selected',
@@ -2373,7 +2357,7 @@ describe('ngOptions', function() {
       expect(element).toEqualSelectValue(1);
 
       // Check after initial option update
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values.pop();
       });
 
@@ -2381,13 +2365,13 @@ describe('ngOptions', function() {
       expect(scope.selected).toEqual(null);
 
       // Check after model change
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = 0;
       });
 
       expect(element).toEqualSelectValue(0);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values.pop();
       });
 
@@ -2396,8 +2380,8 @@ describe('ngOptions', function() {
     });
 
 
-    it('should update the model if all the selected (multiple) options are removed', function() {
-      scope.values = [{value: 0, label: 'zero'}, {value: 1, label: 'one'}, {value: 2, label: 'two'}];
+    it('should update the model if all the selected (multiple) options are removed', () => {
+      scope.values = [{ value: 0, label: 'zero' }, { value: 1, label: 'one' }, { value: 2, label: 'two' }];
       scope.selected = [1, 2];
       createSelect({
         'ng-model': 'selected',
@@ -2408,14 +2392,14 @@ describe('ngOptions', function() {
       expect(element).toEqualSelectValue([1, 2], true);
 
       // Check after initial option update
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values.pop();
       });
 
       expect(element).toEqualSelectValue([1], true);
       expect(scope.selected).toEqual([1]);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values.pop();
       });
 
@@ -2423,13 +2407,13 @@ describe('ngOptions', function() {
       expect(scope.selected).toEqual([]);
 
       // Check after model change
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = [0];
       });
 
       expect(element).toEqualSelectValue([0], true);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values.pop();
       });
 
@@ -2440,15 +2424,15 @@ describe('ngOptions', function() {
   });
 
 
-  describe('empty option', function() {
+  describe('empty option', () => {
 
-    it('should be compiled as template, be watched and updated', function() {
-      var option;
+    it('should be compiled as template, be watched and updated', () => {
+      let option;
       createSingleSelect('<option value="">blank is {{blankVal}}</option>');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.blankVal = 'so blank';
-        scope.values = [{name: 'A'}];
+        scope.values = [{ name: 'A' }];
       });
 
       // check blank option is first and is compiled
@@ -2457,7 +2441,7 @@ describe('ngOptions', function() {
       expect(option.val()).toBe('');
       expect(option.text()).toBe('blank is so blank');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.blankVal = 'not so blank';
       });
 
@@ -2469,13 +2453,13 @@ describe('ngOptions', function() {
     });
 
 
-    it('should support binding via ngBindTemplate directive', function() {
-      var option;
+    it('should support binding via ngBindTemplate directive', () => {
+      let option;
       createSingleSelect('<option value="" ng-bind-template="blank is {{blankVal}}"></option>');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.blankVal = 'so blank';
-        scope.values = [{name: 'A'}];
+        scope.values = [{ name: 'A' }];
       });
 
       // check blank option is first and is compiled
@@ -2486,13 +2470,13 @@ describe('ngOptions', function() {
     });
 
 
-    it('should support binding via ngBind attribute', function() {
-      var option;
+    it('should support binding via ngBind attribute', () => {
+      let option;
       createSingleSelect('<option value="" ng-bind="blankVal"></option>');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.blankVal = 'is blank';
-        scope.values = [{name: 'A'}];
+        scope.values = [{ name: 'A' }];
       });
 
       // check blank option is first and is compiled
@@ -2502,15 +2486,15 @@ describe('ngOptions', function() {
       expect(option.text()).toBe('is blank');
     });
 
-    it('should be ignored when it has no value attribute', function() {
+    it('should be ignored when it has no value attribute', () => {
       // The option value is set to the textContent if there's no value attribute,
       // so in that case it doesn't count as a blank option
       createSingleSelect('<option>--select--</option>');
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}, {name: 'B'}, {name: 'C'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
       });
 
-      var options = element.find('option');
+      const options = element.find('option');
 
       expect(options.eq(0)).toEqualUnknownOption();
       expect(options.eq(1)).toEqualOption(scope.values[0], 'A');
@@ -2519,12 +2503,12 @@ describe('ngOptions', function() {
     });
 
 
-    it('should be rendered with the attributes preserved', function() {
-      var option;
+    it('should be rendered with the attributes preserved', () => {
+      let option;
       createSingleSelect('<option value="" class="coyote" id="road-runner" ' +
         'custom-attr="custom-attr">{{blankVal}}</option>');
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.blankVal = 'is blank';
       });
 
@@ -2535,10 +2519,10 @@ describe('ngOptions', function() {
       expect(option.attr('custom-attr')).toBe('custom-attr');
     });
 
-    it('should be selected, if it is available and no other option is selected', function() {
+    it('should be selected, if it is available and no other option is selected', () => {
       // selectedIndex is used here because jqLite incorrectly reports element.val()
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }];
       });
       createSingleSelect(true);
       // ensure the first option (the blank option) is selected
@@ -2549,7 +2533,7 @@ describe('ngOptions', function() {
     });
 
 
-    it('should be selectable if select is multiple', function() {
+    it('should be selectable if select is multiple', () => {
       createMultiSelect(true);
 
       // select the empty option
@@ -2561,12 +2545,12 @@ describe('ngOptions', function() {
     });
 
 
-    it('should be possible to use ngIf in the blank option', function() {
-      var option;
+    it('should be possible to use ngIf in the blank option', () => {
+      let option;
       createSingleSelect('<option ng-if="isBlank" value="">blank</option>');
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }];
         scope.isBlank = true;
       });
 
@@ -2583,10 +2567,10 @@ describe('ngOptions', function() {
 
 
     it('should be possible to use ngIf in the blank option when values are available upon linking',
-      function() {
-        var options;
+      () => {
+        let options;
 
-        scope.values = [{name: 'A'}];
+        scope.values = [{ name: 'A' }];
         createSingleSelect('<option ng-if="isBlank" value="">blank</option>');
 
         scope.$apply('isBlank = true');
@@ -2603,15 +2587,15 @@ describe('ngOptions', function() {
     );
 
 
-    it('should select the correct option after linking when the ngIf expression is initially falsy', function() {
+    it('should select the correct option after linking when the ngIf expression is initially falsy', () => {
       scope.values = [
-        {name:'black'},
-        {name:'white'},
-        {name:'red'}
+        { name: 'black' },
+        { name: 'white' },
+        { name: 'red' }
       ];
       scope.selected = scope.values[2];
 
-      expect(function() {
+      expect(() => {
         createSingleSelect('<option ng-if="isBlank" value="">blank</option>');
         scope.$apply();
       }).not.toThrow();
@@ -2621,11 +2605,11 @@ describe('ngOptions', function() {
     });
 
 
-    it('should add / remove the "selected" attribute on empty option which has an initially falsy ngIf expression', function() {
+    it('should add / remove the "selected" attribute on empty option which has an initially falsy ngIf expression', () => {
       scope.values = [
-        {name:'black'},
-        {name:'white'},
-        {name:'red'}
+        { name: 'black' },
+        { name: 'white' },
+        { name: 'red' }
       ];
       scope.selected = scope.values[2];
 
@@ -2650,11 +2634,11 @@ describe('ngOptions', function() {
     });
 
 
-    it('should add / remove the "selected" attribute on empty option which has an initially truthy ngIf expression when no option is selected', function() {
+    it('should add / remove the "selected" attribute on empty option which has an initially truthy ngIf expression when no option is selected', () => {
       scope.values = [
-        {name:'black'},
-        {name:'white'},
-        {name:'red'}
+        { name: 'black' },
+        { name: 'white' },
+        { name: 'red' }
       ];
       scope.isBlank = true;
 
@@ -2671,11 +2655,11 @@ describe('ngOptions', function() {
     });
 
 
-    it('should add the "selected" attribute on empty option which has an initially falsy ngIf expression when no option is selected', function() {
+    it('should add the "selected" attribute on empty option which has an initially falsy ngIf expression when no option is selected', () => {
       scope.values = [
-        {name:'black'},
-        {name:'white'},
-        {name:'red'}
+        { name: 'black' },
+        { name: 'white' },
+        { name: 'red' }
       ];
 
       createSingleSelect('<option ng-if="isBlank" value="">blank</option>');
@@ -2692,8 +2676,8 @@ describe('ngOptions', function() {
     });
 
 
-    it('should not throw when a directive compiles the blank option before ngOptions is linked', function() {
-      expect(function() {
+    it('should not throw when a directive compiles the blank option before ngOptions is linked', () => {
+      expect(() => {
         createSelect({
           'o-compile-contents': '',
           'name': 'select',
@@ -2706,12 +2690,12 @@ describe('ngOptions', function() {
     });
 
 
-    it('should not throw with a directive that replaces', inject(function($templateCache, $httpBackend) {
+    it('should not throw with a directive that replaces', angular.mock.inject(($templateCache, $httpBackend) => {
       $templateCache.put('select_template.html', '<select ng-options="option as option for option in selectable_options"> <option value="">This is a test</option> </select>');
 
       scope.options = ['a', 'b', 'c', 'd'];
 
-      expect(function() {
+      expect(() => {
         element = $compile('<custom-select ng-model="value" options="options"></custom-select>')(scope);
         scope.$digest();
       }).not.toThrow();
@@ -2722,13 +2706,13 @@ describe('ngOptions', function() {
   });
 
 
-  describe('on change', function() {
+  describe('on change', () => {
 
-    it('should update model on change', function() {
+    it('should update model on change', () => {
       createSingleSelect();
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}, {name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }, { name: 'B' }];
         scope.selected = scope.values[0];
       });
 
@@ -2739,14 +2723,14 @@ describe('ngOptions', function() {
     });
 
 
-    it('should update model on change through expression', function() {
+    it('should update model on change through expression', () => {
       createSelect({
         'ng-model': 'selected',
         'ng-options': 'item.id as item.name for item in values'
       });
 
-      scope.$apply(function() {
-        scope.values = [{id: 10, name: 'A'}, {id: 20, name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ id: 10, name: 'A' }, { id: 20, name: 'B' }];
         scope.selected = scope.values[0].id;
       });
 
@@ -2757,11 +2741,11 @@ describe('ngOptions', function() {
     });
 
 
-    it('should update model to null on change', function() {
+    it('should update model to null on change', () => {
       createSingleSelect(true);
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}, {name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }, { name: 'B' }];
         scope.selected = scope.values[0];
       });
 
@@ -2772,19 +2756,19 @@ describe('ngOptions', function() {
 
 
     // Regression https://github.com/angular/angular.js/issues/7855
-    it('should update the model with ng-change', function() {
+    it('should update the model with ng-change', () => {
       createSelect({
-        'ng-change':'change()',
-        'ng-model':'selected',
-        'ng-options':'value for value in values'
+        'ng-change': 'change()',
+        'ng-model': 'selected',
+        'ng-options': 'value for value in values'
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values = ['A', 'B'];
         scope.selected = 'A';
       });
 
-      scope.change = function() {
+      scope.change = () => {
         scope.selected = 'A';
       };
 
@@ -2796,19 +2780,19 @@ describe('ngOptions', function() {
     });
   });
 
-  describe('disabled blank', function() {
-    it('should select disabled blank by default', function() {
-      var html = '<select ng-model="someModel" ng-options="c for c in choices">' +
-                   '<option value="" disabled>Choose One</option>' +
-                 '</select>';
-      scope.$apply(function() {
+  describe('disabled blank', () => {
+    it('should select disabled blank by default', () => {
+      const html = '<select ng-model="someModel" ng-options="c for c in choices">' +
+        '<option value="" disabled>Choose One</option>' +
+        '</select>';
+      scope.$apply(() => {
         scope.choices = ['A', 'B', 'C'];
       });
 
       compile(html);
 
-      var options = element.find('option');
-      var optionToSelect = options.eq(0);
+      const options = element.find('option');
+      const optionToSelect = options.eq(0);
       expect(optionToSelect.text()).toBe('Choose One');
       expect(optionToSelect.prop('selected')).toBe(true);
       expect(element[0].value).toBe('');
@@ -2817,18 +2801,18 @@ describe('ngOptions', function() {
     });
 
 
-    it('should select disabled blank by default when select is required', function() {
-      var html = '<select ng-model="someModel" ng-options="c for c in choices" required>' +
-                   '<option value="" disabled>Choose One</option>' +
-                 '</select>';
-      scope.$apply(function() {
+    it('should select disabled blank by default when select is required', () => {
+      const html = '<select ng-model="someModel" ng-options="c for c in choices" required>' +
+        '<option value="" disabled>Choose One</option>' +
+        '</select>';
+      scope.$apply(() => {
         scope.choices = ['A', 'B', 'C'];
       });
 
       compile(html);
 
-      var options = element.find('option');
-      var optionToSelect = options.eq(0);
+      const options = element.find('option');
+      const optionToSelect = options.eq(0);
       expect(optionToSelect.text()).toBe('Choose One');
       expect(optionToSelect.prop('selected')).toBe(true);
       expect(element[0].value).toBe('');
@@ -2837,13 +2821,13 @@ describe('ngOptions', function() {
     });
   });
 
-  describe('select-many', function() {
+  describe('select-many', () => {
 
-    it('should read multiple selection', function() {
+    it('should read multiple selection', () => {
       createMultiSelect();
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}, {name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }, { name: 'B' }];
         scope.selected = [];
       });
 
@@ -2851,7 +2835,7 @@ describe('ngOptions', function() {
       expect(element.find('option')[0].selected).toBeFalsy();
       expect(element.find('option')[1].selected).toBeFalsy();
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected.push(scope.values[1]);
       });
 
@@ -2859,7 +2843,7 @@ describe('ngOptions', function() {
       expect(element.find('option')[0].selected).toBeFalsy();
       expect(element.find('option')[1].selected).toBeTruthy();
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected.push(scope.values[0]);
       });
 
@@ -2869,11 +2853,11 @@ describe('ngOptions', function() {
     });
 
 
-    it('should update model on change', function() {
+    it('should update model on change', () => {
       createMultiSelect();
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}, {name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }, { name: 'B' }];
         scope.selected = [];
       });
 
@@ -2884,13 +2868,13 @@ describe('ngOptions', function() {
     });
 
 
-    it('should select from object', function() {
+    it('should select from object', () => {
       createSelect({
-        'ng-model':'selected',
-        'multiple':true,
-        'ng-options':'key as value for (key,value) in values'
+        'ng-model': 'selected',
+        'multiple': true,
+        'ng-options': 'key as value for (key,value) in values'
       });
-      scope.values = {'0':'A', '1':'B'};
+      scope.values = { '0': 'A', '1': 'B' };
 
       scope.selected = ['1'];
       scope.$digest();
@@ -2906,15 +2890,15 @@ describe('ngOptions', function() {
     });
 
 
-    it('should deselect all options when model is emptied', function() {
+    it('should deselect all options when model is emptied', () => {
       createMultiSelect();
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}, {name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }, { name: 'B' }];
         scope.selected = [scope.values[0]];
       });
       expect(element.find('option')[0].selected).toEqual(true);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected.pop();
       });
 
@@ -2929,30 +2913,30 @@ describe('ngOptions', function() {
     // getter/setter that is already defined on the `<option>` element's prototype is not
     // configurable, so we can't overwrite it with our spy.
     if (!/\b(9|\d{2})(?:\.\d+)+[\s\S]*safari/i.test(window.navigator.userAgent)) {
-      it('should not re-set the `selected` property if it already has the correct value', function() {
-        scope.values = [{name: 'A'}, {name: 'B'}];
+      it('should not re-set the `selected` property if it already has the correct value', () => {
+        scope.values = [{ name: 'A' }, { name: 'B' }];
         createMultiSelect();
 
-        var options = element.find('option');
-        var optionsSetSelected = [];
-        var _selected = [];
+        const options = element.find('option');
+        const optionsSetSelected = [];
+        const _selected = [];
 
         // Set up spies
-        var optionProto = Object.getPrototypeOf(options[0]);
-        var originalSelectedDescriptor = isFunction(Object.getOwnPropertyDescriptor) &&
-                                        Object.getOwnPropertyDescriptor(optionProto, 'selected');
-        var addSpiesOnProto = originalSelectedDescriptor && originalSelectedDescriptor.configurable;
+        const optionProto = Object.getPrototypeOf(options[0]);
+        const originalSelectedDescriptor = angular.isFunction(Object.getOwnPropertyDescriptor) &&
+          Object.getOwnPropertyDescriptor(optionProto, 'selected');
+        const addSpiesOnProto = originalSelectedDescriptor && originalSelectedDescriptor.configurable;
 
-        forEach(options, function(option, i) {
-          var setSelected = function(value) { _selected[i] = value; };
-          optionsSetSelected[i] = jasmine.createSpy('optionSetSelected' + i).and.callFake(setSelected);
+        angular.forEach(options, (option, i) => {
+          const setSelected = value => { _selected[i] = value; };
+          optionsSetSelected[i] = jest.fn(setSelected);
           setSelected(option.selected);
         });
 
         if (!addSpiesOnProto) {
-          forEach(options, function(option, i) {
+          angular.forEach(options, (option, i) => {
             Object.defineProperty(option, 'selected', {
-              get: function() { return _selected[i]; },
+              get: function () { return _selected[i]; },
               set: optionsSetSelected[i]
             });
           });
@@ -2961,26 +2945,26 @@ describe('ngOptions', function() {
           // We cannot use the above (simpler) method on all browsers because of Firefox 54+, which
           // is very flaky when the getter/setter property is defined on the element itself and not
           // the prototype. (Possibly the result of some (buggy?) optimization.)
-          var getSelected = function(index) { return _selected[index]; };
-          var setSelected = function(index, value) { optionsSetSelected[index](value); };
-          var getSelectedOriginal = function(option) {
+          const getSelected = index => { return _selected[index]; };
+          const setSelected = (index, value) => { optionsSetSelected[index](value); };
+          const getSelectedOriginal = option => {
             return originalSelectedDescriptor.get.call(option);
           };
-          var setSelectedOriginal = function(option, value) {
+          const setSelectedOriginal = (option, value) => {
             originalSelectedDescriptor.set.call(option, value);
           };
-          var getIndexAndCall = function(option, foundFn, notFoundFn, value) {
-            for (var i = 0, ii = options.length; i < ii; ++i) {
+          const getIndexAndCall = (option, foundFn, notFoundFn, value) => {
+            for (let i = 0, ii = options.length; i < ii; ++i) {
               if (options[i] === option) return foundFn(i, value);
             }
             return notFoundFn(option, value);
           };
 
           Object.defineProperty(optionProto, 'selected', {
-            get: function() {
+            get: function () {
               return getIndexAndCall(this, getSelected, getSelectedOriginal);
             },
-            set: function(value) {
+            set: function (value) {
               return getIndexAndCall(this, setSelected, setSelectedOriginal, value);
             }
           });
@@ -2993,8 +2977,8 @@ describe('ngOptions', function() {
         expect(optionsSetSelected[1]).not.toHaveBeenCalled();
         expect(options[0].selected).toBe(true);
         expect(options[1].selected).toBe(false);
-        optionsSetSelected[0].calls.reset();
-        optionsSetSelected[1].calls.reset();
+        optionsSetSelected[0].mockClear();
+        optionsSetSelected[1].mockClear();
 
         // Select `optionB` (`optionA` remains selected)
         scope.$apply('selected.push(values[1])');
@@ -3003,8 +2987,8 @@ describe('ngOptions', function() {
         expect(optionsSetSelected[1]).toHaveBeenCalledOnceWith(true);
         expect(options[0].selected).toBe(true);
         expect(options[1].selected).toBe(true);
-        optionsSetSelected[0].calls.reset();
-        optionsSetSelected[1].calls.reset();
+        optionsSetSelected[0].mockClear();
+        optionsSetSelected[1].mockClear();
 
         // Unselect `optionA` (`optionB` remains selected)
         scope.$apply('selected.shift()');
@@ -3013,8 +2997,8 @@ describe('ngOptions', function() {
         expect(optionsSetSelected[1]).not.toHaveBeenCalled();
         expect(options[0].selected).toBe(false);
         expect(options[1].selected).toBe(true);
-        optionsSetSelected[0].calls.reset();
-        optionsSetSelected[1].calls.reset();
+        optionsSetSelected[0].mockClear();
+        optionsSetSelected[1].mockClear();
 
         // Reselect `optionA` (`optionB` remains selected)
         scope.$apply('selected.push(values[0])');
@@ -3023,8 +3007,8 @@ describe('ngOptions', function() {
         expect(optionsSetSelected[1]).not.toHaveBeenCalled();
         expect(options[0].selected).toBe(true);
         expect(options[1].selected).toBe(true);
-        optionsSetSelected[0].calls.reset();
-        optionsSetSelected[1].calls.reset();
+        optionsSetSelected[0].mockClear();
+        optionsSetSelected[1].mockClear();
 
         // Unselect `optionB` (`optionA` remains selected)
         scope.$apply('selected.shift()');
@@ -3033,8 +3017,8 @@ describe('ngOptions', function() {
         expect(optionsSetSelected[1]).toHaveBeenCalledOnceWith(false);
         expect(options[0].selected).toBe(true);
         expect(options[1].selected).toBe(false);
-        optionsSetSelected[0].calls.reset();
-        optionsSetSelected[1].calls.reset();
+        optionsSetSelected[0].mockClear();
+        optionsSetSelected[1].mockClear();
 
         // Unselect `optionA`
         scope.$apply('selected.length = 0');
@@ -3043,8 +3027,8 @@ describe('ngOptions', function() {
         expect(optionsSetSelected[1]).not.toHaveBeenCalled();
         expect(options[0].selected).toBe(false);
         expect(options[1].selected).toBe(false);
-        optionsSetSelected[0].calls.reset();
-        optionsSetSelected[1].calls.reset();
+        optionsSetSelected[0].mockClear();
+        optionsSetSelected[1].mockClear();
 
         // Support: Firefox 54+
         // Restore `originalSelectedDescriptor`
@@ -3057,20 +3041,20 @@ describe('ngOptions', function() {
     if (window.MutationObserver) {
       //IE9 and IE10 do not support MutationObserver
       //Since the feature is only needed for a test, it's okay to skip these browsers
-      it('should render the initial options only one time', function() {
+      it('should render the initial options only one time', () => {
         scope.value = ['black'];
         scope.values = ['black', 'white', 'red'];
         // observe-child-list adds a MutationObserver that we will read out after ngOptions
         // has been compiled
         createSelect({
-          'ng-model':'selected',
-          'ng-options':'value.name for value in values',
+          'ng-model': 'selected',
+          'ng-options': 'value.name for value in values',
           'multiple': 'true',
           'observe-child-list': ''
         });
 
-        var optionEls = element[0].querySelectorAll('option');
-        var records = childListMutationObserver.takeRecords();
+        const optionEls = element[0].querySelectorAll('option');
+        const records = childListMutationObserver.takeRecords();
 
         expect(records.length).toBe(1);
         expect(records[0].addedNodes).toEqual(optionEls);
@@ -3080,23 +3064,23 @@ describe('ngOptions', function() {
   });
 
 
-  describe('required state', function() {
+  describe('required state', () => {
 
-    it('should set the error if the empty option is selected', function() {
+    it('should set the error if the empty option is selected', () => {
       createSelect({
         'ng-model': 'selection',
         'ng-options': 'item for item in values',
         'required': ''
       }, true);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values = ['a', 'b'];
         scope.selection = scope.values[0];
       });
       expect(element).toBeValid();
       expect(ngModelCtrl.$error.required).toBeFalsy();
 
-      var options = element.find('option');
+      const options = element.find('option');
 
       // view -> model
       browserTrigger(options[0], 'click');
@@ -3115,19 +3099,19 @@ describe('ngOptions', function() {
     });
 
 
-    it('should validate with empty option and bound ngRequired', function() {
+    it('should validate with empty option and bound ngRequired', () => {
       createSelect({
         'ng-model': 'value',
         'ng-options': 'item.name for item in values',
         'ng-required': 'required'
       }, true);
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A', id: 1}, {name: 'B', id: 2}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A', id: 1 }, { name: 'B', id: 2 }];
         scope.required = false;
       });
 
-      var options = element.find('option');
+      const options = element.find('option');
 
       browserTrigger(options[0], 'click');
       expect(element).toBeValid();
@@ -3146,7 +3130,7 @@ describe('ngOptions', function() {
     });
 
 
-    it('should treat an empty array as invalid when `multiple` attribute used', function() {
+    it('should treat an empty array as invalid when `multiple` attribute used', () => {
       createSelect({
         'ng-model': 'value',
         'ng-options': 'item.name for item in values',
@@ -3154,14 +3138,14 @@ describe('ngOptions', function() {
         'multiple': ''
       }, true);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.value = [];
-        scope.values = [{name: 'A', id: 1}, {name: 'B', id: 2}];
+        scope.values = [{ name: 'A', id: 1 }, { name: 'B', id: 2 }];
         scope.required = true;
       });
       expect(element).toBeInvalid();
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         // ngModelWatch does not set objectEquality flag
         // array must be replaced in order to trigger $formatters
         scope.value = [scope.values[0]];
@@ -3171,8 +3155,8 @@ describe('ngOptions', function() {
 
 
     it('should NOT set the error if the empty option is present but required attribute is not',
-      function() {
-        scope.$apply(function() {
+      () => {
+        scope.$apply(() => {
           scope.values = ['a', 'b'];
         });
 
@@ -3185,14 +3169,14 @@ describe('ngOptions', function() {
     );
 
 
-    it('should NOT set the error if the unknown option is selected', function() {
+    it('should NOT set the error if the unknown option is selected', () => {
       createSelect({
         'ng-model': 'selection',
         'ng-options': 'item for item in values',
         'required': ''
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values = ['a', 'b'];
         scope.selection = 'a';
       });
@@ -3207,15 +3191,15 @@ describe('ngOptions', function() {
     });
 
 
-    it('should allow falsy values as values', function() {
+    it('should allow falsy values as values', () => {
       createSelect({
         'ng-model': 'value',
         'ng-options': 'item.value as item.name for item in values',
         'ng-required': 'required'
       }, true);
 
-      scope.$apply(function() {
-        scope.values = [{name: 'True', value: true}, {name: 'False', value: false}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'True', value: true }, { name: 'False', value: false }];
         scope.required = false;
       });
 
@@ -3229,14 +3213,14 @@ describe('ngOptions', function() {
     });
 
 
-    it('should validate after option list was updated', function() {
+    it('should validate after option list was updated', () => {
       createSelect({
         'ng-model': 'selection',
         'ng-options': 'item for item in values',
         'required': ''
       }, true);
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values = ['A', 'B'];
         scope.selection = scope.values[0];
       });
@@ -3245,7 +3229,7 @@ describe('ngOptions', function() {
       expect(element).toBeValid();
       expect(ngModelCtrl.$error.required).toBeFalsy();
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.values = ['C', 'D'];
       });
 
@@ -3257,9 +3241,9 @@ describe('ngOptions', function() {
     });
   });
 
-  describe('required and empty option', function() {
+  describe('required and empty option', () => {
 
-    it('should select the empty option after compilation', function() {
+    it('should select the empty option after compilation', () => {
       createSelect({
         'name': 'select',
         'ng-model': 'value',
@@ -3268,21 +3252,21 @@ describe('ngOptions', function() {
       }, true);
 
       expect(element.val()).toBe('');
-      var emptyOption = element.find('option').eq(0);
+      const emptyOption = element.find('option').eq(0);
       expect(emptyOption.prop('selected')).toBe(true);
       expect(emptyOption.val()).toBe('');
     });
   });
 
-  describe('ngModelCtrl', function() {
-    it('should prefix the model value with the word "the" using $parsers', function() {
+  describe('ngModelCtrl', () => {
+    it('should prefix the model value with the word "the" using $parsers', () => {
       createSelect({
         'name': 'select',
         'ng-model': 'value',
         'ng-options': 'item for item in [\'first\', \'second\', \'third\', \'fourth\']'
       });
 
-      scope.form.select.$parsers.push(function(value) {
+      scope.form.select.$parsers.push(value => {
         return 'the ' + value;
       });
 
@@ -3291,31 +3275,31 @@ describe('ngOptions', function() {
       expect(element).toEqualSelectValue('third');
     });
 
-    it('should prefix the view value with the word "the" using $formatters', function() {
+    it('should prefix the view value with the word "the" using $formatters', () => {
       createSelect({
         'name': 'select',
         'ng-model': 'value',
         'ng-options': 'item for item in [\'the first\', \'the second\', \'the third\', \'the fourth\']'
       });
 
-      scope.form.select.$formatters.push(function(value) {
+      scope.form.select.$formatters.push(value => {
         return 'the ' + value;
       });
 
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.value = 'third';
       });
       expect(element).toEqualSelectValue('the third');
     });
 
-    it('should fail validation when $validators fail', function() {
+    it('should fail validation when $validators fail', () => {
       createSelect({
         'name': 'select',
         'ng-model': 'value',
         'ng-options': 'item for item in [\'first\', \'second\', \'third\', \'fourth\']'
       });
 
-      scope.form.select.$validators.fail = function() {
+      scope.form.select.$validators.fail = () => {
         return false;
       };
 
@@ -3325,14 +3309,14 @@ describe('ngOptions', function() {
       expect(element).toEqualSelectValue('third');
     });
 
-    it('should pass validation when $validators pass', function() {
+    it('should pass validation when $validators pass', () => {
       createSelect({
         'name': 'select',
         'ng-model': 'value',
         'ng-options': 'item for item in [\'first\', \'second\', \'third\', \'fourth\']'
       });
 
-      scope.form.select.$validators.pass = function() {
+      scope.form.select.$validators.pass = () => {
         return true;
       };
 
@@ -3342,15 +3326,15 @@ describe('ngOptions', function() {
       expect(element).toEqualSelectValue('third');
     });
 
-    it('should fail validation when $asyncValidators fail', inject(function($q, $rootScope) {
-      var defer;
+    it('should fail validation when $asyncValidators fail', angular.mock.inject(($q, $rootScope) => {
+      let defer;
       createSelect({
         'name': 'select',
         'ng-model': 'value',
         'ng-options': 'item for item in [\'first\', \'second\', \'third\', \'fourth\']'
       });
 
-      scope.form.select.$asyncValidators.async = function() {
+      scope.form.select.$asyncValidators.async = () => {
         defer = $q.defer();
         return defer.promise;
       };
@@ -3367,15 +3351,15 @@ describe('ngOptions', function() {
       expect(element).toEqualSelectValue('third');
     }));
 
-    it('should pass validation when $asyncValidators pass', inject(function($q, $rootScope) {
-      var defer;
+    it('should pass validation when $asyncValidators pass', angular.mock.inject(($q, $rootScope) => {
+      let defer;
       createSelect({
         'name': 'select',
         'ng-model': 'value',
         'ng-options': 'item for item in [\'first\', \'second\', \'third\', \'fourth\']'
       });
 
-      scope.form.select.$asyncValidators.async = function() {
+      scope.form.select.$asyncValidators.async = () => {
         defer = $q.defer();
         return defer.promise;
       };
@@ -3392,14 +3376,14 @@ describe('ngOptions', function() {
       expect(element).toEqualSelectValue('third');
     }));
 
-    it('should not set $dirty with select-multiple after compilation', function() {
+    it('should not set $dirty with select-multiple after compilation', () => {
       scope.values = ['a', 'b'];
       scope.selected = ['b'];
 
       createSelect({
-        'ng-model':'selected',
-        'multiple':true,
-        'ng-options':'value for value in values',
+        'ng-model': 'selected',
+        'multiple': true,
+        'ng-options': 'value for value in values',
         'name': 'select'
       });
 
@@ -3408,15 +3392,15 @@ describe('ngOptions', function() {
     });
   });
 
-  describe('selectCtrl api', function() {
+  describe('selectCtrl api', () => {
 
-    it('should reflect the status of empty and unknown option', function() {
+    it('should reflect the status of empty and unknown option', () => {
       createSingleSelect('<option ng-if="isBlank" value="">blank</option>');
 
-      var selectCtrl = element.controller('select');
+      const selectCtrl = element.controller('select');
 
-      scope.$apply(function() {
-        scope.values = [{name: 'A'}, {name: 'B'}];
+      scope.$apply(() => {
+        scope.values = [{ name: 'A' }, { name: 'B' }];
         scope.isBlank = true;
       });
 
@@ -3426,7 +3410,7 @@ describe('ngOptions', function() {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(false);
 
       // empty -> selection
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.values[0];
       });
 
@@ -3460,7 +3444,7 @@ describe('ngOptions', function() {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
 
       // unknown -> empty
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = null;
       });
 
@@ -3478,7 +3462,7 @@ describe('ngOptions', function() {
       expect(selectCtrl.$isUnknownOptionSelected()).toBe(true);
 
       // unknown -> selection
-      scope.$apply(function() {
+      scope.$apply(() => {
         scope.selected = scope.values[1];
       });
 

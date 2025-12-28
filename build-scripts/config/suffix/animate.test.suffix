@@ -1,0 +1,13 @@
+  window.ngInternals.applyAnimationClassesFactory = applyAnimationClassesFactory;
+  window.ngInternals.prepareAnimationOptions = prepareAnimationOptions;
+  window.ngInternals.applyAnimationStyles = applyAnimationStyles;
+  window.ngInternals.applyAnimationToStyles = applyAnimationToStyles;
+  window.ngInternals.applyAnimationFromStyles = applyAnimationFromStyles;
+  window.ngInternals.mergeAnimationDetails = mergeAnimationDetails;
+  window.ngInternals.getDomNode = getDomNode;
+  window.ngInternals.TRANSITIONEND_EVENT = TRANSITIONEND_EVENT;
+  window.ngInternals.ANIMATIONEND_EVENT = ANIMATIONEND_EVENT;
+  window.ngInternals.ANIMATE_TIMER_KEY = ANIMATE_TIMER_KEY;
+  window.ngInternals.helpers = helpers;
+
+})(window, window.angular);

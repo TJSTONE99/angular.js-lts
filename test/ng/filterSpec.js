@@ -1,35 +1,35 @@
 'use strict';
 
-describe('$filter', function() {
-  var $filterProvider, $filter;
+describe('$filter', () => {
+  let $filterProvider, $filter;
 
-  beforeEach(module(function(_$filterProvider_) {
+  beforeEach(angular.mock.module(_$filterProvider_ => {
     $filterProvider = _$filterProvider_;
   }));
 
-  beforeEach(inject(function(_$filter_) {
+  beforeEach(angular.mock.inject(_$filter_ => {
     $filter = _$filter_;
   }));
 
-  describe('provider', function() {
-    it('should allow registration of filters', function() {
-      var FooFilter = function() {
-        return function() { return 'foo'; };
+  describe('provider', () => {
+    it('should allow registration of filters', () => {
+      const FooFilter = () => {
+        return () => { return 'foo'; };
       };
 
       $filterProvider.register('foo', FooFilter);
 
-      var fooFilter = $filter('foo');
+      const fooFilter = $filter('foo');
       expect(fooFilter()).toBe('foo');
     });
 
-    it('should allow registration of a map of filters', function() {
-      var FooFilter = function() {
-        return function() { return 'foo'; };
+    it('should allow registration of a map of filters', () => {
+      const FooFilter = () => {
+        return () => { return 'foo'; };
       };
 
-      var BarFilter = function() {
-        return function() { return 'bar'; };
+      const BarFilter = () => {
+        return () => { return 'bar'; };
       };
 
       $filterProvider.register({
@@ -37,10 +37,10 @@ describe('$filter', function() {
         'bar': BarFilter
       });
 
-      var fooFilter = $filter('foo');
+      const fooFilter = $filter('foo');
       expect(fooFilter()).toBe('foo');
 
-      var barFilter = $filter('bar');
+      const barFilter = $filter('bar');
       expect(barFilter()).toBe('bar');
     });
   });

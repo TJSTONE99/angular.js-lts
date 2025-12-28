@@ -1,17 +1,17 @@
 'use strict';
 
-describe('ngBind*', function() {
-  var element;
+describe('ngBind*', () => {
+  let element;
 
 
-  afterEach(function() {
+  afterEach(() => {
     dealoc(element);
   });
 
 
-  describe('ngBind', function() {
+  describe('ngBind', () => {
 
-    it('should set text', inject(function($rootScope, $compile) {
+    it('should set text', angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-bind="a"></div>')($rootScope);
       expect(element.text()).toEqual('');
       $rootScope.a = 'misko';
@@ -21,7 +21,7 @@ describe('ngBind*', function() {
     }));
 
 
-    it('should set text to blank if undefined', inject(function($rootScope, $compile) {
+    it('should set text to blank if undefined', angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-bind="a"></div>')($rootScope);
       $rootScope.a = 'misko';
       $rootScope.$digest();
@@ -35,19 +35,19 @@ describe('ngBind*', function() {
     }));
 
 
-    it('should suppress rendering of falsy values', inject(function($rootScope, $compile) {
+    it('should suppress rendering of falsy values', angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div><span ng-bind="null"></span>' +
-                              '<span ng-bind="undefined"></span>' +
-                              '<span ng-bind="\'\'"></span>-' +
-                              '<span ng-bind="0"></span>' +
-                              '<span ng-bind="false"></span>' +
-                          '</div>')($rootScope);
+        '<span ng-bind="undefined"></span>' +
+        '<span ng-bind="\'\'"></span>-' +
+        '<span ng-bind="0"></span>' +
+        '<span ng-bind="false"></span>' +
+        '</div>')($rootScope);
       $rootScope.$digest();
       expect(element.text()).toEqual('-0false');
     }));
 
-    they('should jsonify $prop', [[{a: 1}, '{"a":1}'], [true, 'true'], [false, 'false']], function(prop) {
-      inject(function($rootScope, $compile) {
+    they('should jsonify $prop', [[{ a: 1 }, '{"a":1}'], [true, 'true'], [false, 'false']], prop => {
+      angular.mock.inject(($rootScope, $compile) => {
         $rootScope.value = prop[0];
         element = $compile('<div ng-bind="value"></div>')($rootScope);
         $rootScope.$digest();
@@ -55,9 +55,9 @@ describe('ngBind*', function() {
       });
     });
 
-    it('should use custom toString when present', inject(function($rootScope, $compile) {
+    it('should use custom toString when present', angular.mock.inject(($rootScope, $compile) => {
       $rootScope.value = {
-        toString: function() {
+        toString: function () {
           return 'foo';
         }
       };
@@ -66,7 +66,7 @@ describe('ngBind*', function() {
       expect(element.text()).toEqual('foo');
     }));
 
-    it('should NOT use toString on array objects', inject(function($rootScope, $compile) {
+    it('should NOT use toString on array objects', angular.mock.inject(($rootScope, $compile) => {
       $rootScope.value = [];
       element = $compile('<div ng-bind="value"></div>')($rootScope);
       $rootScope.$digest();
@@ -74,7 +74,7 @@ describe('ngBind*', function() {
     }));
 
 
-    it('should NOT use toString on Date objects', inject(function($rootScope, $compile) {
+    it('should NOT use toString on Date objects', angular.mock.inject(($rootScope, $compile) => {
       $rootScope.value = new Date(2014, 10, 10, 0, 0, 0);
       element = $compile('<div ng-bind="value"></div>')($rootScope);
       $rootScope.$digest();
@@ -83,7 +83,7 @@ describe('ngBind*', function() {
     }));
 
 
-    it('should one-time bind if the expression starts with two colons', inject(function($rootScope, $compile) {
+    it('should one-time bind if the expression starts with two colons', angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-bind="::a"></div>')($rootScope);
       $rootScope.a = 'lucas';
       expect($rootScope.$$watchers.length).toEqual(1);
@@ -95,9 +95,9 @@ describe('ngBind*', function() {
       expect(element.text()).toEqual('lucas');
     }));
 
-    it('should be possible to bind to a new value within the same $digest', inject(function($rootScope, $compile) {
+    it('should be possible to bind to a new value within the same $digest', angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-bind="::a"></div>')($rootScope);
-      $rootScope.$watch('a', function(newVal) { if (newVal === 'foo') { $rootScope.a = 'bar'; } });
+      $rootScope.$watch('a', newVal => { if (newVal === 'foo') { $rootScope.a = 'bar'; } });
       $rootScope.a = 'foo';
       $rootScope.$digest();
       expect(element.text()).toEqual('bar');
@@ -106,9 +106,9 @@ describe('ngBind*', function() {
       expect(element.text()).toEqual('bar');
     }));
 
-    it('should remove the binding if the value is defined at the end of a $digest loop', inject(function($rootScope, $compile) {
+    it('should remove the binding if the value is defined at the end of a $digest loop', angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-bind="::a"></div>')($rootScope);
-      $rootScope.$watch('a', function(newVal) { if (newVal === 'foo') { $rootScope.a = undefined; } });
+      $rootScope.$watch('a', newVal => { if (newVal === 'foo') { $rootScope.a = undefined; } });
       $rootScope.a = 'foo';
       $rootScope.$digest();
       expect(element.text()).toEqual('');
@@ -122,9 +122,9 @@ describe('ngBind*', function() {
   });
 
 
-  describe('ngBindTemplate', function() {
+  describe('ngBindTemplate', () => {
 
-    it('should ngBindTemplate', inject(function($rootScope, $compile) {
+    it('should ngBindTemplate', angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-bind-template="Hello {{name}}!"></div>')($rootScope);
       $rootScope.name = 'Misko';
       $rootScope.$digest();
@@ -133,7 +133,7 @@ describe('ngBind*', function() {
     }));
 
 
-    it('should one-time bind the expressions that start with ::', inject(function($rootScope, $compile) {
+    it('should one-time bind the expressions that start with ::', angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<div ng-bind-template="{{::hello}} {{::name}}!"></div>')($rootScope);
       $rootScope.name = 'Misko';
       expect($rootScope.$$watchers.length).toEqual(2);
@@ -149,47 +149,47 @@ describe('ngBind*', function() {
     }));
 
 
-    it('should render object as JSON ignore $$', inject(function($rootScope, $compile) {
+    it('should render object as JSON ignore $$', angular.mock.inject(($rootScope, $compile) => {
       element = $compile('<pre>{{ {key:"value", $$key:"hide"}  }}</pre>')($rootScope);
       $rootScope.$digest();
-      expect(fromJson(element.text())).toEqual({key:'value'});
+      expect(angular.fromJson(element.text())).toEqual({ key: 'value' });
     }));
   });
 
 
-  describe('ngBindHtml', function() {
+  describe('ngBindHtml', () => {
 
-    it('should complain about accidental use of interpolation', inject(function($compile) {
-      expect(function() {
-        $compile('<div ng-bind-html="{{myHtml}}"></div>');
+    it('should complain about accidental use of interpolation', angular.mock.inject($compile => {
+      expect(() => {
+        $compile('<div ng-bind-html="{{myHtml}}"></div>')($rootScope);
       }).toThrowMinErr('$parse', 'syntax',
         'Syntax Error: Token \'{\' invalid key at column 2 of the expression [{{myHtml}}] starting at [{myHtml}}]');
     }));
 
 
-    describe('SCE disabled', function() {
-      beforeEach(function() {
-        module(function($sceProvider) { $sceProvider.enabled(false); });
+    describe('SCE disabled', () => {
+      beforeEach(() => {
+        angular.mock.module($sceProvider => { $sceProvider.enabled(false); });
       });
 
-      it('should set html', inject(function($rootScope, $compile) {
+      it('should set html', angular.mock.inject(($rootScope, $compile) => {
         element = $compile('<div ng-bind-html="html"></div>')($rootScope);
         $rootScope.html = '<div onclick="">hello</div>';
         $rootScope.$digest();
-        expect(lowercase(element.html())).toEqual('<div onclick="">hello</div>');
+        expect((element.html()).toLowerCase()).toEqual('<div onclick="">hello</div>');
       }));
 
-      it('should update html', inject(function($rootScope, $compile, $sce) {
+      it('should update html', angular.mock.inject(($rootScope, $compile, $sce) => {
         element = $compile('<div ng-bind-html="html"></div>')($rootScope);
         $rootScope.html = 'hello';
         $rootScope.$digest();
-        expect(lowercase(element.html())).toEqual('hello');
+        expect(element.html().toLowerCase()).toEqual('hello');
         $rootScope.html = 'goodbye';
         $rootScope.$digest();
-        expect(lowercase(element.html())).toEqual('goodbye');
+        expect((element.html()).toLowerCase()).toEqual('goodbye');
       }));
 
-      it('should one-time bind if the expression starts with two colons', inject(function($rootScope, $compile) {
+      it('should one-time bind if the expression starts with two colons', angular.mock.inject(($rootScope, $compile) => {
         element = $compile('<div ng-bind-html="::html"></div>')($rootScope);
         $rootScope.html = '<div onclick="">hello</div>';
         expect($rootScope.$$watchers.length).toEqual(1);
@@ -203,84 +203,84 @@ describe('ngBind*', function() {
     });
 
 
-    describe('SCE enabled', function() {
-      it('should NOT set html for untrusted values', inject(function($rootScope, $compile) {
+    describe('SCE enabled', () => {
+      it('should NOT set html for untrusted values', angular.mock.inject(($rootScope, $compile) => {
         element = $compile('<div ng-bind-html="html"></div>')($rootScope);
         $rootScope.html = '<div onclick="">hello</div>';
-        expect(function() { $rootScope.$digest(); }).toThrow();
+        expect(() => { $rootScope.$digest(); }).toThrow();
       }));
 
-      it('should NOT set html for wrongly typed values', inject(function($rootScope, $compile, $sce) {
+      it('should NOT set html for wrongly typed values', angular.mock.inject(($rootScope, $compile, $sce) => {
         element = $compile('<div ng-bind-html="html"></div>')($rootScope);
         $rootScope.html = $sce.trustAsCss('<div onclick="">hello</div>');
-        expect(function() { $rootScope.$digest(); }).toThrow();
+        expect(() => { $rootScope.$digest(); }).toThrow();
       }));
 
-      it('should set html for trusted values', inject(function($rootScope, $compile, $sce) {
+      it('should set html for trusted values', angular.mock.inject(($rootScope, $compile, $sce) => {
         element = $compile('<div ng-bind-html="html"></div>')($rootScope);
         $rootScope.html = $sce.trustAsHtml('<div onclick="">hello</div>');
         $rootScope.$digest();
-        expect(lowercase(element.html())).toEqual('<div onclick="">hello</div>');
+        expect((element.html()).toLowerCase()).toEqual('<div onclick="">hello</div>');
       }));
 
-      it('should update html', inject(function($rootScope, $compile, $sce) {
+      it('should update html', angular.mock.inject(($rootScope, $compile, $sce) => {
         element = $compile('<div ng-bind-html="html"></div>')($rootScope);
         $rootScope.html = $sce.trustAsHtml('hello');
         $rootScope.$digest();
-        expect(lowercase(element.html())).toEqual('hello');
+        expect((element.html()).toLowerCase()).toEqual('hello');
         $rootScope.html = $sce.trustAsHtml('goodbye');
         $rootScope.$digest();
-        expect(lowercase(element.html())).toEqual('goodbye');
+        expect((element.html()).toLowerCase()).toEqual('goodbye');
       }));
 
       it('should not cause infinite recursion for trustAsHtml object watches',
-          inject(function($rootScope, $compile, $sce) {
-        // Ref: https://github.com/angular/angular.js/issues/3932
-        // If the binding is a function that creates a new value on every call via trustAs, we'll
-        // trigger an infinite digest if we don't take care of it.
-        element = $compile('<div ng-bind-html="getHtml()"></div>')($rootScope);
-        $rootScope.getHtml = function() {
-          return $sce.trustAsHtml('<div onclick="">hello</div>');
-        };
-        $rootScope.$digest();
-        expect(lowercase(element.html())).toEqual('<div onclick="">hello</div>');
-      }));
+        angular.mock.inject(($rootScope, $compile, $sce) => {
+          // Ref: https://github.com/angular/angular.js/issues/3932
+          // If the binding is a function that creates a new value on every call via trustAs, we'll
+          // trigger an infinite digest if we don't take care of it.
+          element = $compile('<div ng-bind-html="getHtml()"></div>')($rootScope);
+          $rootScope.getHtml = () => {
+            return $sce.trustAsHtml('<div onclick="">hello</div>');
+          };
+          $rootScope.$digest();
+          expect((element.html()).toLowerCase()).toEqual('<div onclick="">hello</div>');
+        }));
 
-      it('should handle custom $sce objects', function() {
+      it('should handle custom $sce objects', () => {
         function MySafeHtml(val) { this.val = val; }
 
-        module(function($provide) {
-          $provide.decorator('$sce', function($delegate) {
-            $delegate.trustAsHtml = function(html) { return new MySafeHtml(html); };
-            $delegate.getTrustedHtml = function(mySafeHtml) { return mySafeHtml.val; };
-            $delegate.valueOf = function(v) { return v instanceof MySafeHtml ? v.val : v; };
+        angular.mock.module($provide => {
+          $provide.decorator('$sce', $delegate => {
+            $delegate.trustAsHtml = html => { return new MySafeHtml(html); };
+            $delegate.getTrustedHtml = mySafeHtml => { return mySafeHtml.val; };
+            $delegate.valueOf = v => { return v instanceof MySafeHtml ? v.val : v; };
             return $delegate;
           });
         });
 
-        inject(function($rootScope, $compile, $sce) {
+        angular.mock.inject(($rootScope, $compile, $sce) => {
           // Ref: https://github.com/angular/angular.js/issues/14526
           // Previous code used toString for change detection, which fails for custom objects
           // that don't override toString.
           element = $compile('<div ng-bind-html="getHtml()"></div>')($rootScope);
-          var html = 'hello';
-          $rootScope.getHtml = function() { return $sce.trustAsHtml(html); };
+          let html = 'hello';
+          $rootScope.getHtml = () => { return $sce.trustAsHtml(html); };
           $rootScope.$digest();
-          expect(lowercase(element.html())).toEqual('hello');
+          expect((element.html()).toLowerCase()).toEqual('hello');
           html = 'goodbye';
           $rootScope.$digest();
-          expect(lowercase(element.html())).toEqual('goodbye');
+          expect((element.html()).toLowerCase()).toEqual('goodbye');
         });
       });
 
-      describe('when $sanitize is available', function() {
-        beforeEach(function() { module('ngSanitize'); });
+      describe('when $sanitize is available', () => {
+        beforeEach(() => { angular.mock.module('ngSanitize'); });
 
-        it('should sanitize untrusted html', inject(function($rootScope, $compile) {
+        it('should sanitize untrusted html', angular.mock.inject(($rootScope, $compile) => {
           element = $compile('<div ng-bind-html="html"></div>')($rootScope);
           $rootScope.html = '<div onclick="">hello</div>';
           $rootScope.$digest();
-          expect(lowercase(element.html())).toEqual('<div>hello</div>');
+          expect((element.html()).toLowerCase()).toEqual('<div>hello</div>');
         }));
       });
     });

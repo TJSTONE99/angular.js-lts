@@ -4,12 +4,32 @@ import { minify } from "@swc/core";
 import { modules } from "./config/Modules.js";
 
 // --- config / constants ---
-const DIST_DIR = new URL("./dist/", import.meta.url);
+const BUILD_FOR_TEST_ENV = process.argv.slice(2).some((a) => a === "--test");
+const OP_KEY = BUILD_FOR_TEST_ENV ? "test" : "dist";
+const DIST_DIR = BUILD_FOR_TEST_ENV
+  ? new URL(`../${OP_KEY}/.build/`, import.meta.url)
+  : new URL(`../${OP_KEY}/`, import.meta.url);
 const ROOT_PKG_PATH = new URL("../package.json", import.meta.url);
 const LICENSE_PATH = new URL("../LICENSE", import.meta.url);
 
 const readJson = async (url) => JSON.parse(await fsp.readFile(url, "utf8"));
 const { version } = await readJson(ROOT_PKG_PATH);
+
+const angularVersion = {
+  full: version,
+  major: version.split(".")[0],
+  minor: version.split(".")[1],
+  dot: version.split(".")[2],
+  codeName: "lts"
+};
+
+const VERSION_REPLACEMENTS = {
+  '"NG_VERSION_FULL"': angularVersion.full,
+  "'NG_VERSION_MAJOR'": angularVersion.major,
+  "'NG_VERSION_MINOR'": angularVersion.minor,
+  "'NG_VERSION_DOT'": angularVersion.dot,
+  '"NG_VERSION_CODENAME"': angularVersion.codeName,
+};
 
 const packageJsonTemplate = Object.freeze({
   name: "",
@@ -50,6 +70,17 @@ const copyFileEnsuringDir = async (sourcePath, destinationPath) => {
   }
 };
 
+const replaceVersionPlaceholders = (source) => {
+  let result = source;
+
+  for (const [needle, replacement] of Object.entries(VERSION_REPLACEMENTS)) {
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    result = result.replace(new RegExp(escaped, "g"), replacement);
+  }
+
+  return result;
+};
+
 // --- build steps ---
 const buildAllModules = async () => {
   logStep("Building all modules", "In progress");
@@ -63,21 +94,28 @@ const buildAllModules = async () => {
 const buildModule = async (moduleDetails, licenseTemplate) => {
   console.log(` ↳ Building ${moduleDetails.name}: In progress ⌚`);
 
-  const directoryPath = `dist/${moduleDetails.name}`;
+  const directoryPath = `${DIST_DIR.pathname}/${moduleDetails.name}`;
   await ensureDir(directoryPath);
 
   const modulePackageJson = {
     ...packageJsonTemplate,
     name: moduleDetails.name,
     description: moduleDetails.description,
-    main: moduleDetails.jsFiles.length === 0 ? "" : `${moduleDetails.jsFiles[0].name}.js`,
+    main:
+      moduleDetails.jsFiles.length === 0
+        ? ""
+        : `${moduleDetails.jsFiles[0].name}.js`,
     version,
   };
 
   await Promise.all([
     buildModuleFiles(moduleDetails, directoryPath),
     copyModuleFiles(moduleDetails, directoryPath),
-    fsp.writeFile(`${directoryPath}/package.json`, JSON.stringify(modulePackageJson, null, 4), "utf8"),
+    fsp.writeFile(
+      `${directoryPath}/package.json`,
+      JSON.stringify(modulePackageJson, null, 4),
+      "utf8"
+    ),
     fsp.writeFile(`${directoryPath}/LICENSE.md`, licenseTemplate, "utf8"),
   ]);
 
@@ -88,7 +126,21 @@ const buildModuleFiles = async (moduleDetails, directoryPath) => {
   const [file] = moduleDetails.jsFiles;
   if (!file) return;
 
-  const srcContent = (await Promise.all(file.segments.map((s) => fsp.readFile(s, "utf8")))).join("");
+  const segments = file.segments;
+
+  if (file.prefix[OP_KEY] !== null) {
+    segments.unshift(file.prefix[OP_KEY]);
+  }
+
+  if (file.suffix[OP_KEY] !== null) {
+    segments.push(file.suffix[OP_KEY]);
+  }
+
+  const rawContent = (
+    await Promise.all(segments.map((s) => fsp.readFile(s, "utf8")))
+  ).join("");
+
+  const srcContent = BUILD_FOR_TEST_ENV ? rawContent : replaceVersionPlaceholders(rawContent);
 
   const minified = await minify(srcContent, {
     format: { comments: "some" },
@@ -118,4 +170,3 @@ const copyModuleFiles = (moduleDetails, directoryPath) =>
 // --- run ---
 await cleanupDist();
 await buildAllModules();
-

@@ -1,33 +1,33 @@
 'use strict';
 
-describe('ngAnimate $$animateJsDriver', function() {
+describe('ngAnimate $$animateJsDriver', () => {
 
-  beforeEach(module('ngAnimate'));
-  beforeEach(module('ngAnimateMock'));
+  beforeEach(angular.mock.module('ngAnimate'));
+  beforeEach(angular.mock.module('ngAnimateMock'));
 
   it('should register the $$animateJsDriver into the list of drivers found in $animateProvider',
-    module(function($animateProvider) {
+    angular.mock.module($animateProvider => {
 
-    expect($animateProvider.drivers).toContain('$$animateJsDriver');
-  }));
+      expect($animateProvider.drivers).toContain('$$animateJsDriver');
+    }));
 
-  describe('with $$animateJs', function() {
-    var capturedAnimation = null;
-    var captureLog = [];
-    var element;
-    var driver;
+  describe('with $$animateJs', () => {
+    let capturedAnimation = null;
+    const captureLog = [];
+    let element;
+    let driver;
 
-    beforeEach(module(function($provide) {
-      $provide.factory('$$animateJs', function($$AnimateRunner) {
-        return function() {
-          var runner = new $$AnimateRunner();
+    beforeEach(angular.mock.module($provide => {
+      $provide.factory('$$animateJs', $$AnimateRunner => {
+        return function () {
+          const runner = new $$AnimateRunner();
           capturedAnimation = arguments;
           captureLog.push({
             args: capturedAnimation,
             runner: runner
           });
           return {
-            start: function() {
+            start: function () {
               return runner;
             }
           };
@@ -35,75 +35,75 @@ describe('ngAnimate $$animateJsDriver', function() {
       });
 
       captureLog.length = 0;
-      element = jqLite('<div></div>');
+      element = angular.element('<div></div>');
 
-      return function($rootElement, $$animateJsDriver) {
+      return ($rootElement, $$animateJsDriver) => {
         $rootElement.append(element);
 
-        driver = function() {
+        driver = function () {
           return $$animateJsDriver.apply($$animateJsDriver, arguments);
         };
       };
     }));
 
     it('should trigger a standard animation call to $$animateJs when a regular animation is executed',
-      inject(function($rootScope) {
+      angular.mock.inject($rootScope => {
 
-      driver({
-        element: element,
-        event: 'enter'
-      });
-      $rootScope.$digest();
+        driver({
+          element: element,
+          event: 'enter'
+        });
+        $rootScope.$digest();
 
-      expect(captureLog.length).toBe(1);
+        expect(captureLog.length).toBe(1);
 
-      var args = capturedAnimation;
-      expect(args[0]).toBe(element);
-      expect(args[1]).toBe('enter');
-    }));
+        const args = capturedAnimation;
+        expect(args[0]).toBe(element);
+        expect(args[1]).toBe('enter');
+      }));
 
 
     it('should trigger two regular JS animations when a grouped animation is passed in',
-      inject(function($rootScope) {
+      angular.mock.inject($rootScope => {
 
-      var child1 = jqLite('<div></div>');
-      element.append(child1);
-      var child2 = jqLite('<div></div>');
-      element.append(child2);
-
-      driver({
-        from: {
-          structural: true,
-          element: child1,
-          event: 'leave'
-        },
-        to: {
-          structural: true,
-          element: child2,
-          event: 'enter'
-        }
-      });
-      $rootScope.$digest();
-
-      expect(captureLog.length).toBe(2);
-
-      var first = captureLog[0].args;
-      expect(first[0]).toBe(child1);
-      expect(first[1]).toBe('leave');
-
-      var second = captureLog[1].args;
-      expect(second[0]).toBe(child2);
-      expect(second[1]).toBe('enter');
-    }));
-
-    they('should $prop both animations when $prop() is called on the runner', ['end', 'cancel'], function(method) {
-      inject(function($rootScope, $animate) {
-        var child1 = jqLite('<div></div>');
+        const child1 = angular.element('<div></div>');
         element.append(child1);
-        var child2 = jqLite('<div></div>');
+        const child2 = angular.element('<div></div>');
         element.append(child2);
 
-        var animator = driver({
+        driver({
+          from: {
+            structural: true,
+            element: child1,
+            event: 'leave'
+          },
+          to: {
+            structural: true,
+            element: child2,
+            event: 'enter'
+          }
+        });
+        $rootScope.$digest();
+
+        expect(captureLog.length).toBe(2);
+
+        const first = captureLog[0].args;
+        expect(first[0]).toBe(child1);
+        expect(first[1]).toBe('leave');
+
+        const second = captureLog[1].args;
+        expect(second[0]).toBe(child2);
+        expect(second[1]).toBe('enter');
+      }));
+
+    they('should $prop both animations when $prop() is called on the runner', ['end', 'cancel'], method => {
+      angular.mock.inject(($rootScope, $animate) => {
+        const child1 = angular.element('<div></div>');
+        element.append(child1);
+        const child2 = angular.element('<div></div>');
+        element.append(child2);
+
+        const animator = driver({
           from: {
             structural: true,
             element: child1,
@@ -116,11 +116,11 @@ describe('ngAnimate $$animateJsDriver', function() {
           }
         });
 
-        var runner = animator.start();
+        const runner = animator.start();
 
-        var animationsClosed = false;
-        var status;
-        runner.done(function(s) {
+        let animationsClosed = false;
+        let status;
+        runner.done(s => {
           animationsClosed = true;
           status = s;
         });
@@ -135,14 +135,14 @@ describe('ngAnimate $$animateJsDriver', function() {
       });
     });
 
-    they('should fully $prop when all inner animations are complete', ['end', 'cancel'], function(method) {
-      inject(function($rootScope, $animate) {
-        var child1 = jqLite('<div></div>');
+    they('should fully $prop when all inner animations are complete', ['end', 'cancel'], method => {
+      angular.mock.inject(($rootScope, $animate) => {
+        const child1 = angular.element('<div></div>');
         element.append(child1);
-        var child2 = jqLite('<div></div>');
+        const child2 = angular.element('<div></div>');
         element.append(child2);
 
-        var animator = driver({
+        const animator = driver({
           from: {
             structural: true,
             element: child1,
@@ -155,11 +155,11 @@ describe('ngAnimate $$animateJsDriver', function() {
           }
         });
 
-        var runner = animator.start();
+        const runner = animator.start();
 
-        var animationsClosed = false;
-        var status;
-        runner.done(function(s) {
+        let animationsClosed = false;
+        let status;
+        runner.done(s => {
           animationsClosed = true;
           status = s;
         });

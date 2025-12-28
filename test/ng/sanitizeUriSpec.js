@@ -2,41 +2,41 @@
 
 /* eslint-disable no-script-url */
 
-describe('sanitizeUri', function() {
-  var sanitizeHref, sanitizeImg, sanitizeUriProvider, testUrl;
-  beforeEach(function() {
-    module(function(_$$sanitizeUriProvider_) {
+describe('sanitizeUri', () => {
+  let sanitizeHref, sanitizeImg, sanitizeUriProvider, testUrl;
+  beforeEach(() => {
+    angular.mock.module(_$$sanitizeUriProvider_ => {
       sanitizeUriProvider = _$$sanitizeUriProvider_;
     });
-    inject(function($$sanitizeUri) {
-      sanitizeHref = function(uri) {
+    angular.mock.inject($$sanitizeUri => {
+      sanitizeHref = uri => {
         return $$sanitizeUri(uri, false);
       };
-      sanitizeImg = function(uri) {
+      sanitizeImg = uri => {
         return $$sanitizeUri(uri, true);
       };
     });
   });
 
   function isEvilInCurrentBrowser(uri) {
-    var a = window.document.createElement('a');
+    const a = window.document.createElement('a');
     a.setAttribute('href', uri);
     return a.href.substring(0, 4) !== 'http';
   }
 
-  describe('img[src] sanitization', function() {
+  describe('img[src] sanitization', () => {
 
-    it('should sanitize javascript: urls', function() {
+    it('should sanitize javascript: urls', () => {
       testUrl = 'javascript:doEvilStuff()';
       expect(sanitizeImg(testUrl)).toBe('unsafe:javascript:doEvilStuff()');
     });
 
-    it('should sanitize javascript: urls with comments', function() {
+    it('should sanitize javascript: urls with comments', () => {
       testUrl = 'javascript:alert(1)//data:image/';
       expect(sanitizeImg(testUrl)).toBe('unsafe:javascript:alert(1)//data:image/');
     });
 
-    it('should sanitize non-image data: urls', function() {
+    it('should sanitize non-image data: urls', () => {
       testUrl = 'data:application/javascript;charset=US-ASCII,alert(\'evil!\');';
       expect(sanitizeImg(testUrl)).toBe('unsafe:data:application/javascript;charset=US-ASCII,alert(\'evil!\');');
 
@@ -44,12 +44,12 @@ describe('sanitizeUri', function() {
       expect(sanitizeImg(testUrl)).toBe('unsafe:data:,foo');
     });
 
-    it('should sanitize mailto: urls', function() {
+    it('should sanitize mailto: urls', () => {
       testUrl = 'mailto:foo@bar.com';
       expect(sanitizeImg(testUrl)).toBe('unsafe:mailto:foo@bar.com');
     });
 
-    it('should sanitize obfuscated javascript: urls', function() {
+    it('should sanitize obfuscated javascript: urls', () => {
       // case-sensitive
       testUrl = 'JaVaScRiPt:doEvilStuff()';
       expect(sanitizeImg(testUrl)).toBe('unsafe:javascript:doEvilStuff()');
@@ -78,13 +78,13 @@ describe('sanitizeUri', function() {
       );
     });
 
-    it('should sanitize ng-src bindings as well', function() {
+    it('should sanitize ng-src bindings as well', () => {
       testUrl = 'javascript:doEvilStuff()';
       expect(sanitizeImg(testUrl)).toBe('unsafe:javascript:doEvilStuff()');
     });
 
 
-    it('should not sanitize valid urls', function() {
+    it('should not sanitize valid urls', () => {
       testUrl = 'foo/bar';
       expect(sanitizeImg(testUrl)).toBe('foo/bar');
 
@@ -113,20 +113,20 @@ describe('sanitizeUri', function() {
       expect(sanitizeImg(testUrl)).toBe('file:///foo/bar.html');
     });
 
-    it('should not sanitize blob urls', function() {
+    it('should not sanitize blob urls', () => {
       testUrl = 'blob:///foo/bar.html';
       expect(sanitizeImg(testUrl)).toBe('blob:///foo/bar.html');
     });
 
-    it('should not sanitize data: URIs for images', function() {
+    it('should not sanitize data: URIs for images', () => {
       // image data uri
       // ref: http://probablyprogramming.com/2009/03/15/the-tiniest-gif-ever
       testUrl = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
       expect(sanitizeImg(testUrl)).toBe('data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==');
     });
 
-    it('should allow reconfiguration of the src trusted URIs', function() {
-      var returnVal;
+    it('should allow reconfiguration of the src trusted URIs', () => {
+      let returnVal;
       expect(sanitizeUriProvider.imgSrcSanitizationTrustedUrlList() instanceof RegExp).toBe(true);
       returnVal = sanitizeUriProvider.imgSrcSanitizationTrustedUrlList(/javascript:/);
       expect(returnVal).toBe(sanitizeUriProvider);
@@ -141,21 +141,21 @@ describe('sanitizeUri', function() {
   });
 
 
-  describe('a[href] sanitization', function() {
+  describe('a[href] sanitization', () => {
 
-    it('should sanitize javascript: urls', inject(function() {
+    it('should sanitize javascript: urls', angular.mock.inject(() => {
       testUrl = 'javascript:doEvilStuff()';
       expect(sanitizeHref(testUrl)).toBe('unsafe:javascript:doEvilStuff()');
     }));
 
 
-    it('should sanitize data: urls', inject(function() {
+    it('should sanitize data: urls', angular.mock.inject(() => {
       testUrl = 'data:evilPayload';
       expect(sanitizeHref(testUrl)).toBe('unsafe:data:evilPayload');
     }));
 
 
-    it('should sanitize obfuscated javascript: urls', inject(function() {
+    it('should sanitize obfuscated javascript: urls', angular.mock.inject(() => {
       // case-sensitive
       testUrl = 'JaVaScRiPt:doEvilStuff()';
       expect(sanitizeHref(testUrl)).toBe('unsafe:javascript:doEvilStuff()');
@@ -185,13 +185,13 @@ describe('sanitizeUri', function() {
     }));
 
 
-    it('should sanitize ngHref bindings as well', inject(function() {
+    it('should sanitize ngHref bindings as well', angular.mock.inject(() => {
       testUrl = 'javascript:doEvilStuff()';
       expect(sanitizeHref(testUrl)).toBe('unsafe:javascript:doEvilStuff()');
     }));
 
 
-    it('should not sanitize valid urls', inject(function() {
+    it('should not sanitize valid urls', angular.mock.inject(() => {
       testUrl = 'foo/bar';
       expect(sanitizeHref(testUrl)).toBe('foo/bar');
 
@@ -226,8 +226,8 @@ describe('sanitizeUri', function() {
       expect(sanitizeHref(testUrl)).toBe('file:///foo/bar.html');
     }));
 
-    it('should allow reconfiguration of the href trusted URIs', function() {
-      var returnVal;
+    it('should allow reconfiguration of the href trusted URIs', () => {
+      let returnVal;
       expect(sanitizeUriProvider.aHrefSanitizationTrustedUrlList() instanceof RegExp).toBe(true);
       returnVal = sanitizeUriProvider.aHrefSanitizationTrustedUrlList(/javascript:/);
       expect(returnVal).toBe(sanitizeUriProvider);

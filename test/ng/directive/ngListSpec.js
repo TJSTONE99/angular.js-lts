@@ -2,18 +2,18 @@
 
 /* globals generateInputCompilerHelper: false */
 
-describe('ngList', function() {
-
-  var helper = {}, $rootScope;
+describe('ngList', () => {
+  const helper = {};
+  let $rootScope;
 
   generateInputCompilerHelper(helper);
 
-  beforeEach(inject(function(_$rootScope_) {
+  beforeEach(angular.mock.inject(_$rootScope_ => {
     $rootScope = _$rootScope_;
   }));
 
-  it('should parse text into an array', function() {
-    var inputElm = helper.compileInput('<input type="text" ng-model="list" ng-list />');
+  it('should parse text into an array', () => {
+    const inputElm = helper.compileInput('<input type="text" ng-model="list" ng-list />');
 
     // model -> view
     $rootScope.$apply('list = [\'x\', \'y\', \'z\']');
@@ -25,11 +25,11 @@ describe('ngList', function() {
   });
 
 
-  it('should not clobber text if model changes due to itself', function() {
+  it('should not clobber text if model changes due to itself', () => {
     // When the user types 'a,b' the 'a,' stage parses to ['a'] but if the
     // $parseModel function runs it will change to 'a', in essence preventing
     // the user from ever typing ','.
-    var inputElm = helper.compileInput('<input type="text" ng-model="list" ng-list />');
+    const inputElm = helper.compileInput('<input type="text" ng-model="list" ng-list />');
 
     helper.changeInputValueTo('a ');
     expect(inputElm.val()).toEqual('a ');
@@ -49,7 +49,7 @@ describe('ngList', function() {
   });
 
 
-  it('should convert empty string to an empty array', function() {
+  it('should convert empty string to an empty array', () => {
     helper.compileInput('<input type="text" ng-model="list" ng-list />');
 
     helper.changeInputValueTo('');
@@ -57,18 +57,18 @@ describe('ngList', function() {
   });
 
 
-  it('should be invalid if required and empty', function() {
-    var inputElm = helper.compileInput('<input type="text" ng-list ng-model="list" required>');
+  it('should be invalid if required and empty', () => {
+    const inputElm = helper.compileInput('<input type="text" ng-list ng-model="list" required>');
     helper.changeInputValueTo('');
     expect($rootScope.list).toBeUndefined();
     expect(inputElm).toBeInvalid();
     helper.changeInputValueTo('a,b');
-    expect($rootScope.list).toEqual(['a','b']);
+    expect($rootScope.list).toEqual(['a', 'b']);
     expect(inputElm).toBeValid();
   });
 
-  describe('with a custom separator', function() {
-    it('should split on the custom separator', function() {
+  describe('with a custom separator', () => {
+    it('should split on the custom separator', () => {
       helper.compileInput('<input type="text" ng-model="list" ng-list=":" />');
 
       helper.changeInputValueTo('a,a');
@@ -79,26 +79,26 @@ describe('ngList', function() {
     });
 
 
-    it('should join the list back together with the custom separator', function() {
-      var inputElm = helper.compileInput('<input type="text" ng-model="list" ng-list=" : " />');
+    it('should join the list back together with the custom separator', () => {
+      const inputElm = helper.compileInput('<input type="text" ng-model="list" ng-list=" : " />');
 
-      $rootScope.$apply(function() {
+      $rootScope.$apply(() => {
         $rootScope.list = ['x', 'y', 'z'];
       });
       expect(inputElm.val()).toBe('x : y : z');
     });
   });
 
-  describe('(with ngTrim undefined or true)', function() {
+  describe('(with ngTrim undefined or true)', () => {
 
-    it('should ignore separator whitespace when splitting', function() {
+    it('should ignore separator whitespace when splitting', () => {
       helper.compileInput('<input type="text" ng-model="list" ng-list="  |  " />');
 
       helper.changeInputValueTo('a|b');
       expect($rootScope.list).toEqual(['a', 'b']);
     });
 
-    it('should trim whitespace from each list item', function() {
+    it('should trim whitespace from each list item', () => {
       helper.compileInput('<input type="text" ng-model="list" ng-list="|" />');
 
       helper.changeInputValueTo('a | b');
@@ -106,35 +106,35 @@ describe('ngList', function() {
     });
   });
 
-  describe('(with ngTrim set to false)', function() {
+  describe('(with ngTrim set to false)', () => {
 
-    it('should use separator whitespace when splitting', function() {
+    it('should use separator whitespace when splitting', () => {
       helper.compileInput('<input type="text" ng-model="list" ng-trim="false" ng-list="  |  " />');
 
       helper.changeInputValueTo('a|b');
       expect($rootScope.list).toEqual(['a|b']);
 
       helper.changeInputValueTo('a  |  b');
-      expect($rootScope.list).toEqual(['a','b']);
+      expect($rootScope.list).toEqual(['a', 'b']);
 
     });
 
-    it('should not trim whitespace from each list item', function() {
+    it('should not trim whitespace from each list item', () => {
       helper.compileInput('<input type="text" ng-model="list" ng-trim="false" ng-list="|" />');
       helper.changeInputValueTo('a  |  b');
-      expect($rootScope.list).toEqual(['a  ','  b']);
+      expect($rootScope.list).toEqual(['a  ', '  b']);
     });
 
-    it('should support splitting on newlines', function() {
+    it('should support splitting on newlines', () => {
       helper.compileInput('<textarea type="text" ng-model="list" ng-trim="false" ng-list="&#10;"></textarea>');
       helper.changeInputValueTo('a\nb');
-      expect($rootScope.list).toEqual(['a','b']);
+      expect($rootScope.list).toEqual(['a', 'b']);
     });
 
-    it('should support splitting on whitespace', function() {
+    it('should support splitting on whitespace', () => {
       helper.compileInput('<textarea type="text" ng-model="list" ng-trim="false" ng-list=" "></textarea>');
       helper.changeInputValueTo('a b');
-      expect($rootScope.list).toEqual(['a','b']);
+      expect($rootScope.list).toEqual(['a', 'b']);
     });
   });
 });

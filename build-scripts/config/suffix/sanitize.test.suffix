@@ -1,0 +1,4 @@
+  window.ngInternals.sanitizeText = sanitizeText;
+  Object.defineProperty(window.ngInternals, 'htmlParser', { configurable: true, get: () => htmlParser });
+  Object.defineProperty(window.ngInternals, 'htmlSanitizeWriter', { configurable: true, get: () => htmlSanitizeWriter });
+})(window, window.angular);

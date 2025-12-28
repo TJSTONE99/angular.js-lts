@@ -1,79 +1,80 @@
 'use strict';
 
-describe('injector.modules', function() {
-    it('should expose the loaded module info on the instance injector', function() {
-      var test1 = angular.module('test1', ['test2']).info({ version: '1.1' });
-      var test2 = angular.module('test2', []).info({ version: '1.2' });
-      module('test1');
-      inject(['$injector', function($injector) {
-        expect(Object.keys($injector.modules)).toEqual(['ng', 'ngLocale', 'ngMock', 'test1', 'test2']);
-        expect($injector.modules['test1'].info()).toEqual({ version: '1.1' });
-        expect($injector.modules['test2'].info()).toEqual({ version: '1.2' });
+describe('injector.modules', () => {
+  it('should expose the loaded module info on the instance injector', () => {
+    angular.module('test1', ['test2']).info({ version: '1.1' });
+    angular.module('test2', []).info({ version: '1.2' });
+    angular.mock.module('test1');
+    angular.mock.inject(['$injector', $injector => {
+      expect(Object.keys($injector.modules)).toEqual(['ng', 'ngLocale', 'ngMock', 'test1', 'test2']);
+      expect($injector.modules['test1'].info()).toEqual({ version: '1.1' });
+      expect($injector.modules['test2'].info()).toEqual({ version: '1.2' });
+    }]);
+  });
+
+  it('should expose the loaded module info on the provider injector', () => {
+    let providerInjector;
+    angular.module('test1', ['test2']).info({ version: '1.1' });
+    angular.module('test2', [])
+      .info({ version: '1.2' })
+      .provider('test', ['$injector', function ($injector) {
+        providerInjector = $injector;
+        return { $get: function () { } };
       }]);
-    });
+    angular.mock.module('test1');
+    // needed to ensure that the provider blocks are executed
+    angular.mock.inject();
 
-    it('should expose the loaded module info on the provider injector', function() {
-      var providerInjector;
-      var test1 = angular.module('test1', ['test2']).info({ version: '1.1' });
-      var test2 = angular.module('test2', [])
-        .info({ version: '1.2' })
-        .provider('test', ['$injector', function($injector) {
-          providerInjector = $injector;
-          return {$get: function() {}};
-        }]);
-      module('test1');
-      // needed to ensure that the provider blocks are executed
-      inject();
-
-      expect(Object.keys(providerInjector.modules)).toEqual(['ng', 'ngLocale', 'ngMock', 'test1', 'test2']);
-      expect(providerInjector.modules['test1'].info()).toEqual({ version: '1.1' });
-      expect(providerInjector.modules['test2'].info()).toEqual({ version: '1.2' });
-    });
+    expect(Object.keys(providerInjector.modules)).toEqual(['ng', 'ngLocale', 'ngMock', 'test1', 'test2']);
+    expect(providerInjector.modules['test1'].info()).toEqual({ version: '1.1' });
+    expect(providerInjector.modules['test2'].info()).toEqual({ version: '1.2' });
+  });
 });
 
-describe('injector', function() {
-  var providers;
-  var injector;
-  var providerInjector;
-  var controllerProvider;
+describe('injector', () => {
+  let providers;
+  let injector;
+  let providerInjector;
+  let controllerProvider;
 
-  beforeEach(module(function($provide, $injector, $controllerProvider) {
-    providers = function(name, factory, annotations) {
-      $provide.factory(name, extend(factory, annotations || {}));
+  beforeEach(angular.mock.module(($provide, $injector, $controllerProvider) => {
+    providers = (name, factory, annotations) => {
+      $provide.factory(name, angular.extend(factory, annotations || {}));
     };
     providerInjector = $injector;
     controllerProvider = $controllerProvider;
   }));
-  beforeEach(inject(function($injector) {
+  beforeEach(angular.mock.inject(($injector) => {
     injector = $injector;
   }));
 
 
-  it('should return same instance from calling provider', function() {
-    var instance = {},
-        original = instance;
-    providers('instance', function() { return instance; });
+  it('should return same instance from calling provider', () => {
+    let instance = {};
+    const original = instance;
+
+    providers('instance', () => { return instance; });
     expect(injector.get('instance')).toEqual(instance);
     instance = 'deleted';
     expect(injector.get('instance')).toEqual(original);
   });
 
 
-  it('should inject providers', function() {
-    providers('a', function() {return 'Mi';});
-    providers('b', function(mi) {return mi + 'sko';}, {$inject:['a']});
+  it('should inject providers', () => {
+    providers('a', () => { return 'Mi'; });
+    providers('b', (mi) => { return mi + 'sko'; }, { $inject: ['a'] });
     expect(injector.get('b')).toEqual('Misko');
   });
 
 
-  it('should check its modulesToLoad argument', function() {
-    expect(function() { angular.injector('test'); })
-        .toThrowMinErr('ng', 'areq');
+  it('should check its modulesToLoad argument', () => {
+    expect(() => { angular.injector('test'); })
+      .toThrowMinErr('ng', 'areq');
   });
 
 
-  it('should resolve dependency graph and instantiate all services just once', function() {
-    var log = [];
+  it('should resolve dependency graph and instantiate all services just once', () => {
+    const log = [];
 
     //          s1
     //        /  | \
@@ -83,12 +84,12 @@ describe('injector', function() {
     //    //
     //   s6
 
-    providers('s1', function() { log.push('s1'); return {}; }, {$inject: ['s2', 's5', 's6']});
-    providers('s2', function() { log.push('s2'); return {}; }, {$inject: ['s3', 's4', 's5']});
-    providers('s3', function() { log.push('s3'); return {}; }, {$inject: ['s6']});
-    providers('s4', function() { log.push('s4'); return {}; }, {$inject: ['s3', 's5']});
-    providers('s5', function() { log.push('s5'); return {}; });
-    providers('s6', function() { log.push('s6'); return {}; });
+    providers('s1', () => { log.push('s1'); return {}; }, { $inject: ['s2', 's5', 's6'] });
+    providers('s2', () => { log.push('s2'); return {}; }, { $inject: ['s3', 's4', 's5'] });
+    providers('s3', () => { log.push('s3'); return {}; }, { $inject: ['s6'] });
+    providers('s4', () => { log.push('s4'); return {}; }, { $inject: ['s3', 's5'] });
+    providers('s5', () => { log.push('s5'); return {}; });
+    providers('s6', () => { log.push('s6'); return {}; });
 
     injector.get('s1');
 
@@ -96,8 +97,8 @@ describe('injector', function() {
   });
 
 
-  it('should allow query names', function() {
-    providers('abc', function() { return ''; });
+  it('should allow query names', () => {
+    providers('abc', () => { return ''; });
 
     expect(injector.has('abc')).toBe(true);
     expect(injector.has('xyz')).toBe(false);
@@ -105,63 +106,63 @@ describe('injector', function() {
   });
 
 
-  it('should provide useful message if no provider', function() {
-    expect(function() {
+  it('should provide useful message if no provider', () => {
+    expect(() => {
       injector.get('idontexist');
     }).toThrowMinErr('$injector', 'unpr', 'Unknown provider: idontexistProvider <- idontexist');
   });
 
 
-  it('should provide the caller name if given', function() {
-    expect(function() {
+  it('should provide the caller name if given', () => {
+    expect(() => {
       injector.get('idontexist', 'callerName');
     }).toThrowMinErr('$injector', 'unpr', 'Unknown provider: idontexistProvider <- idontexist <- callerName');
   });
 
 
-  it('should provide the caller name for controllers', function() {
-    controllerProvider.register('myCtrl', function(idontexist) {});
-    var $controller = injector.get('$controller');
-    expect(function() {
-      $controller('myCtrl', {$scope: {}});
+  it('should provide the caller name for controllers', () => {
+    controllerProvider.register('myCtrl', (idontexist) => { });
+    const $controller = injector.get('$controller');
+    expect(() => {
+      $controller('myCtrl', { $scope: {} });
     }).toThrowMinErr('$injector', 'unpr', 'Unknown provider: idontexistProvider <- idontexist <- myCtrl');
   });
 
 
-  it('should not corrupt the cache when an object fails to get instantiated', function() {
-    expect(function() {
+  it('should not corrupt the cache when an object fails to get instantiated', () => {
+    expect(() => {
       injector.get('idontexist');
     }).toThrowMinErr('$injector', 'unpr', 'Unknown provider: idontexistProvider <- idontexist');
 
-    expect(function() {
+    expect(() => {
       injector.get('idontexist');
     }).toThrowMinErr('$injector', 'unpr', 'Unknown provider: idontexistProvider <- idontexist');
   });
 
 
-  it('should provide path to the missing provider', function() {
-    providers('a', function(idontexist) {return 1;});
-    providers('b', function(a) {return 2;});
-    expect(function() {
+  it('should provide path to the missing provider', () => {
+    providers('a', (idontexist) => { return 1; });
+    providers('b', a => { return 2; });
+    expect(() => {
       injector.get('b');
     }).toThrowMinErr('$injector', 'unpr', 'Unknown provider: idontexistProvider <- idontexist <- a <- b');
   });
 
 
-  it('should create a new $injector for the run phase', inject(function($injector) {
+  it('should create a new $injector for the run phase', angular.mock.inject(($injector) => {
     expect($injector).not.toBe(providerInjector);
   }));
 
 
-  describe('loadNewModules', function() {
-    it('should be defined on $injector', function() {
-      var injector = createInjector([]);
-      expect(injector.loadNewModules).toEqual(jasmine.any(Function));
+  describe('loadNewModules', () => {
+    it('should be defined on $injector', () => {
+      const injector = ngInternals.createInjector([]);
+      expect(injector.loadNewModules).toEqual(expect.any(Function));
     });
 
-    it('should allow new modules to be added after injector creation', function() {
+    it('should allow new modules to be added after injector creation', () => {
       angular.module('initial', []);
-      var injector = createInjector(['initial']);
+      const injector = ngInternals.createInjector(['initial']);
       expect(injector.modules['initial']).toBeDefined();
       expect(injector.modules['lazy']).toBeUndefined();
       angular.module('lazy', []);
@@ -169,46 +170,46 @@ describe('injector', function() {
       expect(injector.modules['lazy']).toBeDefined();
     });
 
-    it('should execute runBlocks of new modules', function() {
-      var log = [];
-      angular.module('initial', []).run(function() { log.push('initial'); });
-      var injector = createInjector(['initial']);
+    it('should execute runBlocks of new modules', () => {
+      const log = [];
+      angular.module('initial', []).run(() => { log.push('initial'); });
+      const injector = ngInternals.createInjector(['initial']);
       log.push('created');
 
-      angular.module('a', []).run(function() { log.push('a'); });
+      angular.module('a', []).run(() => { log.push('a'); });
       injector.loadNewModules(['a']);
       expect(log).toEqual(['initial', 'created', 'a']);
     });
 
-    it('should execute configBlocks of new modules', function() {
-      var log = [];
-      angular.module('initial', []).config(function() { log.push('initial'); });
-      var injector = createInjector(['initial']);
+    it('should execute configBlocks of new modules', () => {
+      const log = [];
+      angular.module('initial', []).config(() => { log.push('initial'); });
+      const injector = ngInternals.createInjector(['initial']);
       log.push('created');
 
-      angular.module('a', [], function() { log.push('config1'); }).config(function() { log.push('config2'); });
+      angular.module('a', [], () => { log.push('config1'); }).config(() => { log.push('config2'); });
       injector.loadNewModules(['a']);
       expect(log).toEqual(['initial', 'created', 'config1', 'config2']);
     });
 
-    it('should execute runBlocks and configBlocks in the correct order', function() {
-      var log = [];
-      angular.module('initial', [], function() { log.push(1); })
-        .config(function() { log.push(2); })
-        .run(function() { log.push(3); });
-      var injector = createInjector(['initial']);
+    it('should execute runBlocks and configBlocks in the correct order', () => {
+      const log = [];
+      angular.module('initial', [], () => { log.push(1); })
+        .config(() => { log.push(2); })
+        .run(() => { log.push(3); });
+      const injector = ngInternals.createInjector(['initial']);
       log.push('created');
 
-      angular.module('a', [], function() { log.push(4); })
-        .config(function() { log.push(5); })
-        .run(function() { log.push(6); });
+      angular.module('a', [], () => { log.push(4); })
+        .config(() => { log.push(5); })
+        .run(() => { log.push(6); });
       injector.loadNewModules(['a']);
       expect(log).toEqual([1, 2, 3, 'created', 4, 5, 6]);
     });
 
-    it('should load dependent modules', function() {
+    it('should load dependent modules', () => {
       angular.module('initial', []);
-      var injector = createInjector(['initial']);
+      const injector = ngInternals.createInjector(['initial']);
       expect(injector.modules['initial']).toBeDefined();
       expect(injector.modules['lazy1']).toBeUndefined();
       expect(injector.modules['lazy2']).toBeUndefined();
@@ -219,90 +220,90 @@ describe('injector', function() {
       expect(injector.modules['lazy2']).toBeDefined();
     });
 
-    it('should execute blocks of new modules in the correct order', function() {
-      var log = [];
+    it('should execute blocks of new modules in the correct order', () => {
+      const log = [];
       angular.module('initial', []);
-      var injector = createInjector(['initial']);
+      const injector = ngInternals.createInjector(['initial']);
 
-      angular.module('lazy1', ['lazy2'], function() { log.push('lazy1-1'); })
-        .config(function() { log.push('lazy1-2'); })
-        .run(function() { log.push('lazy1-3'); });
-      angular.module('lazy2', [], function() { log.push('lazy2-1'); })
-        .config(function() { log.push('lazy2-2'); })
-        .run(function() { log.push('lazy2-3'); });
+      angular.module('lazy1', ['lazy2'], () => { log.push('lazy1-1'); })
+        .config(() => { log.push('lazy1-2'); })
+        .run(() => { log.push('lazy1-3'); });
+      angular.module('lazy2', [], () => { log.push('lazy2-1'); })
+        .config(() => { log.push('lazy2-2'); })
+        .run(() => { log.push('lazy2-3'); });
 
       injector.loadNewModules(['lazy1']);
       expect(log).toEqual(['lazy2-1', 'lazy2-2', 'lazy1-1', 'lazy1-2', 'lazy2-3', 'lazy1-3']);
     });
 
-    it('should not reload a module that is already loaded', function() {
-      var log = [];
-      angular.module('initial', []).run(function() { log.push('initial'); });
-      var injector = createInjector(['initial']);
+    it('should not reload a module that is already loaded', () => {
+      const log = [];
+      angular.module('initial', []).run(() => { log.push('initial'); });
+      const injector = ngInternals.createInjector(['initial']);
       expect(log).toEqual(['initial']);
 
       injector.loadNewModules(['initial']);
       expect(log).toEqual(['initial']);
 
-      angular.module('a', []).run(function() { log.push('a'); });
+      angular.module('a', []).run(() => { log.push('a'); });
       injector.loadNewModules(['a']);
       expect(log).toEqual(['initial', 'a']);
       injector.loadNewModules(['a']);
       expect(log).toEqual(['initial', 'a']);
 
-      angular.module('b', ['a']).run(function() { log.push('b'); });
-      angular.module('c', []).run(function() { log.push('c'); });
-      angular.module('d', ['b', 'c']).run(function() { log.push('d'); });
+      angular.module('b', ['a']).run(() => { log.push('b'); });
+      angular.module('c', []).run(() => { log.push('c'); });
+      angular.module('d', ['b', 'c']).run(() => { log.push('d'); });
       injector.loadNewModules(['d']);
       expect(log).toEqual(['initial', 'a', 'b', 'c', 'd']);
     });
 
-    it('should be able to register a service from a new module', function() {
-      var injector = createInjector([]);
-      angular.module('a', []).factory('aService', function() {
-        return {sayHello: function() { return 'Hello'; }};
+    it('should be able to register a service from a new module', () => {
+      const injector = ngInternals.createInjector([]);
+      angular.module('a', []).factory('aService', () => {
+        return { sayHello: function () { return 'Hello'; } };
       });
       injector.loadNewModules(['a']);
-      injector.invoke(function(aService) {
+      injector.invoke(aService => {
         expect(aService.sayHello()).toEqual('Hello');
       });
     });
 
 
-    it('should be able to register a controller from a new module', function() {
-      var injector = createInjector(['ng']);
-      angular.module('a', []).controller('aController', function($scope) {
+    it('should be able to register a controller from a new module', () => {
+      const injector = ngInternals.createInjector(['ng']);
+      angular.module('a', []).controller('aController', function ($scope) {
         $scope.test = 'b';
       });
       injector.loadNewModules(['a']);
-      injector.invoke(function($controller) {
-        var scope = {};
-        $controller('aController', {$scope: scope});
+      injector.invoke(function ($controller) {
+        const scope = {};
+        $controller('aController', { $scope: scope });
         expect(scope.test).toEqual('b');
       });
     });
 
 
-    it('should be able to register a filter from a new module', function() {
-      var injector = createInjector(['ng']);
-      angular.module('a', []).filter('aFilter', function() {
-        return function(input) { return input + ' filtered'; };
+    it('should be able to register a filter from a new module', () => {
+      const injector = ngInternals.createInjector(['ng']);
+      angular.module('a', []).filter('aFilter', () => {
+        return input => { return input + ' filtered'; };
       });
       injector.loadNewModules(['a']);
-      injector.invoke(function(aFilterFilter) {
+      injector.invoke(aFilterFilter => {
         expect(aFilterFilter('test')).toEqual('test filtered');
       });
     });
 
 
-    it('should be able to register a directive from a new module', function() {
-      var injector = createInjector(['ng']);
-      angular.module('a', []).directive('aDirective', function() {
-        return {template: 'test directive'};
+    it('should be able to register a directive from a new module', () => {
+      const injector = ngInternals.createInjector(['ng']);
+      angular.module('a', []).directive('aDirective', () => {
+        return { template: 'test directive' };
       });
       injector.loadNewModules(['a']);
-      injector.invoke(function($compile, $rootScope) {
-        var elem = $compile('<div a-directive></div>')($rootScope);  // compile and link
+      injector.invoke(($compile, $rootScope) => {
+        const elem = $compile('<div a-directive></div>')($rootScope);  // compile and link
         $rootScope.$digest();
         expect(elem.text()).toEqual('test directive');
         elem.remove();
@@ -310,18 +311,18 @@ describe('injector', function() {
     });
   });
 
-  it('should have a false strictDi property', inject(function($injector) {
+  it('should have a false strictDi property', angular.mock.inject($injector => {
     expect($injector.strictDi).toBe(false);
   }));
 
 
-  describe('invoke', function() {
-    var args;
+  describe('invoke', () => {
+    let args;
 
-    beforeEach(function() {
+    beforeEach(() => {
       args = null;
-      providers('a', function() {return 1;});
-      providers('b', function() {return 2;});
+      providers('a', () => { return 1; });
+      providers('b', () => { return 2; });
     });
 
 
@@ -331,119 +332,121 @@ describe('injector', function() {
     }
 
 
-    it('should call function', function() {
+    it('should call function', () => {
       Fn.$inject = ['a', 'b', 'c', 'd'];
-      injector.invoke(Fn, {name:'this'},  {c:3, d:4});
-      expect(args).toEqual([{name:'this'}, 1, 2, 3, 4]);
+      injector.invoke(Fn, { name: 'this' }, { c: 3, d: 4 });
+      expect(args).toEqual([{ name: 'this' }, 1, 2, 3, 4]);
     });
 
 
-    it('should treat array as annotations', function() {
-      injector.invoke(['a', 'b', 'c', 'd', Fn], {name:'this'}, {c:3, d:4});
-      expect(args).toEqual([{name:'this'}, 1, 2, 3, 4]);
+    it('should treat array as annotations', () => {
+      injector.invoke(['a', 'b', 'c', 'd', Fn], { name: 'this' }, { c: 3, d: 4 });
+      expect(args).toEqual([{ name: 'this' }, 1, 2, 3, 4]);
     });
 
 
-    it('should invoke the passed-in fn with all of the dependencies as arguments', function() {
-      providers('c', function() {return 3;});
-      providers('d', function() {return 4;});
+    it('should invoke the passed-in fn with all of the dependencies as arguments', () => {
+      providers('c', () => { return 3; });
+      providers('d', () => { return 4; });
       expect(injector.invoke(['a', 'b', 'c', 'd', Fn])).toEqual(10);
     });
 
 
-    it('should fail with errors if not function or array', function() {
-      expect(function() {
+    it('should fail with errors if not function or array', () => {
+      expect(() => {
         injector.invoke({});
       }).toThrowMinErr('ng', 'areq', 'Argument \'fn\' is not a function, got Object');
-      expect(function() {
+      expect(() => {
         injector.invoke(['a', 123], {});
       }).toThrowMinErr('ng', 'areq', 'Argument \'fn\' is not a function, got number');
     });
   });
 
 
-  describe('annotation', function() {
+  describe('annotation', () => {
     /* global annotate: false */
-    it('should return $inject', function() {
-      function fn() {}
+    const annotate = angular.injector.$$annotate;
+
+    it('should return $inject', () => {
+      function fn() { }
       fn.$inject = ['a'];
       expect(annotate(fn)).toBe(fn.$inject);
-      expect(annotate(function() {})).toEqual([]);
-      expect(annotate(function() {})).toEqual([]);
+      expect(annotate(() => { })).toEqual([]);
+      expect(annotate(() => { })).toEqual([]);
       /* eslint-disable space-before-function-paren, no-multi-spaces */
-      expect(annotate(function  () {})).toEqual([]);
-      expect(annotate(function /* */ () {})).toEqual([]);
+      expect(annotate(() => { })).toEqual([]);
+      expect(annotate(() => /* */ { })).toEqual([]);
       /* eslint-enable */
     });
 
 
-    it('should create $inject', function() {
-      var extraParams = angular.noop;
+    it('should create $inject', () => {
+      const extraParams = angular.noop;
       /* eslint-disable space-before-function-paren */
       // keep the multi-line to make sure we can handle it
       function $f_n0 /*
           */(
-          $a, // x, <-- looks like an arg but it is a comment
-          b_, /* z, <-- looks like an arg but it is a
+        $a, // x, <-- looks like an arg but it is a comment
+        b_, /* z, <-- looks like an arg but it is a
                  multi-line comment
                  function(a, b) {}
                  */
-          _c,
+        _c,
           /* {some type} */ d) { extraParams(); }
       /* eslint-enable */
-      expect(annotate($f_n0)).toEqual(['$a', 'b_', '_c',  'd']);
-      expect($f_n0.$inject).toEqual(['$a', 'b_', '_c',  'd']);
+      expect(annotate($f_n0)).toEqual(['$a', 'b_', '_c', 'd']);
+      expect($f_n0.$inject).toEqual(['$a', 'b_', '_c', 'd']);
     });
 
 
-    it('should strip leading and trailing underscores from arg name during inference', function() {
+    it('should strip leading and trailing underscores from arg name during inference', () => {
       function beforeEachFn(_foo_) { /* foo = _foo_ */ }
       expect(annotate(beforeEachFn)).toEqual(['foo']);
     });
 
-    it('should not strip service names with a single underscore', function() {
+    it('should not strip service names with a single underscore', () => {
       function beforeEachFn(_) { /* _ = _ */ }
       expect(annotate(beforeEachFn)).toEqual(['_']);
     });
 
-    it('should handle no arg functions', function() {
-      function $f_n0() {}
+    it('should handle no arg functions', () => {
+      function $f_n0() { }
       expect(annotate($f_n0)).toEqual([]);
       expect($f_n0.$inject).toEqual([]);
     });
 
 
-    it('should handle no arg functions with spaces in the arguments list', function() {
-      function fn() {}
+    it('should handle no arg functions with spaces in the arguments list', () => {
+      function fn() { }
       expect(annotate(fn)).toEqual([]);
       expect(fn.$inject).toEqual([]);
     });
 
 
-    it('should handle args with both $ and _', function() {
-      function $f_n0($a_) {}
+    it('should handle args with both $ and _', () => {
+      function $f_n0($a_) { }
       expect(annotate($f_n0)).toEqual(['$a_']);
       expect($f_n0.$inject).toEqual(['$a_']);
     });
 
-    it('should handle functions with overridden toString', function() {
-      function fn(a) {}
-      fn.toString = function() { return 'fn'; };
+    it('should handle functions with overridden toString', () => {
+      function fn(a) { }
+      fn.toString = () => { return 'fn'; };
       expect(annotate(fn)).toEqual(['a']);
       expect(fn.$inject).toEqual(['a']);
     });
 
-    it('should throw on non function arg', function() {
-      expect(function() {
+    it('should throw on non function arg', () => {
+      expect(() => {
         annotate({});
       }).toThrow();
     });
 
 
-    describe('es6', function() {
+    describe('es6', () => {
       if (support.shorthandMethods) {
         // The functions are generated using `eval` as just having the ES6 syntax can break some browsers.
-        it('should be possible to annotate shorthand methods', function() {
+        it('should be possible to annotate shorthand methods', () => {
           // eslint-disable-next-line no-eval
           expect(annotate(eval('({ fn(x) { return; } })').fn)).toEqual(['x']);
         });
@@ -451,7 +454,7 @@ describe('injector', function() {
 
 
       if (support.fatArrows) {
-        it('should create $inject for arrow functions', function() {
+        it('should create $inject for arrow functions', () => {
           // eslint-disable-next-line no-eval
           expect(annotate(eval('(a, b) => a'))).toEqual(['a', 'b']);
         });
@@ -459,7 +462,7 @@ describe('injector', function() {
 
 
       if (support.fatArrows) {
-        it('should create $inject for arrow functions with no parenthesis', function() {
+        it('should create $inject for arrow functions with no parenthesis', () => {
           // eslint-disable-next-line no-eval
           expect(annotate(eval('a => a'))).toEqual(['a']);
         });
@@ -467,18 +470,18 @@ describe('injector', function() {
 
 
       if (support.fatArrows) {
-        it('should take args before first arrow', function() {
+        it('should take args before first arrow', () => {
           // eslint-disable-next-line no-eval
           expect(annotate(eval('a => b => b'))).toEqual(['a']);
         });
       }
 
       if (support.classes) {
-        it('should be possible to instantiate ES6 classes', function() {
-          providers('a', function() { return 'a-value'; });
+        it('should be possible to instantiate ES6 classes', () => {
+          providers('a', () => { return 'a-value'; });
           // eslint-disable-next-line no-eval
-          var Clazz = eval('(class { constructor(a) { this.a = a; } aVal() { return this.a; } })');
-          var instance = injector.instantiate(Clazz);
+          const Clazz = eval('(class { constructor(a) { this.a = a; } aVal() { return this.a; } })');
+          const instance = injector.instantiate(Clazz);
           expect(instance).toEqual(new Clazz('a-value'));
           expect(instance.aVal()).toEqual('a-value');
         });
@@ -494,73 +497,75 @@ describe('injector', function() {
           'class//<--ES6 stuff\n {}',
           'class/* Test */{}',
           'class /* Test */ {}'
-        ], function(classDefinition) {
+        ], classDefinition => {
           // eslint-disable-next-line no-eval
-          var Clazz = eval('(' + classDefinition + ')');
-          var instance = injector.invoke(Clazz);
+          const Clazz = eval('(' + classDefinition + ')');
+          const instance = injector.invoke(Clazz);
 
-          expect(instance).toEqual(jasmine.any(Clazz));
+          expect(instance).toEqual(expect.any(Clazz));
         });
       }
     });
 
 
-    it('should publish annotate API', function() {
-      expect(angular.mock.$$annotate).toBe(annotate);
-      spyOn(angular.mock, '$$annotate').and.callThrough();
-      function fn() {}
+    it('should publish annotate API', () => {
+      expect(angular.isFunction(angular.mock.$$annotate)).toBe(true);
+      jest.spyOn(angular.mock, '$$annotate');
+      function fn() { }
       injector.annotate(fn);
       expect(angular.mock.$$annotate).toHaveBeenCalledWith(fn);
     });
   });
 
 
-  it('should have $injector', function() {
-    var $injector = createInjector();
+  it('should have $injector', () => {
+    const $injector = ngInternals.createInjector();
     expect($injector.get('$injector')).toBe($injector);
   });
 
 
-  it('should define module', function() {
-    var log = '';
-    var injector = createInjector([function($provide) {
+  it('should define module', () => {
+    let log = '';
+    const injector = ngInternals.createInjector([$provide => {
       $provide.value('value', 'value;');
-      $provide.factory('fn', valueFn('function;'));
+      $provide.factory('fn', ngInternals.valueFn('function;'));
       $provide.provider('service', function Provider() {
-        this.$get = valueFn('service;');
+        this.$get = ngInternals.valueFn('service;');
       });
-    }, function(valueProvider, fnProvider, serviceProvider) {
+    }, (valueProvider, fnProvider, serviceProvider) => {
       log += valueProvider.$get() + fnProvider.$get() + serviceProvider.$get();
-    }]).invoke(function(value, fn, service) {
+    }]).invoke((value, fn, service) => {
       log += '->' + value + fn + service;
     });
     expect(log).toEqual('value;function;service;->value;function;service;');
   });
 
 
-  describe('module', function() {
-    it('should provide $injector even when no module is requested', function() {
-      var $provide,
-        $injector = createInjector([
-          angular.extend(function(p) { $provide = p; }, {$inject: ['$provide']})
-        ]);
+  describe('module', () => {
+    it('should provide $injector even when no module is requested', () => {
+      let $provide;
+
+      const $injector = ngInternals.createInjector([
+        angular.extend(p => { $provide = p; }, { $inject: ['$provide'] })
+      ]);
+
       expect($injector.get('$injector')).toBe($injector);
     });
 
 
-    it('should load multiple function modules and infer inject them', function() {
-      var a = 'junk';
-      var $injector = createInjector([
-        function() {
+    it('should load multiple function modules and infer inject them', () => {
+      let a = 'junk';
+      const $injector = ngInternals.createInjector([
+        () => {
           a = 'A'; // reset to prove we ran
         },
-        function($provide) {
+        $provide => {
           $provide.value('a', a);
         },
-        angular.extend(function(p, serviceA) {
+        angular.extend((p, serviceA) => {
           p.value('b', serviceA.$get() + 'B');
-        }, {$inject:['$provide', 'aProvider']}),
-        ['$provide', 'bProvider', function(p, serviceB) {
+        }, { $inject: ['$provide', 'aProvider'] }),
+        ['$provide', 'bProvider', (p, serviceB) => {
           p.value('c', serviceB.$get() + 'C');
         }]
       ]);
@@ -570,121 +575,121 @@ describe('injector', function() {
     });
 
 
-    it('should run symbolic modules', function() {
-      angularModule('myModule', []).value('a', 'abc');
-      var $injector = createInjector(['myModule']);
+    it('should run symbolic modules', () => {
+      angular.module('myModule', []).value('a', 'abc');
+      const $injector = ngInternals.createInjector(['myModule']);
       expect($injector.get('a')).toEqual('abc');
     });
 
 
-    it('should error on invalid module name', function() {
-      expect(function() {
-        createInjector(['IDontExist'], {});
+    it('should error on invalid module name', () => {
+      expect(() => {
+        ngInternals.createInjector(['IDontExist'], {});
       }).toThrowMinErr('$injector', 'modulerr',
         /\[\$injector:nomod] Module 'IDontExist' is not available! You either misspelled the module name or forgot to load it/);
     });
 
 
-    it('should load dependant modules only once', function() {
-      var log = '';
-      angular.module('a', [], function() { log += 'a'; });
-      angular.module('b', ['a'], function() { log += 'b'; });
-      angular.module('c', ['a', 'b'], function() { log += 'c'; });
-      createInjector(['c', 'c']);
+    it('should load dependant modules only once', () => {
+      let log = '';
+      angular.module('a', [], () => { log += 'a'; });
+      angular.module('b', ['a'], () => { log += 'b'; });
+      angular.module('c', ['a', 'b'], () => { log += 'c'; });
+      ngInternals.createInjector(['c', 'c']);
       expect(log).toEqual('abc');
     });
 
-    it('should load different instances of dependent functions', function() {
-      function  generateValueModule(name, value) {
-        return function($provide) {
+    it('should load different instances of dependent functions', () => {
+      function generateValueModule(name, value) {
+        return $provide => {
           $provide.value(name, value);
         };
       }
-      var injector = createInjector([generateValueModule('name1', 'value1'),
-                                     generateValueModule('name2', 'value2')]);
+      const injector = angular.injector([generateValueModule('name1', 'value1'),
+      generateValueModule('name2', 'value2')]);
       expect(injector.get('name2')).toBe('value2');
     });
 
-    it('should load same instance of dependent function only once', function() {
-      var count = 0;
+    it('should load same instance of dependent function only once', () => {
+      let count = 0;
       function valueModule($provide) {
         count++;
         $provide.value('name', 'value');
       }
 
-      var injector = createInjector([valueModule, valueModule]);
+      const injector = ngInternals.createInjector([valueModule, valueModule]);
       expect(injector.get('name')).toBe('value');
       expect(count).toBe(1);
     });
 
-    it('should execute runBlocks after injector creation', function() {
-      var log = '';
-      angular.module('a', [], function() { log += 'a'; }).run(function() { log += 'A'; });
-      angular.module('b', ['a'], function() { log += 'b'; }).run(function() { log += 'B'; });
-      createInjector([
+    it('should execute runBlocks after injector creation', () => {
+      let log = '';
+      angular.module('a', [], () => { log += 'a'; }).run(() => { log += 'A'; });
+      angular.module('b', ['a'], () => { log += 'b'; }).run(() => { log += 'B'; });
+      ngInternals.createInjector([
         'b',
-        valueFn(function() { log += 'C'; }),
-        [valueFn(function() { log += 'D'; })]
+        ngInternals.valueFn(() => { log += 'C'; }),
+        [ngInternals.valueFn(() => { log += 'D'; })]
       ]);
       expect(log).toEqual('abABCD');
     });
 
-    it('should execute own config blocks after all own providers are invoked', function() {
-      var log = '';
+    it('should execute own config blocks after all own providers are invoked', () => {
+      let log = '';
       angular.module('a', ['b'])
-      .config(function($aProvider) {
-        log += 'aConfig;';
-      })
-      .provider('$a', function Provider$a() {
-        log += '$aProvider;';
-        this.$get = function() {};
-      });
+        .config($aProvider => {
+          log += 'aConfig;';
+        })
+        .provider('$a', function Provider$a() {
+          log += '$aProvider;';
+          this.$get = () => { };
+        });
       angular.module('b', [])
-      .config(function($bProvider) {
-        log += 'bConfig;';
-      })
-      .provider('$b', function Provider$b() {
-        log += '$bProvider;';
-        this.$get = function() {};
-      });
+        .config($bProvider => {
+          log += 'bConfig;';
+        })
+        .provider('$b', function Provider$b() {
+          log += '$bProvider;';
+          this.$get = () => { };
+        });
 
-      createInjector(['a']);
+      ngInternals.createInjector(['a']);
       expect(log).toBe('$bProvider;bConfig;$aProvider;aConfig;');
     });
 
-    describe('$provide', function() {
+    describe('$provide', () => {
 
-      it('should throw an exception if we try to register a service called "hasOwnProperty"', function() {
-        createInjector([function($provide) {
-          expect(function() {
-            $provide.provider('hasOwnProperty', function() {  });
+      it('should throw an exception if we try to register a service called "hasOwnProperty"', () => {
+        ngInternals.createInjector([$provide => {
+          expect(() => {
+            $provide.provider('hasOwnProperty', () => { });
           }).toThrowMinErr('ng', 'badname');
         }]);
       });
 
-      it('should throw an exception if we try to register a constant called "hasOwnProperty"', function() {
-        createInjector([function($provide) {
-          expect(function() {
+      it('should throw an exception if we try to register a constant called "hasOwnProperty"', () => {
+        ngInternals.createInjector([$provide => {
+          expect(() => {
             $provide.constant('hasOwnProperty', {});
           }).toThrowMinErr('ng', 'badname');
         }]);
       });
 
 
-      describe('constant', function() {
-        it('should create configuration injectable constants', function() {
-          var log = [];
-          createInjector([
-            function($provide) {
+      describe('constant', () => {
+        it('should create configuration injectable constants', () => {
+          const log = [];
+          ngInternals.createInjector([
+            $provide => {
               $provide.constant('abc', 123);
-              $provide.constant({a: 'A', b:'B'});
-              return function(a) {
+              $provide.constant({ a: 'A', b: 'B' });
+              return a => {
                 log.push(a);
               };
             },
-            function(abc) {
+            abc => {
               log.push(abc);
-              return function(b) {
+              return b => {
                 log.push(b);
               };
             }
@@ -694,45 +699,45 @@ describe('injector', function() {
       });
 
 
-      describe('value', function() {
-        it('should configure $provide values', function() {
-          expect(createInjector([function($provide) {
+      describe('value', () => {
+        it('should configure $provide values', () => {
+          expect(ngInternals.createInjector([$provide => {
             $provide.value('value', 'abc');
           }]).get('value')).toEqual('abc');
         });
 
 
-        it('should configure a set of values', function() {
-          expect(createInjector([function($provide) {
-            $provide.value({value: Array});
+        it('should configure a set of values', () => {
+          expect(ngInternals.createInjector([$provide => {
+            $provide.value({ value: Array });
           }]).get('value')).toEqual(Array);
         });
       });
 
 
-      describe('factory', function() {
-        it('should configure $provide factory function', function() {
-          expect(createInjector([function($provide) {
-            $provide.factory('value', valueFn('abc'));
+      describe('factory', () => {
+        it('should configure $provide factory function', () => {
+          expect(ngInternals.createInjector([$provide => {
+            $provide.factory('value', ngInternals.valueFn('abc'));
           }]).get('value')).toEqual('abc');
         });
 
 
-        it('should configure a set of factories', function() {
-          expect(createInjector([function($provide) {
-            $provide.factory({value: Array});
+        it('should configure a set of factories', () => {
+          expect(ngInternals.createInjector([$provide => {
+            $provide.factory({ value: Array });
           }]).get('value')).toEqual([]);
         });
       });
 
 
-      describe('service', function() {
-        it('should register a class', function() {
+      describe('service', () => {
+        it('should register a class', () => {
           function Type(value) {
             this.value = value;
           }
 
-          var instance = createInjector([function($provide) {
+          const instance = ngInternals.createInjector([$provide => {
             $provide.value('value', 123);
             $provide.service('foo', Type);
           }]).get('foo');
@@ -742,10 +747,10 @@ describe('injector', function() {
         });
 
 
-        it('should register a set of classes', function() {
-          var Type = function() {};
+        it('should register a set of classes', () => {
+          function Type() { };
 
-          var injector = createInjector([function($provide) {
+          const injector = ngInternals.createInjector([$provide => {
             $provide.service({
               foo: Type,
               bar: Type
@@ -758,177 +763,179 @@ describe('injector', function() {
       });
 
 
-      describe('provider', function() {
-        it('should configure $provide provider object', function() {
-          expect(createInjector([function($provide) {
+      describe('provider', () => {
+        it('should configure $provide provider object', () => {
+          expect(ngInternals.createInjector([$provide => {
             $provide.provider('value', {
-              $get: valueFn('abc')
+              $get: ngInternals.valueFn('abc')
             });
           }]).get('value')).toEqual('abc');
         });
 
 
-        it('should configure $provide provider type', function() {
-          function Type() {}
-          Type.prototype.$get = function() {
+        it('should configure $provide provider type', () => {
+          function Type() { }
+          Type.prototype.$get = function () {
             expect(this instanceof Type).toBe(true);
             return 'abc';
           };
-          expect(createInjector([function($provide) {
+          expect(ngInternals.createInjector([$provide => {
             $provide.provider('value', Type);
           }]).get('value')).toEqual('abc');
         });
 
 
-        it('should configure $provide using an array', function() {
+        it('should configure $provide using an array', () => {
           function Type(PREFIX) {
             this.prefix = PREFIX;
           }
-          Type.prototype.$get = function() {
+          Type.prototype.$get = function () {
             return this.prefix + 'def';
           };
-          expect(createInjector([function($provide) {
+          expect(ngInternals.createInjector([$provide => {
             $provide.constant('PREFIX', 'abc');
             $provide.provider('value', ['PREFIX', Type]);
           }]).get('value')).toEqual('abcdef');
         });
 
 
-        it('should configure a set of providers', function() {
-          expect(createInjector([function($provide) {
-            $provide.provider({value: valueFn({$get:Array})});
+        it('should configure a set of providers', () => {
+          expect(ngInternals.createInjector([$provide => {
+            $provide.provider({ value: ngInternals.valueFn({ $get: Array }) });
           }]).get('value')).toEqual([]);
         });
       });
 
 
-      describe('decorator', function() {
-        var log, injector;
+      describe('decorator', () => {
+        let log, injector;
 
-        beforeEach(function() {
+        beforeEach(() => {
           log = [];
         });
 
 
-        it('should be called with the original instance', function() {
-          injector = createInjector([function($provide) {
-            $provide.value('myService', function(val) {
+        it('should be called with the original instance', () => {
+          injector = ngInternals.createInjector([$provide => {
+            $provide.value('myService', val => {
               log.push('myService:' + val);
               return 'origReturn';
             });
 
-            $provide.decorator('myService', function($delegate) {
-              return function(val) {
+            $provide.decorator('myService', $delegate => {
+              return val => {
                 log.push('myDecoratedService:' + val);
-                var origVal = $delegate('decInput');
+                const origVal = $delegate('decInput');
                 return 'dec+' + origVal;
               };
             });
           }]);
 
-          var out = injector.get('myService')('input');
+          const out = injector.get('myService')('input');
           log.push(out);
           expect(log.join('; ')).
             toBe('myDecoratedService:input; myService:decInput; dec+origReturn');
         });
 
 
-        it('should allow multiple decorators to be applied to a service', function() {
-          injector = createInjector([function($provide) {
-            $provide.value('myService', function(val) {
+        it('should allow multiple decorators to be applied to a service', () => {
+          injector = ngInternals.createInjector([$provide => {
+            $provide.value('myService', val => {
               log.push('myService:' + val);
               return 'origReturn';
             });
 
-            $provide.decorator('myService', function($delegate) {
-              return function(val) {
+            $provide.decorator('myService', $delegate => {
+              return val => {
                 log.push('myDecoratedService1:' + val);
-                var origVal = $delegate('decInput1');
+                const origVal = $delegate('decInput1');
                 return 'dec1+' + origVal;
               };
             });
 
-            $provide.decorator('myService', function($delegate) {
-              return function(val) {
+            $provide.decorator('myService', $delegate => {
+              return val => {
                 log.push('myDecoratedService2:' + val);
-                var origVal = $delegate('decInput2');
+                const origVal = $delegate('decInput2');
                 return 'dec2+' + origVal;
               };
             });
           }]);
 
-          var out = injector.get('myService')('input');
+          const out = injector.get('myService')('input');
           log.push(out);
           expect(log).toEqual(['myDecoratedService2:input',
-                               'myDecoratedService1:decInput2',
-                               'myService:decInput1',
-                               'dec2+dec1+origReturn']);
+            'myDecoratedService1:decInput2',
+            'myService:decInput1',
+            'dec2+dec1+origReturn']);
         });
 
 
-        it('should decorate services with dependencies', function() {
-          injector = createInjector([function($provide) {
+        it('should decorate services with dependencies', () => {
+          injector = ngInternals.createInjector([$provide => {
             $provide.value('dep1', 'dependency1');
 
-            $provide.factory('myService', ['dep1', function(dep1) {
-              return function(val) {
+            $provide.factory('myService', ['dep1', dep1 => {
+              return val => {
                 log.push('myService:' + val + ',' + dep1);
                 return 'origReturn';
               };
             }]);
 
-            $provide.decorator('myService', function($delegate) {
-              return function(val) {
+            $provide.decorator('myService', $delegate => {
+              return val => {
                 log.push('myDecoratedService:' + val);
-                var origVal = $delegate('decInput');
+                const origVal = $delegate('decInput');
                 return 'dec+' + origVal;
               };
             });
           }]);
 
-          var out = injector.get('myService')('input');
+          const out = injector.get('myService')('input');
           log.push(out);
           expect(log.join('; ')).
             toBe('myDecoratedService:input; myService:decInput,dependency1; dec+origReturn');
         });
 
 
-        it('should allow for decorators to be injectable', function() {
-          injector = createInjector([function($provide) {
+        it('should allow for decorators to be injectable', () => {
+          injector = ngInternals.createInjector([$provide => {
             $provide.value('dep1', 'dependency1');
 
-            $provide.factory('myService', function() {
-              return function(val) {
+            $provide.factory('myService', () => {
+              return val => {
                 log.push('myService:' + val);
                 return 'origReturn';
               };
             });
 
-            $provide.decorator('myService', function($delegate, dep1) {
-              return function(val) {
+            $provide.decorator('myService', ($delegate, dep1) => {
+              return val => {
                 log.push('myDecoratedService:' + val + ',' + dep1);
-                var origVal = $delegate('decInput');
+                const origVal = $delegate('decInput');
                 return 'dec+' + origVal;
               };
             });
           }]);
 
-          var out = injector.get('myService')('input');
+          const out = injector.get('myService')('input');
           log.push(out);
           expect(log.join('; ')).
             toBe('myDecoratedService:input,dependency1; myService:decInput; dec+origReturn');
         });
 
 
-        it('should allow for decorators to $injector', function() {
-          injector = createInjector(['ng', function($provide) {
-            $provide.decorator('$injector', function($delegate) {
-              return extend({}, $delegate, {get: function(val) {
-                if (val === 'key') {
-                  return 'value';
+        it('should allow for decorators to $injector', () => {
+          injector = ngInternals.createInjector(['ng', $provide => {
+            $provide.decorator('$injector', $delegate => {
+              return angular.extend({}, $delegate, {
+                get: function (val) {
+                  if (val === 'key') {
+                    return 'value';
+                  }
+                  return $delegate.get(val);
                 }
-                return $delegate.get(val);
-              }});
+              });
             });
           }]);
 
@@ -939,71 +946,71 @@ describe('injector', function() {
     });
 
 
-    describe('error handling', function() {
-      it('should handle wrong argument type', function() {
-        expect(function() {
-          createInjector([
+    describe('error handling', () => {
+      it('should handle wrong argument type', () => {
+        expect(() => {
+          ngInternals.createInjector([
             {}
           ], {});
         }).toThrowMinErr('$injector', 'modulerr', /Failed to instantiate module \{\} due to:\n.*\[ng:areq] Argument 'module' is not a function, got Object/);
       });
 
 
-      it('should handle exceptions', function() {
-        expect(function() {
-          createInjector([function() {
+      it('should handle exceptions', () => {
+        expect(() => {
+          ngInternals.createInjector([() => {
             throw new Error('MyError');
           }], {});
         }).toThrowMinErr('$injector', 'modulerr', /Failed to instantiate module .+ due to:\n.*MyError/);
       });
 
 
-      it('should decorate the missing service error with module name', function() {
-        angular.module('TestModule', [], function(xyzzy) {});
-        expect(function() {
-          createInjector(['TestModule']);
+      it('should decorate the missing service error with module name', () => {
+        angular.module('TestModule', [], xyzzy => { });
+        expect(() => {
+          ngInternals.createInjector(['TestModule']);
         }).toThrowMinErr(
           '$injector', 'modulerr', /Failed to instantiate module TestModule due to:\n.*\[\$injector:unpr] Unknown provider: xyzzy/
         );
       });
 
 
-      it('should decorate the missing service error with module function', function() {
-        function myModule(xyzzy) {}
-        expect(function() {
-          createInjector([myModule]);
+      it('should decorate the missing service error with module function', () => {
+        function myModule(xyzzy) { }
+        expect(() => {
+          ngInternals.createInjector([myModule]);
         }).toThrowMinErr(
           '$injector', 'modulerr', /Failed to instantiate module function myModule\(xyzzy\) due to:\n.*\[\$injector:unpr] Unknown provider: xyzzy/
         );
       });
 
 
-      it('should decorate the missing service error with module array function', function() {
-        function myModule(xyzzy) {}
-        expect(function() {
-          createInjector([['xyzzy', myModule]]);
+      it('should decorate the missing service error with module array function', () => {
+        function myModule(xyzzy) { }
+        expect(() => {
+          ngInternals.createInjector([['xyzzy', myModule]]);
         }).toThrowMinErr(
           '$injector', 'modulerr', /Failed to instantiate module function myModule\(xyzzy\) due to:\n.*\[\$injector:unpr] Unknown provider: xyzzy/
         );
       });
 
 
-      it('should throw error when trying to inject oneself', function() {
-        expect(function() {
-          createInjector([function($provide) {
-            $provide.factory('service', function(service) {});
-            return function(service) {};
+      it('should throw error when trying to inject oneself', () => {
+        expect(() => {
+          ngInternals.createInjector([$provide => {
+            $provide.factory('service', service => { });
+            return service => { };
           }]);
         }).toThrowMinErr('$injector', 'cdep', 'Circular dependency found: service <- service');
       });
 
 
-      it('should throw error when trying to inject circular dependency', function() {
-        expect(function() {
-          createInjector([function($provide) {
-            $provide.factory('a', function(b) {});
-            $provide.factory('b', function(a) {});
-            return function(a) {};
+      it('should throw error when trying to inject circular dependency', () => {
+        expect(() => {
+          ngInternals.createInjector([$provide => {
+            $provide.factory('a', b => { });
+            $provide.factory('b', a => { });
+            return a => { };
           }]);
         }).toThrowMinErr('$injector', 'cdep', 'Circular dependency found: a <- b <- a');
       });
@@ -1012,114 +1019,114 @@ describe('injector', function() {
   });
 
 
-  describe('retrieval', function() {
-    var instance = {name:'angular'};
+  describe('retrieval', () => {
+    const instance = { name: 'angular' };
     function Instance() { this.name = 'angular'; }
 
     function createInjectorWithValue(instanceName, instance) {
-      return createInjector([['$provide', function(provide) {
+      return ngInternals.createInjector([['$provide', provide => {
         provide.value(instanceName, instance);
       }]]);
     }
     function createInjectorWithFactory(serviceName, serviceDef) {
-      return createInjector([['$provide', function(provide) {
+      return ngInternals.createInjector([['$provide', provide => {
         provide.factory(serviceName, serviceDef);
       }]]);
     }
 
 
-    it('should retrieve by name', function() {
-      var $injector = createInjectorWithValue('instance', instance);
-      var retrievedInstance = $injector.get('instance');
+    it('should retrieve by name', () => {
+      const $injector = createInjectorWithValue('instance', instance);
+      const retrievedInstance = $injector.get('instance');
       expect(retrievedInstance).toBe(instance);
     });
 
 
-    it('should cache instance', function() {
-      var $injector = createInjectorWithFactory('instance', function() { return new Instance(); });
-      var instance = $injector.get('instance');
+    it('should cache instance', () => {
+      const $injector = createInjectorWithFactory('instance', () => { return new Instance(); });
+      const instance = $injector.get('instance');
       expect($injector.get('instance')).toBe(instance);
       expect($injector.get('instance')).toBe(instance);
     });
 
 
-    it('should call functions and infer arguments', function() {
-      var $injector = createInjectorWithValue('instance', instance);
-      expect($injector.invoke(function(instance) { return instance; })).toBe(instance);
+    it('should call functions and infer arguments', () => {
+      const $injector = createInjectorWithValue('instance', instance);
+      expect($injector.invoke(instance => { return instance; })).toBe(instance);
     });
 
   });
 
 
-  describe('method invoking', function() {
-    var $injector;
+  describe('method invoking', () => {
+    let $injector;
 
-    beforeEach(function() {
-      $injector = createInjector([function($provide) {
+    beforeEach(() => {
+      $injector = ngInternals.createInjector([$provide => {
         $provide.value('book', 'moby');
         $provide.value('author', 'melville');
       }]);
     });
 
 
-    it('should invoke method', function() {
-      expect($injector.invoke(function(book, author) {
+    it('should invoke method', () => {
+      expect($injector.invoke((book, author) => {
         return author + ':' + book;
       })).toEqual('melville:moby');
-      expect($injector.invoke(function(book, author) {
+      expect($injector.invoke(function (book, author) {
         expect(this).toEqual($injector);
         return author + ':' + book;
       }, $injector)).toEqual('melville:moby');
     });
 
 
-    it('should invoke method with locals', function() {
-      expect($injector.invoke(function(book, author) {
+    it('should invoke method with locals', () => {
+      expect($injector.invoke((book, author) => {
         return author + ':' + book;
       })).toEqual('melville:moby');
       expect($injector.invoke(
-        function(book, author, chapter) {
+        function (book, author, chapter) {
           expect(this).toEqual($injector);
           return author + ':' + book + '-' + chapter;
-        }, $injector, {author:'m', chapter:'ch1'})).toEqual('m:moby-ch1');
+        }, $injector, { author: 'm', chapter: 'ch1' })).toEqual('m:moby-ch1');
     });
 
 
-    it('should invoke method which is annotated', function() {
-      expect($injector.invoke(extend(function(b, a) {
+    it('should invoke method which is annotated', () => {
+      expect($injector.invoke(angular.extend((b, a) => {
         return a + ':' + b;
-      }, {$inject:['book', 'author']}))).toEqual('melville:moby');
-      expect($injector.invoke(extend(function(b, a) {
+      }, { $inject: ['book', 'author'] }))).toEqual('melville:moby');
+      expect($injector.invoke(angular.extend(function (b, a) {
         expect(this).toEqual($injector);
         return a + ':' + b;
-      }, {$inject:['book', 'author']}), $injector)).toEqual('melville:moby');
+      }, { $inject: ['book', 'author'] }), $injector)).toEqual('melville:moby');
     });
 
 
-    it('should invoke method which is an array of annotation', function() {
-      expect($injector.invoke(function(book, author) {
+    it('should invoke method which is an array of annotation', () => {
+      expect($injector.invoke((book, author) => {
         return author + ':' + book;
       })).toEqual('melville:moby');
-      expect($injector.invoke(function(book, author) {
+      expect($injector.invoke(function (book, author) {
         expect(this).toEqual($injector);
         return author + ':' + book;
       }, $injector)).toEqual('melville:moby');
     });
 
 
-    it('should throw useful error on wrong argument type]', function() {
-      expect(function() {
+    it('should throw useful error on wrong argument type]', () => {
+      expect(() => {
         $injector.invoke({});
       }).toThrowMinErr('ng', 'areq', 'Argument \'fn\' is not a function, got Object');
     });
   });
 
 
-  describe('service instantiation', function() {
-    var $injector;
+  describe('service instantiation', () => {
+    let $injector;
 
-    beforeEach(function() {
-      $injector = createInjector([function($provide) {
+    beforeEach(() => {
+      $injector = ngInternals.createInjector([$provide => {
         $provide.value('book', 'moby');
         $provide.value('author', 'melville');
       }]);
@@ -1130,13 +1137,13 @@ describe('injector', function() {
       this.book = book;
       this.author = author;
     }
-    Type.prototype.title = function() {
+    Type.prototype.title = function () {
       return this.author + ': ' + this.book;
     };
 
 
-    it('should instantiate object and preserve constructor property and be instanceof', function() {
-      var t = $injector.instantiate(Type);
+    it('should instantiate object and preserve constructor property and be instanceof', () => {
+      const t = $injector.instantiate(Type);
       expect(t.book).toEqual('moby');
       expect(t.author).toEqual('melville');
       expect(t.title()).toEqual('melville: moby');
@@ -1145,18 +1152,18 @@ describe('injector', function() {
 
 
     it('should instantiate object and preserve constructor property and be instanceof ' +
-        'with the array annotated type', function() {
-      var t = $injector.instantiate(['book', 'author', Type]);
-      expect(t.book).toEqual('moby');
-      expect(t.author).toEqual('melville');
-      expect(t.title()).toEqual('melville: moby');
-      expect(t instanceof Type).toBe(true);
-    });
+      'with the array annotated type', () => {
+        const t = $injector.instantiate(['book', 'author', Type]);
+        expect(t.book).toEqual('moby');
+        expect(t.author).toEqual('melville');
+        expect(t.title()).toEqual('melville: moby');
+        expect(t instanceof Type).toBe(true);
+      });
 
 
-    it('should allow constructor to return different object', function() {
-      var obj = {};
-      var Class = function() {
+    it('should allow constructor to return different object', () => {
+      const obj = {};
+      function Class() {
         return obj;
       };
 
@@ -1164,9 +1171,9 @@ describe('injector', function() {
     });
 
 
-    it('should allow constructor to return a function', function() {
-      var fn = function() {};
-      var Class = function() {
+    it('should allow constructor to return a function', () => {
+      function fn() { };
+      function Class() {
         return fn;
       };
 
@@ -1174,23 +1181,23 @@ describe('injector', function() {
     });
 
 
-    it('should handle constructor exception', function() {
-      expect(function() {
-        $injector.instantiate(function() { throw 'MyError'; });
+    it('should handle constructor exception', () => {
+      expect(() => {
+        $injector.instantiate(function () { throw 'MyError'; });
       }).toThrow('MyError');
     });
 
 
-    it('should return instance if constructor returns non-object value', function() {
-      var A = function() {
+    it('should return instance if constructor returns non-object value', () => {
+      function A() {
         return 10;
       };
 
-      var B = function() {
+      function B() {
         return 'some-string';
       };
 
-      var C = function() {
+      function C() {
         return undefined;
       };
 
@@ -1200,29 +1207,29 @@ describe('injector', function() {
     });
   });
 
-  describe('protection modes', function() {
-    it('should prevent provider lookup in app', function() {
-      var  $injector = createInjector([function($provide) {
+  describe('protection modes', () => {
+    it('should prevent provider lookup in app', () => {
+      const $injector = ngInternals.createInjector([$provide => {
         $provide.value('name', 'angular');
       }]);
-      expect(function() {
+      expect(() => {
         $injector.get('nameProvider');
       }).toThrowMinErr('$injector', 'unpr', 'Unknown provider: nameProviderProvider <- nameProvider');
     });
 
 
-    it('should prevent provider configuration in app', function() {
-      var  $injector = createInjector([]);
-      expect(function() {
+    it('should prevent provider configuration in app', () => {
+      const $injector = ngInternals.createInjector([]);
+      expect(() => {
         $injector.get('$provide').value('a', 'b');
       }).toThrowMinErr('$injector', 'unpr', 'Unknown provider: $provideProvider <- $provide');
     });
 
 
-    it('should prevent instance lookup in module', function() {
+    it('should prevent instance lookup in module', () => {
       function instanceLookupInModule(name) { throw new Error('FAIL'); }
-      expect(function() {
-        createInjector([function($provide) {
+      expect(() => {
+        ngInternals.createInjector([$provide => {
           $provide.value('name', 'angular');
         }, instanceLookupInModule]);
       }).toThrowMinErr('$injector', 'modulerr', '[$injector:unpr] Unknown provider: name');
@@ -1230,22 +1237,22 @@ describe('injector', function() {
   });
 });
 
-describe('strict-di injector', function() {
+describe('strict-di injector', () => {
   beforeEach(inject.strictDi(true));
 
-  describe('with ngMock', function() {
-    it('should not throw when calling mock.module() with "magic" annotations', function() {
-      expect(function() {
-        module(function($provide, $httpProvider, $compileProvider) {
+  describe('with ngMock', () => {
+    it('should not throw when calling mock.module() with "magic" annotations', () => {
+      expect(() => {
+        angular.mock.module(($provide, $httpProvider, $compileProvider) => {
           // Don't throw!
         });
       }).not.toThrow();
     });
 
 
-    it('should not throw when calling mock.inject() with "magic" annotations', function() {
-      expect(function() {
-        inject(function($rootScope, $compile, $http) {
+    it('should not throw when calling mock.inject() with "magic" annotations', () => {
+      expect(() => {
+        angular.mock.inject(($rootScope, $compile, $http) => {
           // Don't throw!
         });
       }).not.toThrow();
@@ -1253,75 +1260,75 @@ describe('strict-di injector', function() {
   });
 
 
-  it('should throw if magic annotation is used by service', function() {
-    module(function($provide) {
+  it('should throw if magic annotation is used by service', () => {
+    angular.mock.module($provide => {
       $provide.service({
-        '$test': function() { return this; },
-        '$test2': function($test) { return this; }
+        '$test': function () { return this; },
+        '$test2': function ($test) { return this; }
       });
     });
-    inject(function($injector) {
-      expect(function() {
-        $injector.invoke(function($test2) {});
+    angular.mock.inject($injector => {
+      expect(() => {
+        $injector.invoke($test2 => { });
       }).toThrowMinErr('$injector', 'strictdi');
     });
   });
 
 
-  it('should throw if magic annotation is used by provider', function() {
-    module(function($provide) {
+  it('should throw if magic annotation is used by provider', () => {
+    angular.mock.module($provide => {
       $provide.provider({
-        '$test': function() { this.$get = function($rootScope) { return $rootScope; }; }
+        '$test': function () { this.$get = $rootScope => { return $rootScope; }; }
       });
     });
-    inject(function($injector) {
-      expect(function() {
-        $injector.invoke(['$test', function($test) {}]);
+    angular.mock.inject($injector => {
+      expect(() => {
+        $injector.invoke(['$test', $test => { }]);
       }).toThrowMinErr('$injector', 'strictdi');
     });
   });
 
 
-  it('should throw if magic annotation is used by factory', function() {
-    module(function($provide) {
+  it('should throw if magic annotation is used by factory', () => {
+    angular.mock.module($provide => {
       $provide.factory({
-        '$test': function($rootScope) { return function() {}; }
+        '$test': function ($rootScope) { return () => { }; }
       });
     });
-    inject(function($injector) {
-      expect(function() {
-        $injector.invoke(['$test', function(test) {}]);
+    angular.mock.inject($injector => {
+      expect(() => {
+        $injector.invoke(['$test', test => { }]);
       }).toThrowMinErr('$injector', 'strictdi');
     });
   });
 
 
-  it('should throw if factory does not return a value', function() {
-    module(function($provide) {
-      $provide.factory('$test', function() {});
+  it('should throw if factory does not return a value', () => {
+    angular.mock.module($provide => {
+      $provide.factory('$test', () => { });
     });
-    expect(function() {
-      inject(function($test) {});
+    expect(() => {
+      angular.mock.inject($test => { });
     }).toThrowMinErr('$injector', 'undef');
   });
 
 
-  it('should always use provider as `this` when invoking a factory', function() {
-    var called = false;
+  it('should always use provider as `this` when invoking a factory', () => {
+    let called = false;
 
     function factoryFn() {
       called = true;
       expect(typeof this.$get).toBe('function');
       return this;
     }
-    module(function($provide) {
+    angular.mock.module($provide => {
       $provide.factory('$test', factoryFn);
     });
-    inject(function($test) {});
+    angular.mock.inject($test => { });
     expect(called).toBe(true);
   });
 
-  it('should set strictDi property to true on the injector instance', inject(function($injector) {
+  it('should set strictDi property to true on the injector instance', angular.mock.inject($injector => {
     expect($injector.strictDi).toBe(true);
   }));
 });

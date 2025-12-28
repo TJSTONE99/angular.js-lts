@@ -2,18 +2,20 @@ export const modules = [
   {
     name: "angular",
     description: "HTML enhanced for web apps",
-    copy: [
-      {
-        from: "css/angular.css",
-        to: "angular-csp.css"
-      }
-    ],
+    copy: [],
     jsFiles: [
       {
         name: "angular",
         module: false,
+        prefix: {
+          dist: "build-scripts/config/prefix/angular.prefix",
+          test: "build-scripts/config/prefix/angular.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/angular.suffix",
+          test: "build-scripts/config/suffix/angular.test.suffix"
+        },
         segments: [
-          "src/angular.prefix",
           "src/minErr.js",
           "src/Angular.js",
           "src/loader.js",
@@ -22,6 +24,7 @@ export const modules = [
           "src/AngularPublic.js",
           "src/jqLite.js",
           "src/apis.js",
+          "src/routeToRegExp.js",
           "src/auto/injector.js",
           "src/ng/anchorScroll.js",
           "src/ng/animate.js",
@@ -38,6 +41,7 @@ export const modules = [
           "src/ng/httpBackend.js",
           "src/ng/interpolate.js",
           "src/ng/interval.js",
+          "src/ng/intervalFactory.js",
           "src/ng/jsonpCallbacks.js",
           "src/ng/locale.js",
           "src/ng/location.js",
@@ -50,6 +54,7 @@ export const modules = [
           "src/ng/sanitizeUri.js",
           "src/ng/sce.js",
           "src/ng/sniffer.js",
+          "src/ng/taskTrackerFactory.js",
           "src/ng/templateRequest.js",
           "src/ng/testability.js",
           "src/ng/timeout.js",
@@ -82,6 +87,7 @@ export const modules = [
           "src/ng/directive/ngNonBindable.js",
           "src/ng/directive/ngOptions.js",
           "src/ng/directive/ngPluralize.js",
+          "src/ng/directive/ngRef.js",
           "src/ng/directive/ngRepeat.js",
           "src/ng/directive/ngShowHide.js",
           "src/ng/directive/ngStyle.js",
@@ -93,15 +99,8 @@ export const modules = [
           "src/angular.bind.js",
           "src/publishExternalApis.js",
           "src/ngLocale/angular-locale_en-us.js",
-          "src/angular.suffix"
+          "src/ng/injectStyles.js"
         ]
-      },
-      {
-        name: "ngComponent",
-        module: true,
-        segments: [
-          'src/es6Bindings/ngComponent.js'
-        ],
       }
     ]
   },
@@ -113,8 +112,16 @@ export const modules = [
       {
         name: "angular-animate",
         module: false,
+        prefix: {
+          dist: "build-scripts/config/prefix/module.prefix",
+          test: "build-scripts/config/prefix/module.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/module.suffix",
+          test: "build-scripts/config/suffix/animate.test.suffix"
+        },
         segments: [
-          "src/angular.prefix",
+          'src/ngAnimate/animateCache.js',
           'src/ngAnimate/shared.js',
           'src/ngAnimate/rafScheduler.js',
           'src/ngAnimate/animateChildrenDirective.js',
@@ -125,8 +132,7 @@ export const modules = [
           'src/ngAnimate/animateQueue.js',
           'src/ngAnimate/animation.js',
           'src/ngAnimate/ngAnimateSwap.js',
-          'src/ngAnimate/module.js',
-          "src/angular.suffix"
+          'src/ngAnimate/module.js'
         ],
       }
     ],
@@ -140,11 +146,17 @@ export const modules = [
       {
         name: "angular-cookies",
         module: false,
+        prefix: {
+          dist: "build-scripts/config/prefix/module.prefix",
+          test: "build-scripts/config/prefix/module.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/module.suffix",
+          test: "build-scripts/config/suffix/module.suffix",
+        },
         segments: [
-          "src/angular.prefix",
           'src/ngCookies/cookies.js',
-          'src/ngCookies/cookieWriter.js',
-          "src/angular.suffix"
+          'src/ngCookies/cookieWriter.js'
         ],
       }
     ],
@@ -158,14 +170,20 @@ export const modules = [
       {
         name: "angular-message-format",
         module: false,
+        prefix: {
+          dist: "build-scripts/config/prefix/module.prefix",
+          test: "build-scripts/config/prefix/module.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/module.suffix",
+          test: "build-scripts/config/suffix/module.suffix",
+        },
         segments: [
-          "src/angular.prefix",
           'src/ngMessageFormat/messageFormatCommon.js',
           'src/ngMessageFormat/messageFormatSelector.js',
           'src/ngMessageFormat/messageFormatInterpolationParts.js',
           'src/ngMessageFormat/messageFormatParser.js',
-          'src/ngMessageFormat/messageFormatService.js',
-          "src/angular.suffix"
+          'src/ngMessageFormat/messageFormatService.js'
         ],
       }
     ],
@@ -179,10 +197,16 @@ export const modules = [
       {
         name: "angular-messages",
         module: false,
+        prefix: {
+          dist: "build-scripts/config/prefix/module.prefix",
+          test: "build-scripts/config/prefix/module.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/module.suffix",
+          test: "build-scripts/config/suffix/module.suffix",
+        },
         segments: [
-          "src/angular.prefix",
-          'src/ngMessages/messages.js',
-          "src/angular.suffix"
+          'src/ngMessages/messages.js'
         ],
       }
     ],
@@ -201,12 +225,18 @@ export const modules = [
             if_return: false,
           }
         },
+        prefix: {
+          dist: "build-scripts/config/prefix/module.prefix",
+          test: "build-scripts/config/prefix/module.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/module.suffix",
+          test: "build-scripts/config/suffix/module.suffix",
+        },
         module: false,
         segments: [
-          "src/angular.prefix",
           'src/ngParseExt/ucd.js',
-          'src/ngParseExt/module.js',
-          "src/angular.suffix",
+          'src/ngParseExt/module.js'
         ],
       }
     ],
@@ -220,6 +250,14 @@ export const modules = [
       {
         name: "angular-resource",
         module: false,
+        prefix: {
+          dist: null,
+          test: null,
+        },
+        suffix: {
+          dist: null,
+          test: "build-scripts/config/suffix/resource.test.suffix"
+        },
         segments: [
           'src/ngResource/resource.js'
         ],
@@ -235,13 +273,20 @@ export const modules = [
       {
         name: "angular-route",
         module: false,
+        prefix: {
+          dist: "build-scripts/config/prefix/module.prefix",
+          test: "build-scripts/config/prefix/module.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/module.suffix",
+          test: "build-scripts/config/suffix/module.suffix"
+        },
         segments: [
-          "src/angular.prefix",
           'src/shallowCopy.js',
+          'src/routeToRegExp.js',
           'src/ngRoute/route.js',
           'src/ngRoute/routeParams.js',
-          'src/ngRoute/directive/ngView.js',
-          "src/angular.suffix"
+          'src/ngRoute/directive/ngView.js'
         ],
       }
     ],
@@ -255,11 +300,17 @@ export const modules = [
       {
         name: "angular-sanitize",
         module: false,
+        prefix: {
+          dist: "build-scripts/config/prefix/module.prefix",
+          test: "build-scripts/config/prefix/module.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/module.suffix",
+          test: "build-scripts/config/suffix/sanitize.test.suffix"
+        },
         segments: [
-          "src/angular.prefix",
           'src/ngSanitize/sanitize.js',
-          'src/ngSanitize/filter/linky.js',
-          "src/angular.suffix"
+          'src/ngSanitize/filter/linky.js'
         ],
       }
     ],
@@ -273,11 +324,18 @@ export const modules = [
       {
         name: "angular-mocks",
         module: false,
+        prefix: {
+          dist: "build-scripts/config/prefix/module.prefix",
+          test: "build-scripts/config/prefix/module.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/module.suffix",
+          test: "build-scripts/config/suffix/module.suffix"
+        },
         segments: [
-          "src/angular.prefix",
+          'src/routeToRegExp.js',
           'src/ngMock/angular-mocks.js',
-          'src/ngMock/browserTrigger.js',
-          "src/angular.suffix"
+          'src/ngMock/browserTrigger.js'
         ],
       }
     ],
@@ -291,12 +349,18 @@ export const modules = [
       {
         name: "angular-touch",
         module: false,
+        prefix: {
+          dist: "build-scripts/config/prefix/module.prefix",
+          test: "build-scripts/config/prefix/module.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/module.suffix",
+          test: "build-scripts/config/suffix/module.suffix"
+        },
         segments: [
-          "src/angular.prefix",
           'src/ngTouch/touch.js',
           'src/ngTouch/swipe.js',
-          'src/ngTouch/directive/ngSwipe.js',
-          "src/angular.suffix"
+          'src/ngTouch/directive/ngSwipe.js'
         ],
       }
     ],
@@ -310,10 +374,16 @@ export const modules = [
       {
         name: "angular-aria",
         module: false,
+        prefix: {
+          dist: "build-scripts/config/prefix/module.prefix",
+          test: "build-scripts/config/prefix/module.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/module.suffix",
+          test: "build-scripts/config/suffix/aria.test.suffix"
+        },
         segments: [
-          "src/angular.prefix",
-          'src/ngAria/aria.js',
-          "src/angular.suffix"
+          'src/ngAria/aria.js'
         ],
       }
     ],
