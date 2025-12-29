@@ -107,6 +107,34 @@ npm run test:e2e:serve
 3. **Test**: Run `npm test` for unit tests or `npm run test:e2e` for E2E tests
 4. **Development**: Use `npm run test:e2e:dev` for interactive development with E2E tests
 
+## Deployment
+
+To deploy AngularJS to bower repositories and npm:
+
+```bash
+npm run deploy
+```
+
+To deploy only to bower repositories (skip npm publishing):
+
+```bash
+npm run deploy:skip-npm
+```
+
+This will:
+- Build the project
+- Copy files to `bower-angular-lts` and `bower-angular-sanitize-lts` repositories (if they exist)
+- Update bower.json versions to match package.json
+- Commit changes and create git tags
+- Push changes to remote repositories
+- Publish `angular-lts` and `angular-sanitize-lts` packages to npm (unless skipped)
+
+**NPM Publishing Notes:**
+- The script will attempt to login to npm if you're not authenticated
+- If you have 2FA enabled, you may need to use an automation token or provide OTP
+- The script checks for existing package versions to avoid duplicate publishes
+- Use `npm run deploy:skip-npm` to deploy only to bower repositories
+
 ## Build System
 
 This LTS version uses a modern build system with:

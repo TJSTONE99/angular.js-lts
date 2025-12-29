@@ -16,6 +16,8 @@
   },
   "scripts": {
     "build": "node ./build-scripts/BuildDist.js",
+    "deploy": "npm run build && node ./deploy-scripts/deploy.js",
+    "deploy:skip-npm": "npm run build && node ./deploy-scripts/deploy.js --skip-npm",
     "test": "npm run test:build && jest",
     "test:log": "npm run test:build && jest 2>&1 | tee jest.log",
     "test:build": "node ./build-scripts/BuildDist.js --test",

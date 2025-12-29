@@ -251,12 +251,12 @@ export const modules = [
         name: "angular-resource",
         module: false,
         prefix: {
-          dist: null,
+          dist: "build-scripts/config/prefix/module.prefix",
           test: null,
         },
         suffix: {
-          dist: null,
-          test: "build-scripts/config/suffix/resource.test.suffix"
+          dist: "build-scripts/config/suffix/module.suffix",
+          test: "build-scripts/config/suffix/resource.test.suffix",
         },
         segments: [
           'src/ngResource/resource.js'
