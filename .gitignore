@@ -21,3 +21,4 @@ npm-debug.log
 *.log
 /dist
 /test/.build
+/test/e2e/.test-results

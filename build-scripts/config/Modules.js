@@ -400,4 +400,29 @@ export const modules = [
     ],
     jsFiles: []
   },
+  {
+    name: "angular-loader",
+    description: "AngularJS module for loading",
+    copy: [],
+    jsFiles: [
+      {
+        name: "angular-loader",
+        module: false,
+        prefix: {
+          dist: "build-scripts/config/prefix/angular-loader.prefix",
+          test: "build-scripts/config/prefix/angular-loader.prefix",
+        },
+        suffix: {
+          dist: "build-scripts/config/suffix/angular-loader.suffix",
+          test: "build-scripts/config/suffix/angular-loader.suffix"
+        },
+        segments: [
+          'src/stringify.js',
+          'src/minErr.js',
+          'src/loader.js'
+        ],
+      }
+    ],
+    peerDependencies: ["angular"]
+  }
 ];

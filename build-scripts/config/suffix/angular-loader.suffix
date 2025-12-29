@@ -1,0 +1,4 @@
+    setupModuleLoader(window);
+})(window);
+
+angular.Module;

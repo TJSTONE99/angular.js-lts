@@ -12,18 +12,26 @@
   },
   "engines": {
     "node": "^20.10.0",
-    "npm": "^10.2.3",
-    "grunt": "^1.2.0"
+    "npm": "^10.2.3"
   },
   "scripts": {
     "build": "node ./build-scripts/BuildDist.js",
     "test": "npm run test:build && jest",
     "test:log": "npm run test:build && jest 2>&1 | tee jest.log",
-    "test:build": "node ./build-scripts/BuildDist.js --test"
+    "test:build": "node ./build-scripts/BuildDist.js --test",
+    "test:e2e": "npm run test:e2e:build && npm run test:e2e:run",
+    "test:e2e:build": "npm run build",
+    "test:e2e:serve": "node --env-file=test/e2e/.env test/e2e/server.cjs",
+    "test:e2e:run": "node --env-file=test/e2e/.env ./node_modules/.bin/playwright test",
+    "test:e2e:dev": "npm run test:e2e:build && npm run test:e2e:serve"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@swc/core": "^1.7.26",
+    "express": "^5.2.1",
+    "http-server": "^14.1.1",
     "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0"
+    "jest-environment-jsdom": "^29.7.0",
+    "jquery": "^2.1.0"
   }
 }
