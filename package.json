@@ -11,8 +11,8 @@
     "url": "https://github.com/PebblePad/angular/angular.js.git"
   },
   "engines": {
-    "node": "^20.10.0",
-    "npm": "^10.2.3"
+    "node": "^24.00.0",
+    "npm": "^11.6.0"
   },
   "scripts": {
     "build": "node ./build-scripts/BuildDist.js",

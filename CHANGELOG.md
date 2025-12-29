@@ -4,6 +4,38 @@ and [read the end of life announcement](https://goo.gle/angularjs-end-of-life).*
 
 **Visit [angular.io](https://angular.io) for the actively supported Angular.**
 
+<a name="1.8.4"></a>
+# 1.8.4 lts-modernization (2025-12-29)
+
+This LTS release modernizes the AngularJS build system and testing infrastructure to support Node.js v24 and modern development workflows.
+
+## Build System Improvements
+- **Node.js v24 Support:** Updated build system to work with Node.js v24 and npm v11.6.0
+  ([0eb681206](https://github.com/TJSTONE99/angular.js-lts/commit/0eb681206))
+- **Modern Build Tools:** Replaced legacy build system with modern ES modules and SWC-based minification
+  ([acc5ccd98](https://github.com/TJSTONE99/angular.js-lts/commit/acc5ccd98))
+- **ESLint Configuration:** Streamlined ESLint configuration by removing unnecessary config files
+  ([4fb8eed50](https://github.com/TJSTONE99/angular.js-lts/commit/4fb8eed50))
+
+## Testing Infrastructure
+- **Jest Integration:** Replaced legacy testing framework with Jest for improved test performance and modern JavaScript support
+  ([acc5ccd98](https://github.com/TJSTONE99/angular.js-lts/commit/acc5ccd98))
+- **Playwright E2E Tests:** Migrated end-to-end tests from Protractor to Playwright for better browser compatibility and performance
+  ([2477eb96e](https://github.com/TJSTONE99/angular.js-lts/commit/2477eb96e))
+- **Test Cleanup:** Removed outdated and unnecessary e2e test files to streamline the test suite
+  ([2d9251be2](https://github.com/TJSTONE99/angular.js-lts/commit/2d9251be2))
+
+## Developer Experience
+- **Package Scripts:** Added comprehensive npm scripts for building, testing, and development workflows
+- **Modern Tooling:** Updated development dependencies to use current versions of build and test tools
+- **ES Module Support:** Converted build system to use ES modules for better compatibility with modern Node.js
+
+## Breaking Changes
+- **Node.js Requirements:** Now requires Node.js ^24.0.0 and npm ^11.6.0
+- **Build Output:** Build artifacts may have different structure due to modernized build system
+- Dropped support for IE
+- Dropped angular-scenario
+
 <a name="1.8.3"></a>
 # 1.8.3 ultimate-farewell (2022-04-07)
 

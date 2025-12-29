@@ -1,5 +1,7 @@
-AngularJS [![CircleCI](https://circleci.com/gh/angular/angular.js/tree/master.svg?style=shield)](https://circleci.com/gh/angular/workflows/angular.js/tree/master)
+AngularJS LTS [![Build Status](https://github.com/TJSTONE99/angular.js-lts/actions/workflows/ci.yml/badge.svg)](https://github.com/TJSTONE99/angular.js-lts/actions)
 =========
+
+**This is the Long Term Support (LTS) version of AngularJS with modernized build tools and Node.js v24 support.**
 
 AngularJS lets you write client-side web applications as if you had a smarter browser.  It lets you
 use good old HTML (or HAML, Jade/Pug and friends!) as your template language and lets you extend HTML’s
@@ -39,13 +41,79 @@ Contribute
 --------------------
 
 We've set up a separate document for our
-[contribution guidelines](https://github.com/angular/angular.js/blob/master/CONTRIBUTING.md).
+[contribution guidelines](https://github.com/TJSTONE99/angular.js-lts/blob/master/CONTRIBUTING.md).
 
 Develop
 --------------------
 
-We've set up a separate document for
-[developers](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md).
+## Prerequisites
+
+- **Node.js**: Version 24.0.0 or higher
+- **npm**: Version 11.6.0 or higher
+
+## Building AngularJS
+
+To build AngularJS from source:
+
+```bash
+# Install dependencies
+npm install
+
+# Build the distribution files
+npm run build
+```
+
+The build process will create distribution files in the `dist/` directory.
+
+## Running Tests
+
+### Unit Tests
+
+AngularJS uses Jest for unit testing:
+
+```bash
+# Run all unit tests
+npm test
+
+# Run tests with detailed logging
+npm run test:log
+
+# Build test files only (without running tests)
+npm run test:build
+```
+
+### End-to-End Tests
+
+E2E tests use Playwright for cross-browser testing:
+
+```bash
+# Run complete E2E test suite
+npm run test:e2e
+
+# Build and serve for E2E testing (development mode)
+npm run test:e2e:dev
+
+# Run E2E tests only (assumes build is already done)
+npm run test:e2e:run
+
+# Serve the test application for manual testing
+npm run test:e2e:serve
+```
+
+## Development Workflow
+
+1. **Setup**: Clone the repository and run `npm install`
+2. **Build**: Use `npm run build` to create distribution files
+3. **Test**: Run `npm test` for unit tests or `npm run test:e2e` for E2E tests
+4. **Development**: Use `npm run test:e2e:dev` for interactive development with E2E tests
+
+## Build System
+
+This LTS version uses a modern build system with:
+- **ES Modules**: Native ES module support for better compatibility
+- **SWC**: Fast JavaScript/TypeScript compilation and minification
+- **Jest**: Modern testing framework with JSDOM environment
+- **Playwright**: Cross-browser E2E testing
 
 
 [![Analytics](https://ga-beacon.appspot.com/UA-8594346-11/angular.js/README.md?pixel)](https://github.com/igrigorik/ga-beacon)
