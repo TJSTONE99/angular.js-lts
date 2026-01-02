@@ -13202,4 +13202,203 @@ describe('$compile', () => {
       });
     });
   });
+
+  describe('CVE-2025-0716: SVG image href sanitization bypass', () => {
+    let $sce, $compileProvider;
+
+    beforeEach(angular.mock.module((_$compileProvider_) => {
+      $compileProvider = _$compileProvider_;
+      // Configure image source sanitization to only allow angularjs.org domain
+      $compileProvider.imgSrcSanitizationTrustedUrlList(/^https:\/\/angularjs\.org\//);
+    }));
+
+    beforeEach(angular.mock.inject((_$sce_) => {
+      $sce = _$sce_;
+    }));
+
+    describe('href attribute with interpolation', () => {
+      it('should sanitize SVG image href with interpolation (blocked)', () => {
+        const template = '<svg><image href="{{ \'https://angular.dev/favicon.ico\' }}"></image></svg>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toMatch(/^unsafe:/);
+      });
+
+      it('should allow SVG image href with interpolation from trusted domain', () => {
+        const template = '<svg><image href="{{ \'https://angularjs.org/favicon.ico\' }}"></image></svg>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toBe('https://angularjs.org/favicon.ico');
+      });
+
+      it('should sanitize SVG image href with data URL interpolation (blocked)', () => {
+        const dataUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48dGV4dCBmb250LXNpemU9IjEwMCIgeT0iMWVtIj7wn5Cx4oCN8J+SuzwvdGV4dD48L3N2Zz4=';
+        const template = `<svg><image href="{{ '${dataUrl}' }}"></image></svg>`;
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toMatch(/^unsafe:/);
+      });
+    });
+
+    describe('ngHref directive with interpolation', () => {
+      it('should sanitize SVG image ngHref with interpolation (blocked)', () => {
+        const template = '<svg><image ng-href="{{ \'https://angular.dev/favicon.ico\' }}"></image></svg>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toMatch(/^unsafe:/);
+      });
+
+      it('should allow SVG image ngHref with interpolation from trusted domain', () => {
+        const template = '<svg><image ng-href="{{ \'https://angularjs.org/favicon.ico\' }}"></image></svg>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toBe('https://angularjs.org/favicon.ico');
+      });
+
+      it('should sanitize SVG image ngHref with data URL interpolation (blocked)', () => {
+        const dataUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48dGV4dCBmb250LXNpemU9IjEwMCIgeT0iMWVtIj7wn5Cx4oCN8J+SuzwvdGV4dD48L3N2Zz4=';
+        const template = `<svg><image ng-href="{{ '${dataUrl}' }}"></image></svg>`;
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toMatch(/^unsafe:/);
+      });
+    });
+
+    describe('ngAttrHref directive', () => {
+      it('should sanitize SVG image ngAttrHref (blocked)', () => {
+        const template = '<svg><image ng-attr-href="https://angular.dev/favicon.ico"></image></svg>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toMatch(/^unsafe:/);
+      });
+
+      it('should allow SVG image ngAttrHref from trusted domain', () => {
+        const template = '<svg><image ng-attr-href="https://angularjs.org/favicon.ico"></image></svg>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toBe('https://angularjs.org/favicon.ico');
+      });
+
+      it('should sanitize SVG image ngAttrHref with data URL (blocked)', () => {
+        const dataUrl = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48dGV4dCBmb250LXNpemU9IjEwMCIgeT0iMWVtIj7wn5Cx4oCN8J+SuzwvdGV4dD48L3N2Zz4=';
+        const template = `<svg><image ng-attr-href="${dataUrl}"></image></svg>`;
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toMatch(/^unsafe:/);
+      });
+    });
+
+    describe('xlinkHref attribute (not vulnerable)', () => {
+      it('should sanitize SVG image xlinkHref with interpolation (blocked)', () => {
+        const template = '<svg><image xlink:href="{{ \'https://angular.dev/favicon.ico\' }}"></image></svg>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('xlink:href')).toMatch(/^unsafe:/);
+      });
+
+      it('should allow SVG image xlinkHref with interpolation from trusted domain', () => {
+        const template = '<svg><image xlink:href="{{ \'https://angularjs.org/favicon.ico\' }}"></image></svg>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('xlink:href')).toBe('https://angularjs.org/favicon.ico');
+      });
+    });
+
+    describe('ngHref on anchor elements (should use URL context)', () => {
+      it('should allow anchor ngHref with interpolation from untrusted domain', () => {
+        const template = '<a ng-href="{{ \'https://angular.dev/\' }}">Link</a>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        expect(element.attr('href')).toBe('https://angular.dev/');
+      });
+
+      it('should sanitize dangerous anchor ngHref protocols', () => {
+        const template = '<a ng-href="{{ \'javascript:alert(1)\' }}">Link</a>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        expect(element.attr('href')).toMatch(/^unsafe:/);
+      });
+    });
+
+    describe('ngHref on other elements (should use RESOURCE_URL context)', () => {
+      it('should sanitize base ngHref from untrusted domain', angular.mock.inject(($compile, $rootScope) => {
+        const template = '<base ng-href="{{ \'https://angular.dev/\' }}">';
+        
+        expect(() => {
+          element = compileForTest(template);
+          $rootScope.$apply();
+        }).toThrowMinErr('$interpolate', 'interr');
+      }));
+    });
+
+    describe('edge cases and regression tests', () => {
+      it('should handle empty href values', () => {
+        const template = '<svg><image ng-href=""></image></svg>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toBeFalsy();
+      });
+
+      it('should handle undefined scope values', () => {
+        const template = '<svg><image ng-href="{{ undefinedValue }}"></image></svg>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toBeFalsy();
+      });
+
+      it('should handle mixed case element names', () => {
+        const template = '<svg><image ng-href="{{ \'https://angular.dev/favicon.ico\' }}"></image></svg>';
+        element = compileForTest(template);
+        $rootScope.$digest();
+        
+        const imageEl = element.find('image');
+        expect(imageEl.attr('href')).toMatch(/^unsafe:/);
+      });
+
+      it('should work with dynamic scope values', () => {
+        const template = '<svg><image ng-href="{{ imageUrl }}"></image></svg>';
+        element = compileForTest(template);
+        
+        // Start with untrusted URL
+        $rootScope.imageUrl = 'https://angular.dev/favicon.ico';
+        $rootScope.$digest();
+        let imageEl = element.find('image');
+        expect(imageEl.attr('href')).toMatch(/^unsafe:/);
+        
+        // Change to trusted URL
+        $rootScope.imageUrl = 'https://angularjs.org/favicon.ico';
+        $rootScope.$digest();
+        imageEl = element.find('image');
+        expect(imageEl.attr('href')).toBe('https://angularjs.org/favicon.ico');
+      });
+    });
+  });
 });

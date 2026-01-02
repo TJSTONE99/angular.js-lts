@@ -3822,11 +3822,15 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
             return $sce.RESOURCE_URL;
           }
           return $sce.MEDIA_URL;
-        } else if (attrNormalizedName === 'xlinkHref') {
-          // Some xlink:href are okay, most aren't
-          if (nodeName === 'image') return $sce.MEDIA_URL;
+        } else if (attrNormalizedName === 'xlinkHref' || attrNormalizedName === 'href') {
           if (nodeName === 'a') return $sce.URL;
-          return $sce.RESOURCE_URL;
+          // CVE-2025-0716: SVG image elements should use MEDIA_URL context for href attribute
+          // to ensure proper image source sanitization
+          if (nodeName === 'image') return $sce.MEDIA_URL;
+          // Only specific elements should have href sanitized
+          if (nodeName === 'base' || nodeName === 'link') return $sce.RESOURCE_URL;
+          // For xlink:href, all other elements should use RESOURCE_URL context
+          if (attrNormalizedName === 'xlinkHref') return $sce.RESOURCE_URL;
         } else if (
           // Formaction
           (nodeName === 'form' && attrNormalizedName === 'action') ||
@@ -3840,6 +3844,13 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
         } else if (nodeName === 'a' && (attrNormalizedName === 'href' ||
           attrNormalizedName === 'ngHref')) {
           return $sce.URL;
+        } else if (nodeName === 'image' && attrNormalizedName === 'ngHref') {
+          // CVE-2025-0716: SVG image elements should use MEDIA_URL context for ngHref attribute
+          // to ensure proper image source sanitization
+          return $sce.MEDIA_URL;
+        } else if ((nodeName === 'base' || nodeName === 'link') && attrNormalizedName === 'ngHref') {
+          // base and link elements should use RESOURCE_URL context for ngHref attribute
+          return $sce.RESOURCE_URL;
         }
       }
 
