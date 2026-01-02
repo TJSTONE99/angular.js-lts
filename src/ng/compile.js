@@ -2079,54 +2079,112 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
 
 
       function sanitizeSrcset(value, invokeType) {
-        if (!value) {
-          return value;
-        }
+        if (!value) return value;
+
         if (!isString(value)) {
-          throw $compileMinErr('srcset', 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, value.toString());
+          throw $compileMinErr(
+            'srcset',
+            'Can\'t pass trusted values to `{0}`: "{1}"',
+            invokeType,
+            value.toString()
+          );
         }
 
-        // Such values are a bit too complex to handle automatically inside $sce.
-        // Instead, we sanitize each of the URIs individually, which works, even dynamically.
+        const trimmed = trim(value);
+        if (!trimmed) return '';
 
-        // It's not possible to work around this using `$sce.trustAsMediaUrl`.
-        // If you want to programmatically set explicitly trusted unsafe URLs, you should use
-        // `$sce.trustAsHtml` on the whole `img` tag and inject it into the DOM using the
-        // `ng-bind-html` directive.
+        const entries = /\s/.test(trimmed)
+          ? splitSrcsetCandidates(trimmed)
+          : trimmed.split(',');
 
-        var result = '';
+        const descriptorPattern = /^\d+(?:\.\d+)?[xw]$/i;
 
-        // first check if there are spaces because it's not the same pattern
-        var trimmedSrcset = trim(value);
-        //                (   999x   ,|   999w   ,|   ,|,   )
-        var srcPattern = /(\s+\d+x\s*,|\s+\d+w\s*,|\s+,|,\s+)/;
-        var pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
+        return entries
+          .map(e => trim(e))
+          .filter(Boolean)
+          .map(candidate => {
+            let url = candidate;
+            let descriptor = '';
 
-        // split srcset into tuple of uri and descriptor except for the last item
-        var rawUris = trimmedSrcset.split(pattern);
+            const lastSpace = candidate.lastIndexOf(' ');
+            if (lastSpace !== -1) {
+              const maybeDescriptor = trim(candidate.slice(lastSpace + 1));
+              if (descriptorPattern.test(maybeDescriptor)) {
+                url = trim(candidate.slice(0, lastSpace));
+                descriptor = maybeDescriptor;
+              }
+            }
 
-        // for each tuples
-        var nbrUrisWith2parts = Math.floor(rawUris.length / 2);
-        for (var i = 0; i < nbrUrisWith2parts; i++) {
-          var innerIdx = i * 2;
-          // sanitize the uri
-          result += $sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
-          // add the descriptor
-          result += ' ' + trim(rawUris[innerIdx + 1]);
-        }
+            if (!url) return null;
 
-        // split the last item into uri and descriptor
-        var lastTuple = trim(rawUris[i * 2]).split(/\s/);
-
-        // sanitize the last uri
-        result += $sce.getTrustedMediaUrl(trim(lastTuple[0]));
-
-        // and add the last descriptor if any
-        if (lastTuple.length === 2) {
-          result += (' ' + trim(lastTuple[1]));
-        }
-        return result;
+            const trustedUrl = $sce.getTrustedMediaUrl(url);
+            return descriptor ? `${trustedUrl} ${descriptor}` : trustedUrl;
+          })
+          .filter(Boolean)
+          .join(', ');
       }
+
+      /* ---------------- helpers ---------------- */
+
+      const isWhitespaceCode = code =>
+        code === 0x20 || code === 0x09 || code === 0x0A ||
+        code === 0x0C || code === 0x0D;
+
+      const isDigitCode = code => code >= 0x30 && code <= 0x39;
+
+      const splitSrcsetCandidates = str => {
+        const parts = [];
+        let start = 0;
+
+        for (let i = 0; i < str.length; i++) {
+          if (str.charCodeAt(i) === 0x2C && isSeparatorComma(str, i)) {
+            parts.push(str.slice(start, i));
+            start = i + 1;
+          }
+        }
+
+        parts.push(str.slice(start));
+        return parts;
+      };
+
+      const isSeparatorComma = (str, idx) => {
+        const prev = idx > 0 ? str.charCodeAt(idx - 1) : null;
+        const next = idx + 1 < str.length ? str.charCodeAt(idx + 1) : null;
+
+        if (isWhitespaceCode(prev) || isWhitespaceCode(next)) {
+          return true;
+        }
+
+        let pos = idx - 1;
+
+        while (pos >= 0 && isWhitespaceCode(str.charCodeAt(pos))) pos--;
+
+        if (pos < 0) return false;
+
+        const unit = str.charCodeAt(pos);
+        if (![0x78, 0x58, 0x77, 0x57].includes(unit)) return false;
+
+        pos--;
+        let sawDigit = false;
+        let sawDot = false;
+
+        while (pos >= 0) {
+          const code = str.charCodeAt(pos);
+          if (isDigitCode(code)) {
+            sawDigit = true;
+            pos--;
+            continue;
+          }
+          if (!sawDot && code === 0x2E) {
+            sawDot = true;
+            pos--;
+            continue;
+          }
+          break;
+        }
+
+        return sawDigit && pos >= 0 && isWhitespaceCode(str.charCodeAt(pos));
+      };
 
 
       function Attributes(element, attributesToCopy) {
