@@ -598,7 +598,10 @@ function $SanitizeProvider() {
           out(tag);
           forEach(attrs, function(value, key) {
             var lkey = lowercase(key);
-            var isImage = (tag === 'img' && lkey === 'src') || (lkey === 'background');
+            // Include additional image-related attributes when determining image URLs.
+            // Ensures consistent URL sanitization for SVG and CSS-backed image sources
+            // that were previously missed (CVE-2025-2336
+            var isImage = (tag === 'img' && lkey === 'src') || (lkey === 'background') || (tag === 'image' && (lkey === 'href' || lkey ==='xlink:href'));
             if (validAttrs[lkey] === true &&
               (uriAttrs[lkey] !== true || uriValidator(value, isImage))) {
               out(' ');
