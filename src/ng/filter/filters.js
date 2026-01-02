@@ -69,7 +69,8 @@ function currencyFilter($locale) {
     }
 
     // If the currency symbol is empty, trim whitespace around the symbol
-    var currencySymbolRe = !currencySymbol ? /\s*\u00A4\s*/g : /\u00A4/g;
+    // CVE-2022-25844 fix: Limit whitespace matching to prevent ReDoS
+    var currencySymbolRe = !currencySymbol ? /\s{0,50}\u00A4\s{0,50}/g : /\u00A4/g;
 
     // if null or undefined pass it through
     return (amount == null)
@@ -272,6 +273,25 @@ function roundNumber(parsedNumber, fractionSize, minFrac, maxFrac) {
 }
 
 /**
+ * Sanitize pattern strings to prevent ReDoS attacks (CVE-2022-25844)
+ * @param  {string} str The pattern string to sanitize
+ * @return {string}     The sanitized pattern string
+ */
+function sanitizePatternString(str) {
+  if (!isString(str)) return '';
+  
+  // Limit maximum length to prevent ReDoS attacks
+  var MAX_PATTERN_LENGTH = 100;
+  if (str.length > MAX_PATTERN_LENGTH) {
+    return str.substring(0, MAX_PATTERN_LENGTH);
+  }
+  
+  // Remove any JavaScript function calls that could cause ReDoS
+  // This prevents patterns like ' '.repeat(999999) or similar attacks
+  return str.replace(/[a-zA-Z_$][a-zA-Z0-9_$]*\s*\([^)]*\)/g, '');
+}
+
+/**
  * Format a number into a string
  * @param  {number} number       The number to format
  * @param  {{
@@ -298,6 +318,12 @@ function formatNumber(number, pattern, groupSep, decimalSep, fractionSize) {
   var numStr = Math.abs(number) + '',
       formattedText = '',
       parsedNumber;
+
+  // Sanitize pattern strings to prevent ReDoS attacks (CVE-2022-25844)
+  var safePosPre = sanitizePatternString(pattern.posPre);
+  var safePosSuf = sanitizePatternString(pattern.posSuf);
+  var safeNegPre = sanitizePatternString(pattern.negPre);
+  var safeNegSuf = sanitizePatternString(pattern.negSuf);
 
   if (isInfinity) {
     formattedText = '\u221e';
@@ -349,9 +375,9 @@ function formatNumber(number, pattern, groupSep, decimalSep, fractionSize) {
     }
   }
   if (number < 0 && !isZero) {
-    return pattern.negPre + formattedText + pattern.negSuf;
+    return safeNegPre + formattedText + safeNegSuf;
   } else {
-    return pattern.posPre + formattedText + pattern.posSuf;
+    return safePosPre + formattedText + safePosSuf;
   }
 }
 
