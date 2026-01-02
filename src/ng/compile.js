@@ -2322,8 +2322,11 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
 
           nodeName = nodeName_(this.$$element);
 
-          // Sanitize img[srcset] values.
-          if (nodeName === 'img' && key === 'srcset') {
+          // Sanitize img[srcset] and source[srcset] values.
+          // Required to prevent malformed srcset entries from bypassing URL sanitization
+          // when attributes are set programmatically (CVE-2024-8373).
+          // Sanitize img[srcset] + source[srcset] values.
+          if ((nodeName === 'img' || nodeName === 'source') && key === 'srcset') {
             this[key] = value = sanitizeSrcset(value, '$set(\'srcset\', value)');
           }
 
