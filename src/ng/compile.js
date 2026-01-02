@@ -2117,6 +2117,18 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
 
             if (!url) return null;
 
+            // Strip wrapping quotes around the URL candidate, if present
+            if (url.length >= 2) {
+              const first = url.charAt(0);
+              const last = url.charAt(url.length - 1);
+              if (
+                (first === '"' && last === '"') ||
+                (first === '\'' && last === '\'')
+              ) {
+                url = url.slice(1, -1);
+              }
+            }
+
             const trustedUrl = $sce.getTrustedMediaUrl(url);
             return descriptor ? `${trustedUrl} ${descriptor}` : trustedUrl;
           })
@@ -2147,23 +2159,43 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
         return parts;
       };
 
-      const isSeparatorComma = (str, idx) => {
-        const prev = idx > 0 ? str.charCodeAt(idx - 1) : null;
-        const next = idx + 1 < str.length ? str.charCodeAt(idx + 1) : null;
+      const isSeparatorComma = (str, commaIdx) => {
+        const localDescriptorPattern = /^\d+(?:\.\d+)?[xw]$/i;
+
+        const prev = commaIdx > 0 ? str.charCodeAt(commaIdx - 1) : null;
+        const next = commaIdx + 1 < str.length ? str.charCodeAt(commaIdx + 1) : null;
 
         if (isWhitespaceCode(prev) || isWhitespaceCode(next)) {
           return true;
         }
 
-        let pos = idx - 1;
-
+        // Walk backwards to inspect token before comma
+        let pos = commaIdx - 1;
         while (pos >= 0 && isWhitespaceCode(str.charCodeAt(pos))) pos--;
 
         if (pos < 0) return false;
 
         const unit = str.charCodeAt(pos);
-        if (![0x78, 0x58, 0x77, 0x57].includes(unit)) return false;
+        if (![0x78, 0x58, 0x77, 0x57].includes(unit)) {
+          // Not x/w — check if this looks like a plain token separator
+          let spacePos = pos;
+          while (spacePos >= 0 && !isWhitespaceCode(str.charCodeAt(spacePos))) {
+            spacePos--;
+          }
 
+          if (spacePos >= 0) {
+            const token = trim(str.slice(spacePos + 1, commaIdx));
+            const looksLikeUrlFragment = /[:/?&=,]/.test(token);
+
+            if (token && !looksLikeUrlFragment && !localDescriptorPattern.test(token)) {
+              return true;
+            }
+          }
+
+          return false;
+        }
+
+        // Parse numeric descriptor
         pos--;
         let sawDigit = false;
         let sawDot = false;
