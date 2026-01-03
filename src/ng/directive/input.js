@@ -22,7 +22,16 @@ var ISO_DATE_REGEXP = /^\d{4,}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+(?:[+-
 //   8. Query
 //   9. Fragment
 //                 1111111111111111 222   333333    44444        55555555555555555555555     666     77777777     8888888     999
-var URL_REGEXP = /^[a-z][a-z\d.+-]*:\/*(?:[^:@]+(?::[^@]+)?@)?(?:[^\s:/?#]+|\[[a-f\d:]+])(?::\d+)?(?:\/[^?#]*)?(?:\?[^#]*)?(?:#.*)?$/i;
+
+// PATCH: Limit the number of forward slashes following the URL scheme.
+// Previously this used an unbounded repetition (\/\*), which could lead
+// to catastrophic backtracking and a Regular Expression Denial of Service (ReDoS)
+// when processing crafted, very long URLs.
+// The scheme separator in valid URLs allows at most two slashes (e.g. "://"),
+// so this change preserves correct behavior while mitigating CVE-2023-26118.
+var URL_REGEXP = /^[a-z][a-z\d.+-]*:(?:|\/|\/\/|\/\/\/)(?:[^:@]+(?::[^@]+)?@)?(?:[^\s:/?#]+|\[[a-f\d:]+])(?::\d+)?(?:\/[^?#]*)?(?:\?[^#]*)?(?:#.*)?$/i;
+
+
 // eslint-disable-next-line max-len
 var EMAIL_REGEXP = /^(?=.{1,254}$)(?=.{1,64}@)[-!#$%&'*+/0-9=?A-Z^_`a-z{|}~]+(\.[-!#$%&'*+/0-9=?A-Z^_`a-z{|}~]+)*@[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?(\.[A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$/;
 var NUMBER_REGEXP = /^\s*(-|\+)?(\d+|(\d*(\.\d*)))([eE][+-]?\d+)?\s*$/;
@@ -34,7 +43,7 @@ var TIME_REGEXP = /^(\d\d):(\d\d)(?::(\d\d)(\.\d{1,3})?)?$/;
 
 var PARTIAL_VALIDATION_EVENTS = 'keydown wheel mousedown';
 var PARTIAL_VALIDATION_TYPES = createMap();
-forEach('date,datetime-local,month,time,week'.split(','), function(type) {
+forEach('date,datetime-local,month,time,week'.split(','), function (type) {
   PARTIAL_VALIDATION_TYPES[type] = true;
 });
 
@@ -136,185 +145,79 @@ var inputType = {
    */
   'text': textInputType,
 
-    /**
-     * @ngdoc input
-     * @name input[date]
-     *
-     * @description
-     * Input with date validation and transformation. In browsers that do not yet support
-     * the HTML5 date input, a text element will be used. In that case, text must be entered in a valid ISO-8601
-     * date format (yyyy-MM-dd), for example: `2009-01-06`. Since many
-     * modern browsers do not yet support this input type, it is important to provide cues to users on the
-     * expected input format via a placeholder or label.
-     *
-     * The model must always be a Date object, otherwise AngularJS will throw an error.
-     * Invalid `Date` objects (dates whose `getTime()` is `NaN`) will be rendered as an empty string.
-     *
-     * The timezone to be used to read/write the `Date` instance in the model can be defined using
-     * {@link ng.directive:ngModelOptions ngModelOptions}. By default, this is the timezone of the browser.
-     *
-     * @param {string} ngModel Assignable AngularJS expression to data-bind to.
-     * @param {string=} name Property name of the form under which the control is published.
-     * @param {string=} min Sets the `min` validation error key if the value entered is less than `min`. This must be a
-     *   valid ISO date string (yyyy-MM-dd). You can also use interpolation inside this attribute
-     *   (e.g. `min="{{minDate | date:'yyyy-MM-dd'}}"`). Note that `min` will also add native HTML5
-     *   constraint validation.
-     * @param {string=} max Sets the `max` validation error key if the value entered is greater than `max`. This must be
-     *   a valid ISO date string (yyyy-MM-dd). You can also use interpolation inside this attribute
-     *   (e.g. `max="{{maxDate | date:'yyyy-MM-dd'}}"`). Note that `max` will also add native HTML5
-     *   constraint validation.
-     * @param {(date|string)=} ngMin Sets the `min` validation constraint to the Date / ISO date string
-     *   the `ngMin` expression evaluates to. Note that it does not set the `min` attribute.
-     * @param {(date|string)=} ngMax Sets the `max` validation constraint to the Date / ISO date string
-     *   the `ngMax` expression evaluates to. Note that it does not set the `max` attribute.
-     * @param {string=} required Sets `required` validation error key if the value is not entered.
-     * @param {string=} ngRequired Adds `required` attribute and `required` validation constraint to
-     *    the element when the ngRequired expression evaluates to true. Use `ngRequired` instead of
-     *    `required` when you want to data-bind to the `required` attribute.
-     * @param {string=} ngChange AngularJS expression to be executed when input changes due to user
-     *    interaction with the input element.
-     *
-     * @example
-     <example name="date-input-directive" module="dateInputExample">
-     <file name="index.html">
-       <script>
-          angular.module('dateInputExample', [])
-            .controller('DateController', ['$scope', function($scope) {
-              $scope.example = {
-                value: new Date(2013, 9, 22)
-              };
-            }]);
-       </script>
-       <form name="myForm" ng-controller="DateController as dateCtrl">
-          <label for="exampleInput">Pick a date in 2013:</label>
-          <input type="date" id="exampleInput" name="input" ng-model="example.value"
-              placeholder="yyyy-MM-dd" min="2013-01-01" max="2013-12-31" required />
-          <div role="alert">
-            <span class="error" ng-show="myForm.input.$error.required">
-                Required!</span>
-            <span class="error" ng-show="myForm.input.$error.date">
-                Not a valid date!</span>
-           </div>
-           <tt>value = {{example.value | date: "yyyy-MM-dd"}}</tt><br/>
-           <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
-           <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
-           <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
-           <tt>myForm.$error.required = {{!!myForm.$error.required}}</tt><br/>
-       </form>
-     </file>
-     <file name="protractor.js" type="protractor">
-        var value = element(by.binding('example.value | date: "yyyy-MM-dd"'));
-        var valid = element(by.binding('myForm.input.$valid'));
-
-        // currently protractor/webdriver does not support
-        // sending keys to all known HTML5 input controls
-        // for various browsers (see https://github.com/angular/protractor/issues/562).
-        function setInput(val) {
-          // set the value of the element and force validation.
-          var scr = "var ipt = document.getElementById('exampleInput'); " +
-          "ipt.value = '" + val + "';" +
-          "angular.element(ipt).scope().$apply(function(s) { s.myForm[ipt.name].$setViewValue('" + val + "'); });";
-          browser.executeScript(scr);
-        }
-
-        it('should initialize to model', function() {
-          expect(value.getText()).toContain('2013-10-22');
-          expect(valid.getText()).toContain('myForm.input.$valid = true');
-        });
-
-        it('should be invalid if empty', function() {
-          setInput('');
-          expect(value.getText()).toEqual('value =');
-          expect(valid.getText()).toContain('myForm.input.$valid = false');
-        });
-
-        it('should be invalid if over max', function() {
-          setInput('2015-01-01');
-          expect(value.getText()).toContain('');
-          expect(valid.getText()).toContain('myForm.input.$valid = false');
-        });
-     </file>
-     </example>
-     */
-  'date': createDateInputType('date', DATE_REGEXP,
-         createDateParser(DATE_REGEXP, ['yyyy', 'MM', 'dd']),
-         'yyyy-MM-dd'),
-
-   /**
-    * @ngdoc input
-    * @name input[datetime-local]
-    *
-    * @description
-    * Input with datetime validation and transformation. In browsers that do not yet support
-    * the HTML5 date input, a text element will be used. In that case, the text must be entered in a valid ISO-8601
-    * local datetime format (yyyy-MM-ddTHH:mm:ss), for example: `2010-12-28T14:57:00`.
-    *
-    * The model must always be a Date object, otherwise AngularJS will throw an error.
-    * Invalid `Date` objects (dates whose `getTime()` is `NaN`) will be rendered as an empty string.
-    *
-    * The timezone to be used to read/write the `Date` instance in the model can be defined using
-    * {@link ng.directive:ngModelOptions ngModelOptions}. By default, this is the timezone of the browser.
-    *
-    * The format of the displayed time can be adjusted with the
-    * {@link ng.directive:ngModelOptions#ngModelOptions-arguments ngModelOptions} `timeSecondsFormat`
-    * and `timeStripZeroSeconds`.
-    *
-    * @param {string} ngModel Assignable AngularJS expression to data-bind to.
-    * @param {string=} name Property name of the form under which the control is published.
-    * @param {string=} min Sets the `min` validation error key if the value entered is less than `min`.
-    *   This must be a valid ISO datetime format (yyyy-MM-ddTHH:mm:ss). You can also use interpolation
-    *   inside this attribute (e.g. `min="{{minDatetimeLocal | date:'yyyy-MM-ddTHH:mm:ss'}}"`).
-    *   Note that `min` will also add native HTML5 constraint validation.
-    * @param {string=} max Sets the `max` validation error key if the value entered is greater than `max`.
-    *   This must be a valid ISO datetime format (yyyy-MM-ddTHH:mm:ss). You can also use interpolation
-    *   inside this attribute (e.g. `max="{{maxDatetimeLocal | date:'yyyy-MM-ddTHH:mm:ss'}}"`).
-    *   Note that `max` will also add native HTML5 constraint validation.
-    * @param {(date|string)=} ngMin Sets the `min` validation error key to the Date / ISO datetime string
-    *   the `ngMin` expression evaluates to. Note that it does not set the `min` attribute.
-    * @param {(date|string)=} ngMax Sets the `max` validation error key to the Date / ISO datetime string
-    *   the `ngMax` expression evaluates to. Note that it does not set the `max` attribute.
-    * @param {string=} required Sets `required` validation error key if the value is not entered.
-    * @param {string=} ngRequired Adds `required` attribute and `required` validation constraint to
-    *    the element when the ngRequired expression evaluates to true. Use `ngRequired` instead of
-    *    `required` when you want to data-bind to the `required` attribute.
-    * @param {string=} ngChange AngularJS expression to be executed when input changes due to user
-    *    interaction with the input element.
-    *
-    * @example
-    <example name="datetimelocal-input-directive" module="dateExample">
-    <file name="index.html">
-      <script>
-        angular.module('dateExample', [])
+  /**
+   * @ngdoc input
+   * @name input[date]
+   *
+   * @description
+   * Input with date validation and transformation. In browsers that do not yet support
+   * the HTML5 date input, a text element will be used. In that case, text must be entered in a valid ISO-8601
+   * date format (yyyy-MM-dd), for example: `2009-01-06`. Since many
+   * modern browsers do not yet support this input type, it is important to provide cues to users on the
+   * expected input format via a placeholder or label.
+   *
+   * The model must always be a Date object, otherwise AngularJS will throw an error.
+   * Invalid `Date` objects (dates whose `getTime()` is `NaN`) will be rendered as an empty string.
+   *
+   * The timezone to be used to read/write the `Date` instance in the model can be defined using
+   * {@link ng.directive:ngModelOptions ngModelOptions}. By default, this is the timezone of the browser.
+   *
+   * @param {string} ngModel Assignable AngularJS expression to data-bind to.
+   * @param {string=} name Property name of the form under which the control is published.
+   * @param {string=} min Sets the `min` validation error key if the value entered is less than `min`. This must be a
+   *   valid ISO date string (yyyy-MM-dd). You can also use interpolation inside this attribute
+   *   (e.g. `min="{{minDate | date:'yyyy-MM-dd'}}"`). Note that `min` will also add native HTML5
+   *   constraint validation.
+   * @param {string=} max Sets the `max` validation error key if the value entered is greater than `max`. This must be
+   *   a valid ISO date string (yyyy-MM-dd). You can also use interpolation inside this attribute
+   *   (e.g. `max="{{maxDate | date:'yyyy-MM-dd'}}"`). Note that `max` will also add native HTML5
+   *   constraint validation.
+   * @param {(date|string)=} ngMin Sets the `min` validation constraint to the Date / ISO date string
+   *   the `ngMin` expression evaluates to. Note that it does not set the `min` attribute.
+   * @param {(date|string)=} ngMax Sets the `max` validation constraint to the Date / ISO date string
+   *   the `ngMax` expression evaluates to. Note that it does not set the `max` attribute.
+   * @param {string=} required Sets `required` validation error key if the value is not entered.
+   * @param {string=} ngRequired Adds `required` attribute and `required` validation constraint to
+   *    the element when the ngRequired expression evaluates to true. Use `ngRequired` instead of
+   *    `required` when you want to data-bind to the `required` attribute.
+   * @param {string=} ngChange AngularJS expression to be executed when input changes due to user
+   *    interaction with the input element.
+   *
+   * @example
+   <example name="date-input-directive" module="dateInputExample">
+   <file name="index.html">
+     <script>
+        angular.module('dateInputExample', [])
           .controller('DateController', ['$scope', function($scope) {
             $scope.example = {
-              value: new Date(2010, 11, 28, 14, 57)
+              value: new Date(2013, 9, 22)
             };
           }]);
-      </script>
-      <form name="myForm" ng-controller="DateController as dateCtrl">
-        <label for="exampleInput">Pick a date between in 2013:</label>
-        <input type="datetime-local" id="exampleInput" name="input" ng-model="example.value"
-            placeholder="yyyy-MM-ddTHH:mm:ss" min="2001-01-01T00:00:00" max="2013-12-31T00:00:00" required />
+     </script>
+     <form name="myForm" ng-controller="DateController as dateCtrl">
+        <label for="exampleInput">Pick a date in 2013:</label>
+        <input type="date" id="exampleInput" name="input" ng-model="example.value"
+            placeholder="yyyy-MM-dd" min="2013-01-01" max="2013-12-31" required />
         <div role="alert">
           <span class="error" ng-show="myForm.input.$error.required">
               Required!</span>
-          <span class="error" ng-show="myForm.input.$error.datetimelocal">
+          <span class="error" ng-show="myForm.input.$error.date">
               Not a valid date!</span>
-        </div>
-        <tt>value = {{example.value | date: "yyyy-MM-ddTHH:mm:ss"}}</tt><br/>
-        <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
-        <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
-        <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
-        <tt>myForm.$error.required = {{!!myForm.$error.required}}</tt><br/>
-      </form>
-    </file>
-    <file name="protractor.js" type="protractor">
-      var value = element(by.binding('example.value | date: "yyyy-MM-ddTHH:mm:ss"'));
+         </div>
+         <tt>value = {{example.value | date: "yyyy-MM-dd"}}</tt><br/>
+         <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
+         <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
+         <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
+         <tt>myForm.$error.required = {{!!myForm.$error.required}}</tt><br/>
+     </form>
+   </file>
+   <file name="protractor.js" type="protractor">
+      var value = element(by.binding('example.value | date: "yyyy-MM-dd"'));
       var valid = element(by.binding('myForm.input.$valid'));
 
       // currently protractor/webdriver does not support
       // sending keys to all known HTML5 input controls
-      // for various browsers (https://github.com/angular/protractor/issues/562).
+      // for various browsers (see https://github.com/angular/protractor/issues/562).
       function setInput(val) {
         // set the value of the element and force validation.
         var scr = "var ipt = document.getElementById('exampleInput'); " +
@@ -324,7 +227,7 @@ var inputType = {
       }
 
       it('should initialize to model', function() {
-        expect(value.getText()).toContain('2010-12-28T14:57:00');
+        expect(value.getText()).toContain('2013-10-22');
         expect(valid.getText()).toContain('myForm.input.$valid = true');
       });
 
@@ -335,16 +238,122 @@ var inputType = {
       });
 
       it('should be invalid if over max', function() {
-        setInput('2015-01-01T23:59:00');
+        setInput('2015-01-01');
         expect(value.getText()).toContain('');
         expect(valid.getText()).toContain('myForm.input.$valid = false');
       });
-    </file>
-    </example>
-    */
+   </file>
+   </example>
+   */
+  'date': createDateInputType('date', DATE_REGEXP,
+    createDateParser(DATE_REGEXP, ['yyyy', 'MM', 'dd']),
+    'yyyy-MM-dd'),
+
+  /**
+   * @ngdoc input
+   * @name input[datetime-local]
+   *
+   * @description
+   * Input with datetime validation and transformation. In browsers that do not yet support
+   * the HTML5 date input, a text element will be used. In that case, the text must be entered in a valid ISO-8601
+   * local datetime format (yyyy-MM-ddTHH:mm:ss), for example: `2010-12-28T14:57:00`.
+   *
+   * The model must always be a Date object, otherwise AngularJS will throw an error.
+   * Invalid `Date` objects (dates whose `getTime()` is `NaN`) will be rendered as an empty string.
+   *
+   * The timezone to be used to read/write the `Date` instance in the model can be defined using
+   * {@link ng.directive:ngModelOptions ngModelOptions}. By default, this is the timezone of the browser.
+   *
+   * The format of the displayed time can be adjusted with the
+   * {@link ng.directive:ngModelOptions#ngModelOptions-arguments ngModelOptions} `timeSecondsFormat`
+   * and `timeStripZeroSeconds`.
+   *
+   * @param {string} ngModel Assignable AngularJS expression to data-bind to.
+   * @param {string=} name Property name of the form under which the control is published.
+   * @param {string=} min Sets the `min` validation error key if the value entered is less than `min`.
+   *   This must be a valid ISO datetime format (yyyy-MM-ddTHH:mm:ss). You can also use interpolation
+   *   inside this attribute (e.g. `min="{{minDatetimeLocal | date:'yyyy-MM-ddTHH:mm:ss'}}"`).
+   *   Note that `min` will also add native HTML5 constraint validation.
+   * @param {string=} max Sets the `max` validation error key if the value entered is greater than `max`.
+   *   This must be a valid ISO datetime format (yyyy-MM-ddTHH:mm:ss). You can also use interpolation
+   *   inside this attribute (e.g. `max="{{maxDatetimeLocal | date:'yyyy-MM-ddTHH:mm:ss'}}"`).
+   *   Note that `max` will also add native HTML5 constraint validation.
+   * @param {(date|string)=} ngMin Sets the `min` validation error key to the Date / ISO datetime string
+   *   the `ngMin` expression evaluates to. Note that it does not set the `min` attribute.
+   * @param {(date|string)=} ngMax Sets the `max` validation error key to the Date / ISO datetime string
+   *   the `ngMax` expression evaluates to. Note that it does not set the `max` attribute.
+   * @param {string=} required Sets `required` validation error key if the value is not entered.
+   * @param {string=} ngRequired Adds `required` attribute and `required` validation constraint to
+   *    the element when the ngRequired expression evaluates to true. Use `ngRequired` instead of
+   *    `required` when you want to data-bind to the `required` attribute.
+   * @param {string=} ngChange AngularJS expression to be executed when input changes due to user
+   *    interaction with the input element.
+   *
+   * @example
+   <example name="datetimelocal-input-directive" module="dateExample">
+   <file name="index.html">
+     <script>
+       angular.module('dateExample', [])
+         .controller('DateController', ['$scope', function($scope) {
+           $scope.example = {
+             value: new Date(2010, 11, 28, 14, 57)
+           };
+         }]);
+     </script>
+     <form name="myForm" ng-controller="DateController as dateCtrl">
+       <label for="exampleInput">Pick a date between in 2013:</label>
+       <input type="datetime-local" id="exampleInput" name="input" ng-model="example.value"
+           placeholder="yyyy-MM-ddTHH:mm:ss" min="2001-01-01T00:00:00" max="2013-12-31T00:00:00" required />
+       <div role="alert">
+         <span class="error" ng-show="myForm.input.$error.required">
+             Required!</span>
+         <span class="error" ng-show="myForm.input.$error.datetimelocal">
+             Not a valid date!</span>
+       </div>
+       <tt>value = {{example.value | date: "yyyy-MM-ddTHH:mm:ss"}}</tt><br/>
+       <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
+       <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
+       <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
+       <tt>myForm.$error.required = {{!!myForm.$error.required}}</tt><br/>
+     </form>
+   </file>
+   <file name="protractor.js" type="protractor">
+     var value = element(by.binding('example.value | date: "yyyy-MM-ddTHH:mm:ss"'));
+     var valid = element(by.binding('myForm.input.$valid'));
+
+     // currently protractor/webdriver does not support
+     // sending keys to all known HTML5 input controls
+     // for various browsers (https://github.com/angular/protractor/issues/562).
+     function setInput(val) {
+       // set the value of the element and force validation.
+       var scr = "var ipt = document.getElementById('exampleInput'); " +
+       "ipt.value = '" + val + "';" +
+       "angular.element(ipt).scope().$apply(function(s) { s.myForm[ipt.name].$setViewValue('" + val + "'); });";
+       browser.executeScript(scr);
+     }
+
+     it('should initialize to model', function() {
+       expect(value.getText()).toContain('2010-12-28T14:57:00');
+       expect(valid.getText()).toContain('myForm.input.$valid = true');
+     });
+
+     it('should be invalid if empty', function() {
+       setInput('');
+       expect(value.getText()).toEqual('value =');
+       expect(valid.getText()).toContain('myForm.input.$valid = false');
+     });
+
+     it('should be invalid if over max', function() {
+       setInput('2015-01-01T23:59:00');
+       expect(value.getText()).toContain('');
+       expect(valid.getText()).toContain('myForm.input.$valid = false');
+     });
+   </file>
+   </example>
+   */
   'datetime-local': createDateInputType('datetimelocal', DATETIMELOCAL_REGEXP,
-      createDateParser(DATETIMELOCAL_REGEXP, ['yyyy', 'MM', 'dd', 'HH', 'mm', 'ss', 'sss']),
-      'yyyy-MM-ddTHH:mm:ss.sss'),
+    createDateParser(DATETIMELOCAL_REGEXP, ['yyyy', 'MM', 'dd', 'HH', 'mm', 'ss', 'sss']),
+    'yyyy-MM-ddTHH:mm:ss.sss'),
 
   /**
    * @ngdoc input
@@ -451,113 +460,113 @@ var inputType = {
    </example>
    */
   'time': createDateInputType('time', TIME_REGEXP,
-      createDateParser(TIME_REGEXP, ['HH', 'mm', 'ss', 'sss']),
-     'HH:mm:ss.sss'),
+    createDateParser(TIME_REGEXP, ['HH', 'mm', 'ss', 'sss']),
+    'HH:mm:ss.sss'),
 
-   /**
-    * @ngdoc input
-    * @name input[week]
-    *
-    * @description
-    * Input with week-of-the-year validation and transformation to Date. In browsers that do not yet support
-    * the HTML5 week input, a text element will be used. In that case, the text must be entered in a valid ISO-8601
-    * week format (yyyy-W##), for example: `2013-W02`.
-    *
-    * The model must always be a Date object, otherwise AngularJS will throw an error.
-    * Invalid `Date` objects (dates whose `getTime()` is `NaN`) will be rendered as an empty string.
-    *
-    * The value of the resulting Date object will be set to Thursday at 00:00:00 of the requested week,
-    * due to ISO-8601 week numbering standards. Information on ISO's system for numbering the weeks of the
-    * year can be found at: https://en.wikipedia.org/wiki/ISO_8601#Week_dates
-    *
-    * The timezone to be used to read/write the `Date` instance in the model can be defined using
-    * {@link ng.directive:ngModelOptions ngModelOptions}. By default, this is the timezone of the browser.
-    *
-    * @param {string} ngModel Assignable AngularJS expression to data-bind to.
-    * @param {string=} name Property name of the form under which the control is published.
-    * @param {string=} min Sets the `min` validation error key if the value entered is less than `min`.
-    *   This must be a valid ISO week format (yyyy-W##). You can also use interpolation inside this
-    *   attribute (e.g. `min="{{minWeek | date:'yyyy-Www'}}"`). Note that `min` will also add
-    *   native HTML5 constraint validation.
-    * @param {string=} max Sets the `max` validation error key if the value entered is greater than `max`.
-    *   This must be a valid ISO week format (yyyy-W##). You can also use interpolation inside this
-    *   attribute (e.g. `max="{{maxWeek | date:'yyyy-Www'}}"`). Note that `max` will also add
-    *   native HTML5 constraint validation.
-    * @param {(date|string)=} ngMin Sets the `min` validation constraint to the Date / ISO week string
-    *   the `ngMin` expression evaluates to. Note that it does not set the `min` attribute.
-    * @param {(date|string)=} ngMax Sets the `max` validation constraint to the Date / ISO week string
-    *   the `ngMax` expression evaluates to. Note that it does not set the `max` attribute.
-    * @param {string=} required Sets `required` validation error key if the value is not entered.
-    * @param {string=} ngRequired Adds `required` attribute and `required` validation constraint to
-    *    the element when the ngRequired expression evaluates to true. Use `ngRequired` instead of
-    *    `required` when you want to data-bind to the `required` attribute.
-    * @param {string=} ngChange AngularJS expression to be executed when input changes due to user
-    *    interaction with the input element.
-    *
-    * @example
-    <example name="week-input-directive" module="weekExample">
-    <file name="index.html">
-      <script>
-      angular.module('weekExample', [])
-        .controller('DateController', ['$scope', function($scope) {
-          $scope.example = {
-            value: new Date(2013, 0, 3)
-          };
-        }]);
-      </script>
-      <form name="myForm" ng-controller="DateController as dateCtrl">
-        <label>Pick a date between in 2013:
-          <input id="exampleInput" type="week" name="input" ng-model="example.value"
-                 placeholder="YYYY-W##" min="2012-W32"
-                 max="2013-W52" required />
-        </label>
-        <div role="alert">
-          <span class="error" ng-show="myForm.input.$error.required">
-              Required!</span>
-          <span class="error" ng-show="myForm.input.$error.week">
-              Not a valid date!</span>
-        </div>
-        <tt>value = {{example.value | date: "yyyy-Www"}}</tt><br/>
-        <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
-        <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
-        <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
-        <tt>myForm.$error.required = {{!!myForm.$error.required}}</tt><br/>
-      </form>
-    </file>
-    <file name="protractor.js" type="protractor">
-      var value = element(by.binding('example.value | date: "yyyy-Www"'));
-      var valid = element(by.binding('myForm.input.$valid'));
+  /**
+   * @ngdoc input
+   * @name input[week]
+   *
+   * @description
+   * Input with week-of-the-year validation and transformation to Date. In browsers that do not yet support
+   * the HTML5 week input, a text element will be used. In that case, the text must be entered in a valid ISO-8601
+   * week format (yyyy-W##), for example: `2013-W02`.
+   *
+   * The model must always be a Date object, otherwise AngularJS will throw an error.
+   * Invalid `Date` objects (dates whose `getTime()` is `NaN`) will be rendered as an empty string.
+   *
+   * The value of the resulting Date object will be set to Thursday at 00:00:00 of the requested week,
+   * due to ISO-8601 week numbering standards. Information on ISO's system for numbering the weeks of the
+   * year can be found at: https://en.wikipedia.org/wiki/ISO_8601#Week_dates
+   *
+   * The timezone to be used to read/write the `Date` instance in the model can be defined using
+   * {@link ng.directive:ngModelOptions ngModelOptions}. By default, this is the timezone of the browser.
+   *
+   * @param {string} ngModel Assignable AngularJS expression to data-bind to.
+   * @param {string=} name Property name of the form under which the control is published.
+   * @param {string=} min Sets the `min` validation error key if the value entered is less than `min`.
+   *   This must be a valid ISO week format (yyyy-W##). You can also use interpolation inside this
+   *   attribute (e.g. `min="{{minWeek | date:'yyyy-Www'}}"`). Note that `min` will also add
+   *   native HTML5 constraint validation.
+   * @param {string=} max Sets the `max` validation error key if the value entered is greater than `max`.
+   *   This must be a valid ISO week format (yyyy-W##). You can also use interpolation inside this
+   *   attribute (e.g. `max="{{maxWeek | date:'yyyy-Www'}}"`). Note that `max` will also add
+   *   native HTML5 constraint validation.
+   * @param {(date|string)=} ngMin Sets the `min` validation constraint to the Date / ISO week string
+   *   the `ngMin` expression evaluates to. Note that it does not set the `min` attribute.
+   * @param {(date|string)=} ngMax Sets the `max` validation constraint to the Date / ISO week string
+   *   the `ngMax` expression evaluates to. Note that it does not set the `max` attribute.
+   * @param {string=} required Sets `required` validation error key if the value is not entered.
+   * @param {string=} ngRequired Adds `required` attribute and `required` validation constraint to
+   *    the element when the ngRequired expression evaluates to true. Use `ngRequired` instead of
+   *    `required` when you want to data-bind to the `required` attribute.
+   * @param {string=} ngChange AngularJS expression to be executed when input changes due to user
+   *    interaction with the input element.
+   *
+   * @example
+   <example name="week-input-directive" module="weekExample">
+   <file name="index.html">
+     <script>
+     angular.module('weekExample', [])
+       .controller('DateController', ['$scope', function($scope) {
+         $scope.example = {
+           value: new Date(2013, 0, 3)
+         };
+       }]);
+     </script>
+     <form name="myForm" ng-controller="DateController as dateCtrl">
+       <label>Pick a date between in 2013:
+         <input id="exampleInput" type="week" name="input" ng-model="example.value"
+                placeholder="YYYY-W##" min="2012-W32"
+                max="2013-W52" required />
+       </label>
+       <div role="alert">
+         <span class="error" ng-show="myForm.input.$error.required">
+             Required!</span>
+         <span class="error" ng-show="myForm.input.$error.week">
+             Not a valid date!</span>
+       </div>
+       <tt>value = {{example.value | date: "yyyy-Www"}}</tt><br/>
+       <tt>myForm.input.$valid = {{myForm.input.$valid}}</tt><br/>
+       <tt>myForm.input.$error = {{myForm.input.$error}}</tt><br/>
+       <tt>myForm.$valid = {{myForm.$valid}}</tt><br/>
+       <tt>myForm.$error.required = {{!!myForm.$error.required}}</tt><br/>
+     </form>
+   </file>
+   <file name="protractor.js" type="protractor">
+     var value = element(by.binding('example.value | date: "yyyy-Www"'));
+     var valid = element(by.binding('myForm.input.$valid'));
 
-      // currently protractor/webdriver does not support
-      // sending keys to all known HTML5 input controls
-      // for various browsers (https://github.com/angular/protractor/issues/562).
-      function setInput(val) {
-        // set the value of the element and force validation.
-        var scr = "var ipt = document.getElementById('exampleInput'); " +
-        "ipt.value = '" + val + "';" +
-        "angular.element(ipt).scope().$apply(function(s) { s.myForm[ipt.name].$setViewValue('" + val + "'); });";
-        browser.executeScript(scr);
-      }
+     // currently protractor/webdriver does not support
+     // sending keys to all known HTML5 input controls
+     // for various browsers (https://github.com/angular/protractor/issues/562).
+     function setInput(val) {
+       // set the value of the element and force validation.
+       var scr = "var ipt = document.getElementById('exampleInput'); " +
+       "ipt.value = '" + val + "';" +
+       "angular.element(ipt).scope().$apply(function(s) { s.myForm[ipt.name].$setViewValue('" + val + "'); });";
+       browser.executeScript(scr);
+     }
 
-      it('should initialize to model', function() {
-        expect(value.getText()).toContain('2013-W01');
-        expect(valid.getText()).toContain('myForm.input.$valid = true');
-      });
+     it('should initialize to model', function() {
+       expect(value.getText()).toContain('2013-W01');
+       expect(valid.getText()).toContain('myForm.input.$valid = true');
+     });
 
-      it('should be invalid if empty', function() {
-        setInput('');
-        expect(value.getText()).toEqual('value =');
-        expect(valid.getText()).toContain('myForm.input.$valid = false');
-      });
+     it('should be invalid if empty', function() {
+       setInput('');
+       expect(value.getText()).toEqual('value =');
+       expect(valid.getText()).toContain('myForm.input.$valid = false');
+     });
 
-      it('should be invalid if over max', function() {
-        setInput('2015-W01');
-        expect(value.getText()).toContain('');
-        expect(valid.getText()).toContain('myForm.input.$valid = false');
-      });
-    </file>
-    </example>
-    */
+     it('should be invalid if over max', function() {
+       setInput('2015-W01');
+       expect(value.getText()).toContain('');
+       expect(valid.getText()).toContain('myForm.input.$valid = false');
+     });
+   </file>
+   </example>
+   */
   'week': createDateInputType('week', WEEK_REGEXP, weekParser, 'yyyy-Www'),
 
   /**
@@ -662,8 +671,8 @@ var inputType = {
    </example>
    */
   'month': createDateInputType('month', MONTH_REGEXP,
-     createDateParser(MONTH_REGEXP, ['yyyy', 'MM']),
-     'yyyy-MM'),
+    createDateParser(MONTH_REGEXP, ['yyyy', 'MM']),
+    'yyyy-MM'),
 
   /**
    * @ngdoc input
@@ -1274,7 +1283,7 @@ var inputType = {
 };
 
 function stringBasedInputType(ctrl) {
-  ctrl.$formatters.push(function(value) {
+  ctrl.$formatters.push(function (value) {
     return ctrl.$isEmpty(value) ? value : value.toString();
   });
 }
@@ -1293,11 +1302,12 @@ function baseInputType(scope, element, attr, ctrl, $sniffer, $browser) {
   if (!$sniffer.android) {
     var composing = false;
 
-    element.on('compositionstart', function() {
+    element.on('compositionstart', function () {
       composing = true;
     });
 
-    element.on('compositionupdate', function(ev) {
+    // Support: IE9+
+    element.on('compositionupdate', function (ev) {
       // End composition when ev.data is empty string on 'compositionupdate' event.
       // When the input de-focusses (e.g. by clicking away), IE triggers 'compositionupdate'
       // instead of 'compositionend'.
@@ -1306,7 +1316,7 @@ function baseInputType(scope, element, attr, ctrl, $sniffer, $browser) {
       }
     });
 
-    element.on('compositionend', function() {
+    element.on('compositionend', function () {
       composing = false;
       listener();
     });
@@ -1314,14 +1324,14 @@ function baseInputType(scope, element, attr, ctrl, $sniffer, $browser) {
 
   var timeout;
 
-  var listener = function(ev) {
+  var listener = function (ev) {
     if (timeout) {
       $browser.defer.cancel(timeout);
       timeout = null;
     }
     if (composing) return;
     var value = element.val(),
-        event = ev && ev.type;
+      event = ev && ev.type;
 
     // By default we will trim the value
     // If the attribute ng-trim exists we will avoid trimming
@@ -1338,7 +1348,37 @@ function baseInputType(scope, element, attr, ctrl, $sniffer, $browser) {
     }
   };
 
-  element.on('input', listener);
+  // if the browser does support "input" event, we are fine - except on IE9 which doesn't fire the
+  // input event on backspace, delete or cut
+  if ($sniffer.hasEvent('input')) {
+    element.on('input', listener);
+  } else {
+    var deferListener = function (ev, input, origValue) {
+      if (!timeout) {
+        timeout = $browser.defer(function () {
+          timeout = null;
+          if (!input || input.value !== origValue) {
+            listener(ev);
+          }
+        });
+      }
+    };
+
+    element.on('keydown', /** @this */ function (event) {
+      var key = event.keyCode;
+
+      // ignore
+      //    command            modifiers                   arrows
+      if (key === 91 || (15 < key && key < 19) || (37 <= key && key <= 40)) return;
+
+      deferListener(event, this, this.value);
+    });
+
+    // if user modifies input value using context menu in IE, we need "paste", "cut" and "drop" events to catch it
+    if ($sniffer.hasEvent('paste')) {
+      element.on('paste cut drop', deferListener);
+    }
+  }
 
   // if user paste into input using mouse on older browser
   // or form autocomplete on newer browser, we need "change" event to catch it
@@ -1349,12 +1389,12 @@ function baseInputType(scope, element, attr, ctrl, $sniffer, $browser) {
   // For these event types, when native validators are present and the browser supports the type,
   // check for validity changes on various DOM events.
   if (PARTIAL_VALIDATION_TYPES[type] && ctrl.$$hasNativeValidators && type === attr.type) {
-    element.on(PARTIAL_VALIDATION_EVENTS, /** @this */ function(ev) {
+    element.on(PARTIAL_VALIDATION_EVENTS, /** @this */ function (ev) {
       if (!timeout) {
         var validity = this[VALIDITY_STATE_PROPERTY];
         var origBadInput = validity.badInput;
         var origTypeMismatch = validity.typeMismatch;
-        timeout = $browser.defer(function() {
+        timeout = $browser.defer(function () {
           timeout = null;
           if (validity.badInput !== origBadInput || validity.typeMismatch !== origTypeMismatch) {
             listener(ev);
@@ -1364,7 +1404,7 @@ function baseInputType(scope, element, attr, ctrl, $sniffer, $browser) {
     });
   }
 
-  ctrl.$render = function() {
+  ctrl.$render = function () {
     // Workaround for Firefox validation #12102.
     var value = ctrl.$isEmpty(ctrl.$viewValue) ? '' : ctrl.$viewValue;
     if (element.val() !== value) {
@@ -1383,13 +1423,13 @@ function weekParser(isoWeek, existingDate) {
     var parts = WEEK_REGEXP.exec(isoWeek);
     if (parts) {
       var year = +parts[1],
-          week = +parts[2],
-          hours = 0,
-          minutes = 0,
-          seconds = 0,
-          milliseconds = 0,
-          firstThurs = getFirstThursdayOfYear(year),
-          addDays = (week - 1) * 7;
+        week = +parts[2],
+        hours = 0,
+        minutes = 0,
+        seconds = 0,
+        milliseconds = 0,
+        firstThurs = getFirstThursdayOfYear(year),
+        addDays = (week - 1) * 7;
 
       if (existingDate) {
         hours = existingDate.getHours();
@@ -1406,7 +1446,7 @@ function weekParser(isoWeek, existingDate) {
 }
 
 function createDateParser(regexp, mapping) {
-  return function(iso, previousDate) {
+  return function (iso, previousDate) {
     var parts, map;
 
     if (isDate(iso)) {
@@ -1442,7 +1482,7 @@ function createDateParser(regexp, mapping) {
           map = { yyyy: 1970, MM: 1, dd: 1, HH: 0, mm: 0, ss: 0, sss: 0 };
         }
 
-        forEach(parts, function(part, index) {
+        forEach(parts, function (part, index) {
           if (index < mapping.length) {
             map[mapping[index]] = +part;
           }
@@ -1472,7 +1512,7 @@ function createDateInputType(type, regexp, parseDate, format) {
     var previousDate;
     var previousTimezone;
 
-    ctrl.$parsers.push(function(value) {
+    ctrl.$parsers.push(function (value) {
       if (ctrl.$isEmpty(value)) return null;
 
       if (regexp.test(value)) {
@@ -1485,7 +1525,7 @@ function createDateInputType(type, regexp, parseDate, format) {
       return undefined;
     });
 
-    ctrl.$formatters.push(function(value) {
+    ctrl.$formatters.push(function (value) {
       if (value && !isDate(value)) {
         throw ngModelMinErr('datefmt', 'Expected `{0}` to be a date', value);
       }
@@ -1510,10 +1550,10 @@ function createDateInputType(type, regexp, parseDate, format) {
       var minVal = attr.min || $parse(attr.ngMin)(scope);
       var parsedMinVal = parseObservedDateValue(minVal);
 
-      ctrl.$validators.min = function(value) {
+      ctrl.$validators.min = function (value) {
         return !isValidDate(value) || isUndefined(parsedMinVal) || parseDate(value) >= parsedMinVal;
       };
-      attr.$observe('min', function(val) {
+      attr.$observe('min', function (val) {
         if (val !== minVal) {
           parsedMinVal = parseObservedDateValue(val);
           minVal = val;
@@ -1526,10 +1566,10 @@ function createDateInputType(type, regexp, parseDate, format) {
       var maxVal = attr.max || $parse(attr.ngMax)(scope);
       var parsedMaxVal = parseObservedDateValue(maxVal);
 
-      ctrl.$validators.max = function(value) {
+      ctrl.$validators.max = function (value) {
         return !isValidDate(value) || isUndefined(parsedMaxVal) || parseDate(value) <= parsedMaxVal;
       };
-      attr.$observe('max', function(val) {
+      attr.$observe('max', function (val) {
         if (val !== maxVal) {
           parsedMaxVal = parseObservedDateValue(val);
           maxVal = val;
@@ -1573,7 +1613,7 @@ function createDateInputType(type, regexp, parseDate, format) {
           .replace(/:$/, '');
       }
 
-      var formatted =  $filter('date')(value, targetFormat, timezone);
+      var formatted = $filter('date')(value, targetFormat, timezone);
 
       if (isTimeType && ctrl.$options.getOption('timeStripZeroSeconds')) {
         formatted = formatted.replace(/(?::00)?(?:\.000)?$/, '');
@@ -1588,7 +1628,7 @@ function badInputChecker(scope, element, attr, ctrl, parserName) {
   var node = element[0];
   var nativeValidation = ctrl.$$hasNativeValidators = isObject(node.validity);
   if (nativeValidation) {
-    ctrl.$parsers.push(function(value) {
+    ctrl.$parsers.push(function (value) {
       var validity = element.prop(VALIDITY_STATE_PROPERTY) || {};
       if (validity.badInput || validity.typeMismatch) {
         ctrl.$$parserName = parserName;
@@ -1601,15 +1641,15 @@ function badInputChecker(scope, element, attr, ctrl, parserName) {
 }
 
 function numberFormatterParser(ctrl) {
-  ctrl.$parsers.push(function(value) {
-    if (ctrl.$isEmpty(value))      return null;
+  ctrl.$parsers.push(function (value) {
+    if (ctrl.$isEmpty(value)) return null;
     if (NUMBER_REGEXP.test(value)) return parseFloat(value);
 
     ctrl.$$parserName = 'number';
     return undefined;
   });
 
-  ctrl.$formatters.push(function(value) {
+  ctrl.$formatters.push(function (value) {
     if (!ctrl.$isEmpty(value)) {
       if (!isNumber(value)) {
         throw ngModelMinErr('numfmt', 'Expected `{0}` to be a number', value);
@@ -1697,11 +1737,11 @@ function numberInputType(scope, element, attr, ctrl, $sniffer, $browser, $filter
     var minVal = attr.min || $parse(attr.ngMin)(scope);
     parsedMinVal = parseNumberAttrVal(minVal);
 
-    ctrl.$validators.min = function(modelValue, viewValue) {
+    ctrl.$validators.min = function (modelValue, viewValue) {
       return ctrl.$isEmpty(viewValue) || isUndefined(parsedMinVal) || viewValue >= parsedMinVal;
     };
 
-    attr.$observe('min', function(val) {
+    attr.$observe('min', function (val) {
       if (val !== minVal) {
         parsedMinVal = parseNumberAttrVal(val);
         minVal = val;
@@ -1715,11 +1755,11 @@ function numberInputType(scope, element, attr, ctrl, $sniffer, $browser, $filter
     var maxVal = attr.max || $parse(attr.ngMax)(scope);
     var parsedMaxVal = parseNumberAttrVal(maxVal);
 
-    ctrl.$validators.max = function(modelValue, viewValue) {
+    ctrl.$validators.max = function (modelValue, viewValue) {
       return ctrl.$isEmpty(viewValue) || isUndefined(parsedMaxVal) || viewValue <= parsedMaxVal;
     };
 
-    attr.$observe('max', function(val) {
+    attr.$observe('max', function (val) {
       if (val !== maxVal) {
         parsedMaxVal = parseNumberAttrVal(val);
         maxVal = val;
@@ -1733,12 +1773,12 @@ function numberInputType(scope, element, attr, ctrl, $sniffer, $browser, $filter
     var stepVal = attr.step || $parse(attr.ngStep)(scope);
     var parsedStepVal = parseNumberAttrVal(stepVal);
 
-    ctrl.$validators.step = function(modelValue, viewValue) {
+    ctrl.$validators.step = function (modelValue, viewValue) {
       return ctrl.$isEmpty(viewValue) || isUndefined(parsedStepVal) ||
         isValidForStep(viewValue, parsedMinVal || 0, parsedStepVal);
     };
 
-    attr.$observe('step', function(val) {
+    attr.$observe('step', function (val) {
       // TODO(matsko): implement validateLater to reduce number of validations
       if (val !== stepVal) {
         parsedStepVal = parseNumberAttrVal(val);
@@ -1757,13 +1797,13 @@ function rangeInputType(scope, element, attr, ctrl, $sniffer, $browser) {
   baseInputType(scope, element, attr, ctrl, $sniffer, $browser);
 
   var supportsRange = ctrl.$$hasNativeValidators && element[0].type === 'range',
-      minVal = supportsRange ? 0 : undefined,
-      maxVal = supportsRange ? 100 : undefined,
-      stepVal = supportsRange ? 1 : undefined,
-      validity = element[0].validity,
-      hasMinAttr = isDefined(attr.min),
-      hasMaxAttr = isDefined(attr.max),
-      hasStepAttr = isDefined(attr.step);
+    minVal = supportsRange ? 0 : undefined,
+    maxVal = supportsRange ? 100 : undefined,
+    stepVal = supportsRange ? 1 : undefined,
+    validity = element[0].validity,
+    hasMinAttr = isDefined(attr.min),
+    hasMaxAttr = isDefined(attr.max),
+    hasStepAttr = isDefined(attr.step);
 
   var originalRender = ctrl.$render;
 
@@ -1817,7 +1857,7 @@ function rangeInputType(scope, element, attr, ctrl, $sniffer, $browser) {
       // ngStep doesn't set the setp attr, so the browser doesn't adjust the input value as setting step would
       function stepValidator(modelValue, viewValue) {
         return ctrl.$isEmpty(viewValue) || isUndefined(stepVal) ||
-               isValidForStep(viewValue, minVal || 0, stepVal);
+          isValidForStep(viewValue, minVal || 0, stepVal);
       };
 
     setInitialValueAndObserver('step', stepChange);
@@ -1903,7 +1943,7 @@ function urlInputType(scope, element, attr, ctrl, $sniffer, $browser) {
   baseInputType(scope, element, attr, ctrl, $sniffer, $browser);
   stringBasedInputType(ctrl);
 
-  ctrl.$validators.url = function(modelValue, viewValue) {
+  ctrl.$validators.url = function (modelValue, viewValue) {
     var value = modelValue || viewValue;
     return ctrl.$isEmpty(value) || URL_REGEXP.test(value);
   };
@@ -1915,7 +1955,7 @@ function emailInputType(scope, element, attr, ctrl, $sniffer, $browser) {
   baseInputType(scope, element, attr, ctrl, $sniffer, $browser);
   stringBasedInputType(ctrl);
 
-  ctrl.$validators.email = function(modelValue, viewValue) {
+  ctrl.$validators.email = function (modelValue, viewValue) {
     var value = modelValue || viewValue;
     return ctrl.$isEmpty(value) || EMAIL_REGEXP.test(value);
   };
@@ -1928,7 +1968,7 @@ function radioInputType(scope, element, attr, ctrl) {
     element.attr('name', nextUid());
   }
 
-  var listener = function(ev) {
+  var listener = function (ev) {
     var value;
     if (element[0].checked) {
       value = attr.value;
@@ -1941,7 +1981,7 @@ function radioInputType(scope, element, attr, ctrl) {
 
   element.on('change', listener);
 
-  ctrl.$render = function() {
+  ctrl.$render = function () {
     var value = attr.value;
     if (doTrim) {
       value = trim(value);
@@ -1958,7 +1998,7 @@ function parseConstantExpr($parse, context, name, expression, fallback) {
     parseFn = $parse(expression);
     if (!parseFn.constant) {
       throw ngModelMinErr('constexpr', 'Expected constant expression for `{0}`, but saw ' +
-                                   '`{1}`.', name, expression);
+        '`{1}`.', name, expression);
     }
     return parseFn(context);
   }
@@ -1969,28 +2009,28 @@ function checkboxInputType(scope, element, attr, ctrl, $sniffer, $browser, $filt
   var trueValue = parseConstantExpr($parse, scope, 'ngTrueValue', attr.ngTrueValue, true);
   var falseValue = parseConstantExpr($parse, scope, 'ngFalseValue', attr.ngFalseValue, false);
 
-  var listener = function(ev) {
+  var listener = function (ev) {
     ctrl.$setViewValue(element[0].checked, ev && ev.type);
   };
 
   element.on('change', listener);
 
-  ctrl.$render = function() {
+  ctrl.$render = function () {
     element[0].checked = ctrl.$viewValue;
   };
 
   // Override the standard `$isEmpty` because the $viewValue of an empty checkbox is always set to `false`
   // This is because of the parser below, which compares the `$modelValue` with `trueValue` to convert
   // it to a boolean.
-  ctrl.$isEmpty = function(value) {
+  ctrl.$isEmpty = function (value) {
     return value === false;
   };
 
-  ctrl.$formatters.push(function(value) {
+  ctrl.$formatters.push(function (value) {
     return equals(value, trueValue);
   });
 
-  ctrl.$parsers.push(function(value) {
+  ctrl.$parsers.push(function (value) {
     return value ? trueValue : falseValue;
   });
 }
@@ -2171,30 +2211,30 @@ function checkboxInputType(scope, element, attr, ctrl, $sniffer, $browser, $filt
     </example>
  */
 var inputDirective = ['$browser', '$sniffer', '$filter', '$parse',
-    function($browser, $sniffer, $filter, $parse) {
-  return {
-    restrict: 'E',
-    require: ['?ngModel'],
-    link: {
-      pre: function(scope, element, attr, ctrls) {
-        if (ctrls[0]) {
-          (inputType[lowercase(attr.type)] || inputType.text)(scope, element, attr, ctrls[0], $sniffer,
-                                                              $browser, $filter, $parse);
+  function ($browser, $sniffer, $filter, $parse) {
+    return {
+      restrict: 'E',
+      require: ['?ngModel'],
+      link: {
+        pre: function (scope, element, attr, ctrls) {
+          if (ctrls[0]) {
+            (inputType[lowercase(attr.type)] || inputType.text)(scope, element, attr, ctrls[0], $sniffer,
+              $browser, $filter, $parse);
+          }
         }
       }
-    }
-  };
-}];
+    };
+  }];
 
 
-var hiddenInputBrowserCacheDirective = function() {
+var hiddenInputBrowserCacheDirective = function () {
   var valueProperty = {
     configurable: true,
     enumerable: false,
-    get: function() {
+    get: function () {
       return this.getAttribute('value') || '';
     },
-    set: function(val) {
+    set: function (val) {
       this.setAttribute('value', val);
     }
   };
@@ -2202,13 +2242,13 @@ var hiddenInputBrowserCacheDirective = function() {
   return {
     restrict: 'E',
     priority: 200,
-    compile: function(_, attr) {
+    compile: function (_, attr) {
       if (lowercase(attr.type) !== 'hidden') {
         return;
       }
 
       return {
-        pre: function(scope, element, attr, ctrls) {
+        pre: function (scope, element, attr, ctrls) {
           var node = element[0];
 
           // Support: Edge
@@ -2288,7 +2328,7 @@ var CONSTANT_VALUE_REGEXP = /^(true|false|\d+)$/;
       </file>
     </example>
  */
-var ngValueDirective = function() {
+var ngValueDirective = function () {
   /**
    *  inputs use the value attribute as their default value if the value property is not set.
    *  Once the value property has been set (by adding input), it will not react to changes to
@@ -2304,7 +2344,7 @@ var ngValueDirective = function() {
   return {
     restrict: 'A',
     priority: 100,
-    compile: function(tpl, tplAttr) {
+    compile: function (tpl, tplAttr) {
       if (CONSTANT_VALUE_REGEXP.test(tplAttr.ngValue)) {
         return function ngValueConstantLink(scope, elm, attr) {
           var value = scope.$eval(attr.ngValue);
