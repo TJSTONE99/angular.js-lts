@@ -68,8 +68,8 @@ describe('ngHref', () => {
   }));
 
 
-  // Support: IE 9-11 only, Edge 12-17
-  if (ngInternals.msie || /\bEdge\/1[2-7]\.[\d.]+\b/.test(window.navigator.userAgent)) {
+  // Support: Edge 12-17
+  if (/\bEdge\/1[2-7]\.[\d.]+\b/.test(window.navigator.userAgent)) {
     // IE/Edge fail when setting a href to a URL containing a % that isn't a valid escape sequence
     // See https://github.com/angular/angular.js/issues/13388
     it('should throw error if ng-href contains a non-escaped percent symbol', angular.mock.inject(($rootScope, $compile) => {

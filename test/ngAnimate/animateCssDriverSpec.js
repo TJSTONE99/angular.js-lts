@@ -26,7 +26,6 @@ describe('ngAnimate $$animateCssDriver', () => {
   });
 
   describe('when active', () => {
-    if (!browserSupportsCssAnimations()) return;
 
     let element;
     let ss;
@@ -538,6 +537,27 @@ describe('ngAnimate $$animateCssDriver', () => {
           $rootElement.append(fromAnchor);
           $rootElement.append(toAnchor);
 
+          // Mock getBoundingClientRect for jsdom environment
+          const mockFromBounds = { 
+            width: 200, 
+            height: 100, 
+            top: 500, 
+            left: 150,
+            right: 350,
+            bottom: 600
+          };
+          const mockToBounds = { 
+            width: 0, 
+            height: 0, 
+            top: 0, 
+            left: 0,
+            right: 0,
+            bottom: 0
+          };
+          
+          jest.spyOn(fromAnchor[0], 'getBoundingClientRect').mockReturnValue(mockFromBounds);
+          jest.spyOn(toAnchor[0], 'getBoundingClientRect').mockReturnValue(mockToBounds);
+
           const runner = driver({
             from: fromAnimation,
             to: toAnimation,
@@ -863,6 +883,27 @@ describe('ngAnimate $$animateCssDriver', () => {
 
           $rootElement.append(fromAnchor);
           $rootElement.append(toAnchor);
+
+          // Mock getBoundingClientRect for jsdom environment
+          const mockFromBounds = { 
+            width: 0, 
+            height: 0, 
+            top: 0, 
+            left: 0,
+            right: 0,
+            bottom: 0
+          };
+          const mockToBounds = { 
+            width: 9999, 
+            height: 6666, 
+            top: 301, 
+            left: 21,
+            right: 10020,
+            bottom: 6967
+          };
+          
+          jest.spyOn(fromAnchor[0], 'getBoundingClientRect').mockReturnValue(mockFromBounds);
+          jest.spyOn(toAnchor[0], 'getBoundingClientRect').mockReturnValue(mockToBounds);
 
           driver({
             from: fromAnimation,

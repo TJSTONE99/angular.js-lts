@@ -170,15 +170,6 @@ describe('$sniffer', () => {
       expect(mockDocument.createElement).toHaveBeenCalledTimes(1);
     });
 
-
-    it('should claim that IE9 doesn\'t have support for "oninput"', () => {
-      // Support: IE 9-11 only
-      // IE9 implementation is fubared, so it's better to pretend that it doesn't have the support
-      // IE10+ implementation is fubared when mixed with placeholders
-      mockDivElement = { oninput: angular.noop };
-
-      expect($sniffer.hasEvent('input')).toBe(!ngInternals.msie);
-    });
   });
 
 

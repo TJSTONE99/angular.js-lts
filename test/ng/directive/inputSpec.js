@@ -34,7 +34,7 @@ describe('input', () => {
   });
 
 
-  it('should not set readonly or disabled property on ie7', () => {
+  it('should not set readonly or disabled property', () => {
     expect.extend({
       toBeOff: function (actual, attributeName) {
         const actualValue = actual.attr(attributeName);

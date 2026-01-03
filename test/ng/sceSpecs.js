@@ -22,71 +22,6 @@ describe('SCE', function () {
     }));
   });
 
-  describe('IE<11 quirks mode', function () {
-    /* global msie: true */
-    let msieBackup;
-
-    beforeEach(function () {
-      msieBackup = window.document.documentMode;
-    });
-
-    afterEach(function () {
-      ngInternals.setMsie(msieBackup);
-    });
-
-    function runTest(enabled, documentMode, expectException) {
-      ngInternals.setMsie(documentMode);
-      angular.mock.module(function ($provide) {
-        $provide.value('$sceDelegate', { trustAs: null, valueOf: null, getTrusted: null });
-      });
-
-      angular.mock.inject(function ($window, $injector) {
-
-        function constructSce() {
-          /* global $SceProvider: false */
-          const sceProvider = new ngInternals.$SceProvider();
-          sceProvider.enabled(enabled);
-          return $injector.invoke(sceProvider.$get, sceProvider);
-        }
-
-        if (expectException) {
-          expect(constructSce).toThrowMinErr(
-            '$sce', 'iequirks', 'Strict Contextual Escaping does not support Internet Explorer ' +
-            'version < 11 in quirks mode.  You can fix this by adding the text <!doctype html> to ' +
-            'the top of your HTML document.  See http://docs.angularjs.org/api/ng.$sce for more ' +
-          'information.');
-        } else {
-          // no exception.
-          constructSce();
-        }
-      });
-    }
-
-    it('should throw an exception when sce is enabled in quirks mode', function () {
-      runTest(true, 7, true);
-    });
-
-    it('should NOT throw an exception when sce is enabled and in standards mode', function () {
-      runTest(true, 8, false);
-    });
-
-    it('should NOT throw an exception when sce is enabled and documentMode is undefined', function () {
-      runTest(true, undefined, false);
-    });
-
-    it('should NOT throw an exception when sce is disabled even when in quirks mode', function () {
-      runTest(false, 7, false);
-    });
-
-    it('should NOT throw an exception when sce is disabled and in standards mode', function () {
-      runTest(false, 8, false);
-    });
-
-    it('should NOT throw an exception when sce is disabled and documentMode is undefined', function () {
-      runTest(false, undefined, false);
-    });
-  });
-
   describe('when enabled', function () {
     it('should wrap string values with TrustedValueHolder', angular.mock.inject(function ($sce) {
       const originalValue = 'original_value';
@@ -605,18 +540,6 @@ describe('SCE', function () {
         expect($sce.getTrustedHtml('a<xxx><B>b</B></xxx>c')).toBe('a<b>b</b>c');
       }));
 
-      // Note: that test only passes if HTML is added to the concatenable contexts list.
-      // See isConcatenableSecureContext in interpolate.js for that.
-      //
-      // if (!msie || msie >= 11) {
-      //   it('can set dynamic srcdocs with concatenations and sanitize the result',
-      //       angular.mock.inject(function($compile, $rootScope) {
-      //     var element = compileForTest('<iframe srcdoc="&lt;b&gt;&lt;script&gt;{{html}}"></iframe>');
-      //     $rootScope.html = 'no</script>yes</b>';
-      //     $rootScope.$digest();
-      //     expect((element.attr('srcdoc')).toLowerCase()).toEqual('<b>yes</b>');
-      //   }));
-      // }
     });
   });
 });

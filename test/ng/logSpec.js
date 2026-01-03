@@ -67,22 +67,11 @@ describe('$log', () => {
     }
   ));
 
-  runTests({ ie9Mode: false });
-  runTests({ ie9Mode: true });
+  runTests();
 
-  function runTests(options) {
-    const ie9Mode = options.ie9Mode;
+  function runTests() {
 
     function attachMockConsoleTo$window() {
-      // Support: IE 9 only
-      // Simulate missing apply on console methods in IE 9.
-      if (ie9Mode) {
-        log.apply = log.call =
-          warn.apply = warn.call =
-          info.apply = info.call =
-          error.apply = error.call =
-          debug.apply = debug.call = null;
-      }
 
       $window.console = {
         log: log,
@@ -93,7 +82,7 @@ describe('$log', () => {
       };
     }
 
-    describe(ie9Mode ? 'IE 9 logging behavior' : 'Modern browsers\' logging behavior', () => {
+    describe('Modern browsers\' logging behavior', () => {
       beforeEach(angular.mock.module(attachMockConsoleTo$window));
 
       it('should work if $window.navigator not defined', angular.mock.inject(
@@ -193,7 +182,7 @@ describe('$log', () => {
           expect($window.console.error).toHaveBeenCalledWith('abc', e);
         });
 
-        if (ngInternals.msie || /\bEdge\//.test(window.navigator.userAgent)) {
+        if (/\bEdge\//.test(window.navigator.userAgent)) {
           it('should print stack', () => {
             e.stack = 'stack';
             $log.error('abc', e);

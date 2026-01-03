@@ -11,7 +11,8 @@ async function waitForAngular(page) {
   try {
     await page.waitForFunction(() => {
       return window.angular && window.angular.element && 
-             document.querySelector('[ng-app]') !== null;
+             document.querySelector('[ng-app]') && 
+             document.querySelector('[ng-app]').classList.contains('ng-scope');
     }, { timeout: 10000 });
   } catch (error) {
     // If Angular doesn't load, let's debug what's happening

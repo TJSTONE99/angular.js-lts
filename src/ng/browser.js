@@ -62,11 +62,7 @@ function Browser(window, document, $log, $sniffer, $$taskTrackerFactory) {
       baseElement = document.find('base'),
       pendingLocation = null,
       getCurrentState = !$sniffer.history ? noop : function getCurrentState() {
-        try {
           return history.state;
-        } catch (e) {
-          // MSIE can reportedly throw when there is no state (UNCONFIRMED).
-        }
       };
 
   cacheState();

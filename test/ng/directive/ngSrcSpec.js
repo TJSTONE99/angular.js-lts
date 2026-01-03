@@ -52,33 +52,6 @@ describe('ngSrc', () => {
       expect(element.attr('src')).toEqual('some/1');
     }));
 
-    // Support: IE 9-11 only
-    if (ngInternals.msie) {
-      it('should update the element property as well as the attribute', angular.mock.inject(($compile, $rootScope, $sce) => {
-        // on IE, if "ng:src" directive declaration is used and "src" attribute doesn't exist
-        // then calling element.setAttribute('src', 'foo') doesn't do anything, so we need
-        // to set the property as well to achieve the desired effect
-
-        element = $compile('<img ng-src="{{id}}"></img>')($rootScope);
-
-        $rootScope.$digest();
-        expect(element.prop('src')).toBe('');
-        dealoc(element);
-
-        element = $compile('<img ng-src="some/"></img>')($rootScope);
-
-        $rootScope.$digest();
-        expect(element.prop('src')).toBe('/some/$');
-        dealoc(element);
-
-        element = $compile('<img ng-src="{{id}}"></img>')($rootScope);
-        $rootScope.$apply(() => {
-          $rootScope.id = $sce.trustAsResourceUrl('http://somewhere/abc');
-        });
-        expect(element.prop('src')).toEqual('http://somewhere/abc');
-      }));
-    }
-
     it('should work with `src` attribute on the same element', angular.mock.inject(($rootScope, $compile) => {
       $rootScope.imageUrl = 'dynamic';
       element = $compile('<img ng-src="{{imageUrl}}" src="static">')($rootScope);
