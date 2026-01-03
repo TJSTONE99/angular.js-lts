@@ -111,21 +111,6 @@ describe('$httpBackend', () => {
     expect(callback).toHaveBeenCalledTimes(1);
   });
 
-
-  it('should normalize IE\'s 1223 status code into 204', () => {
-    callback.mockImplementation((status) => {
-      expect(status).toBe(204);
-    });
-
-    $backend('GET', 'URL', null, callback);
-    xhr = angular.mock.MockXhr.$$lastInstance;
-
-    xhr.status = 1223;
-    xhr.onload();
-
-    expect(callback).toHaveBeenCalledTimes(1);
-  });
-
   it('should set only the requested headers', () => {
     $backend('POST', 'URL', null, angular.noop, { 'X-header1': 'value1', 'X-header2': 'value2' });
     xhr = angular.mock.MockXhr.$$lastInstance;
@@ -397,25 +382,6 @@ describe('$httpBackend', () => {
       expect(callback).toHaveBeenCalledTimes(1);
     });
 
-
-    it('should read responseText if response was not defined', () => {
-      //  old browsers like IE9, don't support responseType, so they always respond with responseText
-
-      $backend('GET', '/whatever', null, callback, {}, null, null, 'blob');
-
-      const xhrInstance = angular.mock.MockXhr.$$lastInstance;
-      const responseText = '{"some": "object"}';
-      expect(xhrInstance.responseType).toBe('blob');
-
-      callback.mockImplementation((status, response) => {
-        expect(response).toBe(responseText);
-      });
-
-      xhrInstance.responseText = responseText;
-      xhrInstance.onload();
-
-      expect(callback).toHaveBeenCalledTimes(1);
-    });
   });
 
 

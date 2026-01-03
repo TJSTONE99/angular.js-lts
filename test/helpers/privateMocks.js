@@ -22,13 +22,6 @@ const they = (msg, vals, spec) => baseThey(msg, vals, spec, it);
 const fthey = (msg, vals, spec) => baseThey(msg, vals, spec, fit);
 const xthey = (msg, vals, spec) => baseThey(msg, vals, spec, xit);
 
-const browserSupportsCssAnimations = () => {
-  // Support: IE 9 only
-  // Only IE 10+ support keyframes / transitions
-  if (!window || !window.document || !window.getComputedStyle || !window.document.documentMode) return false;
-  return window.document.documentMode >= 10;
-};
-
 const createMockStyleSheet = (doc) => {
   const documentRef = doc && doc[0] ? doc[0] : window.document;
 
@@ -75,6 +68,5 @@ const createMockStyleSheet = (doc) => {
 };
 
 window.assertCompareNodes = assertCompareNodes;
-window.browserSupportsCssAnimations = browserSupportsCssAnimations;
 window.createMockStyleSheet = createMockStyleSheet;
 window.they = they;

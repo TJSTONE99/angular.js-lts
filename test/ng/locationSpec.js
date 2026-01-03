@@ -42,8 +42,8 @@ describe('$location', () => {
     beforeEach(() => {
       // Support: non-Windows browsers
       // These tests expect a Windows environment which we can only guarantee
-      // on IE & Edge.
-      if (ngInternals.msie || /\bEdge\/[\d.]+\b/.test(window.navigator.userAgent)) return;
+      // on Edge.
+      if (/\bEdge\/[\d.]+\b/.test(window.navigator.userAgent)) return;
 
       urlParsingNodePlaceholder = ngInternals.urlParsingNode;
 
@@ -64,7 +64,7 @@ describe('$location', () => {
 
     afterEach(() => {
       // Support: non-Windows browsers
-      if (ngInternals.msie || /\bEdge\/[\d.]+\b/.test(window.navigator.userAgent)) return;
+      if (/\bEdge\/[\d.]+\b/.test(window.navigator.userAgent)) return;
       //reset urlParsingNode
       ngInternals.urlParsingNode = urlParsingNodePlaceholder;
     });
