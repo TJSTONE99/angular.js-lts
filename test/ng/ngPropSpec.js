@@ -260,6 +260,126 @@ describe('ngProp*', () => {
     });
   });
 
+
+  ['img', 'audio', 'video'].forEach(tag => {
+    // Support: IE 9 only
+    // IE9 rejects the `video` / `audio` tags with "Error: Not implemented"
+    if (ngInternals.msie !== 9 || tag === 'img') {
+      describe(tag + '[src] context requirement', () => {
+        it('should NOT require trusted values for trusted URIs', angular.mock.inject(($rootScope, $compile) => {
+          const element = $compile('<' + tag + ' ng-prop-src="testUrl"></' + tag + '>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = 'http://example.com/image.mp4'; // `http` is trusted
+          $rootScope.$digest();
+          expect(element.prop('src')).toEqual('http://example.com/image.mp4');
+        }));
+
+        it('should accept trusted values', angular.mock.inject(($rootScope, $compile, $sce) => {
+          // As a MEDIA_URL URL
+          let element = $compile('<' + tag + ' ng-prop-src="testUrl"></' + tag + '>')($rootScope);
+          toDealoc.push(element);
+          // Some browsers complain if you try to write `javascript:` into an `img[src]`
+          // So for the test use something different
+          $rootScope.testUrl = $sce.trustAsMediaUrl('untrusted:foo()');
+          $rootScope.$digest();
+          expect(element.prop('src')).toEqual('untrusted:foo()');
+
+          // As a URL
+          element = $compile('<' + tag + ' ng-prop-src="testUrl"></' + tag + '>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = $sce.trustAsUrl('untrusted:foo()');
+          $rootScope.$digest();
+          expect(element.prop('src')).toEqual('untrusted:foo()');
+
+          // As a RESOURCE URL
+          element = $compile('<' + tag + ' ng-prop-src="testUrl"></' + tag + '>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = $sce.trustAsResourceUrl('untrusted:foo()');
+          $rootScope.$digest();
+          expect(element.prop('src')).toEqual('untrusted:foo()');
+        }));
+
+        it('should sanitize non-trusted values', angular.mock.inject(($rootScope, $compile, $sce) => {
+          // As a MEDIA_URL URL
+          const element = $compile('<' + tag + ' ng-prop-src="testUrl"></' + tag + '>')($rootScope);
+          toDealoc.push(element);
+          // Some browsers complain if you try to write `javascript:` into an `img[src]`
+          // So for the test use something different
+          $rootScope.testUrl = 'untrusted:foo()';
+          $rootScope.$digest();
+          expect(element.prop('src')).toEqual('unsafe:untrusted:foo()');
+        }));
+
+        it('should sanitize wrongly typed values', angular.mock.inject(($rootScope, $compile, $sce) => {
+          // As a MEDIA_URL URL
+          const element = $compile('<' + tag + ' ng-prop-src="testUrl"></' + tag + '>')($rootScope);
+          toDealoc.push(element);
+          // Some browsers complain if you try to write `javascript:` into an `img[src]`
+          // So for the test use something different
+          $rootScope.testUrl = $sce.trustAsCss('untrusted:foo()');
+          $rootScope.$digest();
+          expect(element.prop('src')).toEqual('unsafe:untrusted:foo()');
+        }));
+      });
+    }
+  });
+
+  // Support: IE 9 only
+  // IE 9 rejects the `source` / `track` tags with
+  // "Unable to get value of the property 'childNodes': object is null or undefined"
+  if (ngInternals.msie !== 9) {
+    ['source', 'track'].forEach(tag => {
+      describe(tag + '[src]', () => {
+        it('should NOT require trusted values for trusted URIs', angular.mock.inject(($rootScope, $compile) => {
+          const element = $compile('<video><' + tag + ' ng-prop-src="testUrl"></' + tag + '></video>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = 'http://example.com/image.mp4'; // `http` is trusted
+          $rootScope.$digest();
+          expect(element.find(tag).prop('src')).toEqual('http://example.com/image.mp4');
+        }));
+
+        it('should accept trusted values', angular.mock.inject(($rootScope, $compile, $sce) => {
+          // As a MEDIA_URL URL
+          let element = $compile('<video><' + tag + ' ng-prop-src="testUrl"></' + tag + '></video>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = $sce.trustAsMediaUrl('javascript:foo()');
+          $rootScope.$digest();
+          expect(element.find(tag).prop('src')).toEqual('javascript:foo()');
+
+          // As a URL
+          element = $compile('<video><' + tag + ' ng-prop-src="testUrl"></' + tag + '></video>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = $sce.trustAsUrl('javascript:foo()');
+          $rootScope.$digest();
+          expect(element.find(tag).prop('src')).toEqual('javascript:foo()');
+
+          // As a RESOURCE URL
+          element = $compile('<video><' + tag + ' ng-prop-src="testUrl"></' + tag + '></video>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = $sce.trustAsResourceUrl('javascript:foo()');
+          $rootScope.$digest();
+          expect(element.find(tag).prop('src')).toEqual('javascript:foo()');
+        }));
+
+        it('should sanitize non-trusted values', angular.mock.inject(($rootScope, $compile, $sce) => {
+          const element = $compile('<video><' + tag + ' ng-prop-src="testUrl"></' + tag + '></video>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = 'untrusted:foo()';
+          $rootScope.$digest();
+          expect(element.find(tag).prop('src')).toEqual('unsafe:untrusted:foo()');
+        }));
+
+        it('should sanitize wrongly typed values', angular.mock.inject(($rootScope, $compile, $sce) => {
+          const element = $compile('<video><' + tag + ' ng-prop-src="testUrl"></' + tag + '></video>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = $sce.trustAsCss('untrusted:foo()');
+          $rootScope.$digest();
+          expect(element.find(tag).prop('src')).toEqual('unsafe:untrusted:foo()');
+        }));
+      });
+    });
+  }
+
   describe('img[src] sanitization', () => {
 
     it('should accept trusted values', angular.mock.inject(($rootScope, $compile, $sce) => {
@@ -305,6 +425,126 @@ describe('ngProp*', () => {
         expect(element.prop('src')).toBe('untrusted:foo();');
       });
     });
+  });
+
+  ['img', 'source'].forEach(srcsetElement => {
+    // Support: IE 9 only
+    // IE9 ignores source[srcset] property assignments
+    if (ngInternals.msie !== 9 || srcsetElement === 'img') {
+      describe(srcsetElement + '[srcset] sanitization', () => {
+        it('should not error if srcset is blank', angular.mock.inject(($compile, $rootScope) => {
+          const element = $compile('<' + srcsetElement + ' ng-prop-srcset="testUrl"></' + srcsetElement + '>')($rootScope);
+          toDealoc.push(element);
+          // Set srcset to a value
+          $rootScope.testUrl = 'http://example.com/';
+          $rootScope.$digest();
+          expect(element.prop('srcset')).toBe('http://example.com/');
+
+          // Now set it to blank
+          $rootScope.testUrl = '';
+          $rootScope.$digest();
+          expect(element.prop('srcset')).toBe('');
+        }));
+
+        it('should NOT require trusted values for trusted URI values', angular.mock.inject(($rootScope, $compile, $sce) => {
+          const element = $compile('<' + srcsetElement + ' ng-prop-srcset="testUrl"></' + srcsetElement + '>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = 'http://example.com/image.png'; // `http` is trusted
+          $rootScope.$digest();
+          expect(element.prop('srcset')).toEqual('http://example.com/image.png');
+        }));
+
+        it('should accept trusted values, if they are also trusted URIs', angular.mock.inject(($rootScope, $compile, $sce) => {
+          const element = $compile('<' + srcsetElement + ' ng-prop-srcset="testUrl"></' + srcsetElement + '>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = $sce.trustAsUrl('http://example.com');
+          $rootScope.$digest();
+          expect(element.prop('srcset')).toEqual('http://example.com');
+        }));
+
+        it('should NOT work with trusted values', angular.mock.inject(($rootScope, $compile, $sce) => {
+          // A limitation of the approach used for srcset is that you cannot use `trustAsUrl`.
+          // Use trustAsHtml and ng-bind-html to work around this.
+          let element = $compile('<' + srcsetElement + ' ng-prop-srcset="testUrl"></' + srcsetElement + '>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = $sce.trustAsUrl('javascript:something');
+          $rootScope.$digest();
+          expect(element.prop('srcset')).toEqual('unsafe:javascript:something');
+
+          element = $compile('<' + srcsetElement + ' ng-prop-srcset="testUrl + \',\' + testUrl"></' + srcsetElement + '>')($rootScope);
+          toDealoc.push(element);
+          $rootScope.testUrl = $sce.trustAsUrl('javascript:something');
+          $rootScope.$digest();
+          expect(element.prop('srcset')).toEqual(
+            'unsafe:javascript:something, unsafe:javascript:something');
+        }));
+
+        it('should use $$sanitizeUri', () => {
+          const $$sanitizeUri = jest.fn().mockReturnValue('someSanitizedUrl');
+          angular.mock.module($provide => {
+            $provide.value('$$sanitizeUri', $$sanitizeUri);
+          });
+          angular.mock.inject(($compile, $rootScope) => {
+            let element = $compile('<' + srcsetElement + ' ng-prop-srcset="testUrl"></' + srcsetElement + '>')($rootScope);
+            toDealoc.push(element);
+            $rootScope.testUrl = 'someUrl';
+            $rootScope.$apply();
+            expect(element.prop('srcset')).toBe('someSanitizedUrl');
+            expect($$sanitizeUri).toHaveBeenCalledWith($rootScope.testUrl, true);
+
+            element = $compile('<' + srcsetElement + ' ng-prop-srcset="testUrl + \',\' + testUrl"></' + srcsetElement + '>')($rootScope);
+            toDealoc.push(element);
+            $rootScope.testUrl = 'javascript:yay';
+            $rootScope.$apply();
+            expect(element.prop('srcset')).toEqual('someSanitizedUrl, someSanitizedUrl');
+
+            element = $compile('<' + srcsetElement + ' ng-prop-srcset="\'java\' + testUrl"></' + srcsetElement + '>')($rootScope);
+            toDealoc.push(element);
+            $rootScope.testUrl = 'script:yay, javascript:nay';
+            $rootScope.$apply();
+            expect(element.prop('srcset')).toEqual('someSanitizedUrl, someSanitizedUrl');
+          });
+        });
+
+        it('should sanitize all uris in srcset', angular.mock.inject(($rootScope, $compile) => {
+          const element = $compile('<' + srcsetElement + ' ng-prop-srcset="testUrl"></' + srcsetElement + '>')($rootScope);
+          toDealoc.push(element);
+          const testSet = {
+            'http://example.com/image.png': 'http://example.com/image.png',
+            ' http://example.com/image.png': 'http://example.com/image.png',
+            'http://example.com/image.png ': 'http://example.com/image.png',
+            'http://example.com/image.png 128w': 'http://example.com/image.png 128w',
+            'http://example.com/image.png 2x': 'http://example.com/image.png 2x',
+            'http://example.com/image.png 1.5x': 'http://example.com/image.png 1.5x',
+            'http://example.com/image1.png 1x,http://example.com/image2.png 2x': 'http://example.com/image1.png 1x, http://example.com/image2.png 2x',
+            'http://example.com/image1.png 1x ,http://example.com/image2.png 2x': 'http://example.com/image1.png 1x, http://example.com/image2.png 2x',
+            'http://example.com/image1.png 1x, http://example.com/image2.png 2x': 'http://example.com/image1.png 1x, http://example.com/image2.png 2x',
+            'http://example.com/image1.png 1x , http://example.com/image2.png 2x': 'http://example.com/image1.png 1x, http://example.com/image2.png 2x',
+            'http://example.com/image1.png 48w,http://example.com/image2.png 64w': 'http://example.com/image1.png 48w, http://example.com/image2.png 64w',
+            //Test regex to make sure doesn't mistake parts of url for width descriptors
+            'http://example.com/image1.png?w=48w,http://example.com/image2.png 64w': 'http://example.com/image1.png?w=48w,http://example.com/image2.png 64w',
+            'http://example.com/image1.png 1x,http://example.com/image2.png 64w': 'http://example.com/image1.png 1x, http://example.com/image2.png 64w',
+            'http://example.com/image1.png,http://example.com/image2.png': 'http://example.com/image1.png, http://example.com/image2.png',
+            'http://example.com/image1.png ,http://example.com/image2.png': 'http://example.com/image1.png, http://example.com/image2.png',
+            'http://example.com/image1.png, http://example.com/image2.png': 'http://example.com/image1.png, http://example.com/image2.png',
+            'http://example.com/image1.png , http://example.com/image2.png': 'http://example.com/image1.png, http://example.com/image2.png',
+            'http://example.com/image1.png 1x, http://example.com/image2.png 2x, http://example.com/image3.png 3x':
+              'http://example.com/image1.png 1x, http://example.com/image2.png 2x, http://example.com/image3.png 3x',
+            'javascript:doEvilStuff() 2x': 'unsafe:javascript:doEvilStuff() 2x',
+            'http://example.com/image1.png 1x,javascript:doEvilStuff() 2x': 'http://example.com/image1.png 1x, unsafe:javascript:doEvilStuff() 2x',
+            'http://example.com/image1.jpg?x=a,b 1x,http://example.com/ima,ge2.jpg 2x': 'http://example.com/image1.jpg?x=a,b 1x, http://example.com/ima,ge2.jpg 2x',
+            //Test regex to make sure doesn't mistake parts of url for pixel density descriptors
+            'http://example.com/image1.jpg?x=a2x,b 1x,http://example.com/ima,ge2.jpg 2x': 'http://example.com/image1.jpg?x=a2x,b 1x, http://example.com/ima,ge2.jpg 2x'
+          };
+
+          angular.forEach(testSet, (ref, url) => {
+            $rootScope.testUrl = url;
+            $rootScope.$digest();
+            expect(element.prop('srcset')).toEqual(ref);
+          });
+        }));
+      });
+    }
   });
 
   describe('a[href] sanitization', () => {
@@ -703,7 +943,14 @@ describe('ngProp*', () => {
         $rootScope.style = $sce.trustAsCss('margin-left: 10px');
         $rootScope.$digest();
 
-        expect(element.css('margin-left')).toEqual('10px');
+        // Support: IE
+        // IE allows assignments but does not register the styles
+        // Sometimes the value is '0px', sometimes ''
+        if (ngInternals.msie) {
+          expect(parseInt(element.css('margin-left'), 10) || 0).toBe(0);
+        } else {
+          expect(element.css('margin-left')).toEqual('10px');
+        }
       }));
     }
   });
