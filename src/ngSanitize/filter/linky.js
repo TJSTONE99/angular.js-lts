@@ -127,71 +127,218 @@
      </file>
    </example>
  */
-angular.module('ngSanitize').filter('linky', ['$sanitize', function($sanitize) {
-  var LINKY_URL_REGEXP =
-        /((s?ftp|https?):\/\/|(www\.)|(mailto:)?[A-Za-z0-9._%+-]+@)\S*[^\s.;,(){}<>"\u201d\u2019]/i,
-      MAILTO_REGEXP = /^mailto:/i;
+'use strict';
 
-  var linkyMinErr = angular.$$minErr('linky');
-  var isDefined = angular.isDefined;
-  var isFunction = angular.isFunction;
-  var isObject = angular.isObject;
-  var isString = angular.isString;
+angular.module('ngSanitize').filter('linky', ['$sanitize', ($sanitize) => {
 
-  return function(text, target, attributes) {
+  // ---- Regexes (split to avoid ReDoS) ----
+  const URL_PROTOCOL_REGEXP = /((s?ftp|https?):\/\/)\S*[^\s.;,(){}<>"\u201d\u2019]/gi;
+  const URL_WWW_REGEXP = /(www\.)\S*[^\s.;,(){}<>"\u201d\u2019]/gi;
+  const EMAIL_REGEXP = /((mailto:)?[A-Za-z0-9._%+-]+@)\S*[^\s.;,(){}<>"\u201d\u2019]/gi;
+  const MAILTO_REGEXP = /^mailto:/i;
+
+  const MAX_TEXT_LENGTH = 5000;
+  const MAX_CHUNK_SIZE = 10000;
+
+  const {
+    isDefined,
+    isFunction,
+    isObject,
+    isString
+  } = angular;
+
+  const linkyMinErr = angular.$$minErr('linky');
+
+  // ---------------------------------------------------------------------------
+  // ReDoS protection helpers
+  // ---------------------------------------------------------------------------
+
+  const looksLikeReDoS = (text) => {
+    if (text.length <= MAX_TEXT_LENGTH) return false;
+
+    let maxConsecutive = 0;
+    let current = 0;
+    let hasSpacesOrPunctuation = false;
+
+    const hasValidUrlStart = /^(https?:\/\/|www\.|[A-Za-z0-9._%+-]+@)/.test(text);
+    const sampleSize = Math.min(text.length, 500);
+
+    for (let i = 0; i < sampleSize; i++) {
+      const char = text.charAt(i);
+
+      if (/[A-Za-z0-9]/.test(char)) {
+        current++;
+        maxConsecutive = Math.max(maxConsecutive, current);
+      } else {
+        current = 0;
+        if (/[\s.,;:!?]/.test(char)) {
+          hasSpacesOrPunctuation = true;
+        }
+      }
+    }
+
+    // Repeated single character attack
+    if (sampleSize > 100) {
+      const firstChar = text.charAt(0);
+      const allSame = [...text.slice(0, sampleSize)].every(c => c === firstChar);
+
+      if (allSame && /[A-Za-z0-9]/.test(firstChar)) {
+        return true;
+      }
+    }
+
+    return maxConsecutive > 100 && !hasValidUrlStart && !hasSpacesOrPunctuation;
+  };
+
+  // ---------------------------------------------------------------------------
+  // Chunking helpers
+  // ---------------------------------------------------------------------------
+
+  const splitIntoChunks = (text) => {
+    if (text.length <= MAX_CHUNK_SIZE) {
+      return [{ text, offset: 0 }];
+    }
+
+    const chunks = [];
+    for (let i = 0; i < text.length; i += MAX_CHUNK_SIZE - 100) {
+      chunks.push({
+        text: text.substring(i, i + MAX_CHUNK_SIZE),
+        offset: i
+      });
+    }
+    return chunks;
+  };
+
+  // ---------------------------------------------------------------------------
+  // Matching helpers
+  // ---------------------------------------------------------------------------
+
+  const overlapsExisting = (matches, index, length) =>
+    matches.some(m =>
+      index < m.index + m.length &&
+      index + length > m.index
+    );
+
+  const findMatchesInChunk = (chunkText, chunkOffset, matches) => {
+    let match;
+
+    URL_PROTOCOL_REGEXP.lastIndex = 0;
+    URL_WWW_REGEXP.lastIndex = 0;
+    EMAIL_REGEXP.lastIndex = 0;
+
+    while ((match = URL_PROTOCOL_REGEXP.exec(chunkText))) {
+      matches.push({
+        index: match.index + chunkOffset,
+        length: match[0].length,
+        text: match[0],
+        type: 'protocol'
+      });
+    }
+
+    while ((match = URL_WWW_REGEXP.exec(chunkText))) {
+      const index = match.index + chunkOffset;
+      if (!overlapsExisting(matches, index, match[0].length)) {
+        matches.push({
+          index,
+          length: match[0].length,
+          text: match[0],
+          type: 'www'
+        });
+      }
+    }
+
+    while ((match = EMAIL_REGEXP.exec(chunkText))) {
+      const index = match.index + chunkOffset;
+      if (!overlapsExisting(matches, index, match[0].length)) {
+        matches.push({
+          index,
+          length: match[0].length,
+          text: match[0],
+          type: 'email'
+        });
+      }
+    }
+  };
+
+  const findAllMatches = (text) => {
+    if (looksLikeReDoS(text)) return [];
+
+    const matches = [];
+    const chunks = splitIntoChunks(text);
+
+    chunks.forEach(({ text, offset }) =>
+      findMatchesInChunk(text, offset, matches)
+    );
+
+    // Sort + de-duplicate
+    return matches
+      .sort((a, b) => a.index - b.index)
+      .filter((m, i, arr) =>
+        i === 0 ||
+        m.index !== arr[i - 1].index ||
+        m.text !== arr[i - 1].text
+      );
+  };
+
+  // ---------------------------------------------------------------------------
+  // Filter implementation
+  // ---------------------------------------------------------------------------
+
+  return (text, target, attributes) => {
     if (text == null || text === '') return text;
-    if (!isString(text)) throw linkyMinErr('notstring', 'Expected string but received: {0}', text);
+    if (!isString(text)) {
+      throw linkyMinErr('notstring', 'Expected string but received: {0}', text);
+    }
 
-    var attributesFn =
+    const getAttributes =
       isFunction(attributes) ? attributes :
-      isObject(attributes) ? function getAttributesObject() {return attributes;} :
-      function getEmptyAttributesObject() {return {};};
+        isObject(attributes) ? () => attributes :
+          () => ({});
 
-    var match;
-    var raw = text;
-    var html = [];
-    var url;
-    var i;
-    while ((match = raw.match(LINKY_URL_REGEXP))) {
-      // We can not end in these as they are sometimes found at the end of the sentence
-      url = match[0];
-      // if we did not match ftp/http/www/mailto then assume mailto
-      if (!match[2] && !match[4]) {
-        url = (match[3] ? 'http://' : 'mailto:') + url;
-      }
-      i = match.index;
-      addText(raw.substr(0, i));
-      addLink(url, match[0].replace(MAILTO_REGEXP, ''));
-      raw = raw.substring(i + match[0].length);
-    }
-    addText(raw);
-    return $sanitize(html.join(''));
+    const matches = findAllMatches(text);
+    const html = [];
+    let lastIndex = 0;
 
-    function addText(text) {
-      if (!text) {
-        return;
-      }
-      html.push(sanitizeText(text));
-    }
+    const addText = (value) => {
+      if (value) html.push(sanitizeText(value));
+    };
 
-    function addLink(url, text) {
-      var key, linkAttributes = attributesFn(url);
+    const addLink = (url, label) => {
+      const linkAttrs = getAttributes(url);
       html.push('<a ');
 
-      for (key in linkAttributes) {
-        html.push(key + '="' + linkAttributes[key] + '" ');
+      Object.keys(linkAttrs).forEach(key => {
+        html.push(`${key}="${linkAttrs[key]}" `);
+      });
+
+      if (isDefined(target) && !('target' in linkAttrs)) {
+        html.push(`target="${target}" `);
       }
 
-      if (isDefined(target) && !('target' in linkAttributes)) {
-        html.push('target="',
-                  target,
-                  '" ');
-      }
-      html.push('href="',
-                url.replace(/"/g, '&quot;'),
-                '">');
-      addText(text);
+      html.push(
+        'href="',
+        url.replace(/"/g, '&quot;'),
+        '">'
+      );
+      addText(label);
       html.push('</a>');
-    }
+    };
+
+    matches.forEach(match => {
+      addText(text.slice(lastIndex, match.index));
+
+      let url = match.text;
+      if (match.type === 'www') {
+        url = `http://${url}`;
+      } else if (match.type === 'email' && !MAILTO_REGEXP.test(url)) {
+        url = `mailto:${url}`;
+      }
+
+      addLink(url, match.text.replace(MAILTO_REGEXP, ''));
+      lastIndex = match.index + match.length;
+    });
+
+    addText(text.slice(lastIndex));
+    return $sanitize(html.join(''));
   };
 }]);
