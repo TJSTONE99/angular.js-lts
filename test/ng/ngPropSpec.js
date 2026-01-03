@@ -432,6 +432,32 @@ describe('ngProp*', () => {
     // IE9 ignores source[srcset] property assignments
     if (ngInternals.msie !== 9 || srcsetElement === 'img') {
       describe(srcsetElement + '[srcset] sanitization', () => {
+        it('should respect allowlist for ng-prop-srcset', () => {
+          angular.mock.module(($compileProvider) => {
+            $compileProvider.imgSrcSanitizationTrustedUrlList(/^https:\/\/angularjs\.org\//);
+          });
+          angular.mock.inject(($compile, $rootScope) => {
+            const element = $compile('<' + srcsetElement + ' ng-prop-srcset="urls"></' + srcsetElement + '>')($rootScope);
+            toDealoc.push(element);
+            $rootScope.urls = 'https://angularjs.org/one.png 1x, https://evil.example/two.png 2x';
+            $rootScope.$apply();
+            expect(element.prop('srcset')).toBe('https://angularjs.org/one.png 1x, unsafe:https://evil.example/two.png 2x');
+          });
+        });
+
+        it('should individually sanitize mixed URLs for ng-prop-srcset', function () {
+          angular.mock.module(($compileProvider) => {
+            $compileProvider.imgSrcSanitizationTrustedUrlList(/^https:\/\/angularjs\.org\//);
+          });
+          angular.mock.inject(($compile, $rootScope) => {
+            const element = $compile('<' + srcsetElement + ' ng-prop-srcset="urls"></' + srcsetElement + '>')($rootScope);
+            toDealoc.push(element);
+            $rootScope.urls = 'https://evil.example/a.png 1x, https://angularjs.org/b.png 2x, https://evil.example/c.png 3x';
+            $rootScope.$apply();
+            expect(element.prop('srcset')).toBe('unsafe:https://evil.example/a.png 1x, https://angularjs.org/b.png 2x, unsafe:https://evil.example/c.png 3x');
+          });
+        });
+
         it('should not error if srcset is blank', angular.mock.inject(($compile, $rootScope) => {
           const element = $compile('<' + srcsetElement + ' ng-prop-srcset="testUrl"></' + srcsetElement + '>')($rootScope);
           toDealoc.push(element);
@@ -445,6 +471,19 @@ describe('ngProp*', () => {
           $rootScope.$digest();
           expect(element.prop('srcset')).toBe('');
         }));
+
+        it('should sanitize quoted candidates for ng-prop-srcset', () => {
+          angular.mock.module(($compileProvider) => {
+            $compileProvider.imgSrcSanitizationTrustedUrlList(/^https?:\/\/example\.com\//);
+          });
+          angular.mock.inject(($compile, $rootScope) => {
+            const element = $compile('<' + srcsetElement + ' ng-prop-srcset="urls"></' + srcsetElement + '>')($rootScope);
+            toDealoc.push(element);
+            $rootScope.urls = '\'http://example.com/a.png\' 1x, "http://evil.example/b.png" 2x';
+            $rootScope.$apply();
+            expect(element.prop('srcset')).toContain('unsafe:http://evil.example/b.png 2x');
+          });
+        });
 
         it('should NOT require trusted values for trusted URI values', angular.mock.inject(($rootScope, $compile, $sce) => {
           const element = $compile('<' + srcsetElement + ' ng-prop-srcset="testUrl"></' + srcsetElement + '>')($rootScope);

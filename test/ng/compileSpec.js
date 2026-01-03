@@ -4240,7 +4240,7 @@ describe('$compile', () => {
       beforeEach(() => {
         angular.mock.module(() => {
           // Create directives that capture the `attr` object
-          ['input', 'a', 'img'].forEach(tag => {
+          ['input', 'a', 'img', 'source'].forEach(tag => {
             directive(tag, ngInternals.valueFn({
               restrict: 'ECA',
               link: function (scope, element, attr) {
@@ -4345,17 +4345,32 @@ describe('$compile', () => {
         expect($rootScope.attr.img).toEqual('evil:foo()');
       }));
 
-      it('should automatically sanitize img[srcset]', angular.mock.inject(($compile, $rootScope) => {
+      it('CVE-2024-8373: should automatically sanitize img[srcset]', angular.mock.inject(($compile, $rootScope) => {
         element = compileForTest('<img></img>');
         $rootScope.attr.$set('srcset', 'evil:foo()');
         expect(element.attr('srcset')).toEqual('unsafe:evil:foo()');
         expect($rootScope.attr.srcset).toEqual('unsafe:evil:foo()');
       }));
 
-      it('should not accept trusted values for img[srcset]', angular.mock.inject(($compile, $rootScope, $sce) => {
+      it('CVE-2024-8373: should not accept trusted values for img[srcset]', angular.mock.inject(($compile, $rootScope, $sce) => {
         const trusted = $sce.trustAsMediaUrl('trustme:foo()');
         element = compileForTest('<img></img>');
         expect(() => {
+          $rootScope.attr.$set('srcset', trusted);
+        }).toThrowMinErr('$compile', 'srcset', 'Can\'t pass trusted values to `$set(\'srcset\', value)`: "trustme:foo()"');
+      }));
+
+      it('should automatically sanitize source[srcset]', inject(function ($compile, $rootScope) {
+        element = $compile('<source></source>')($rootScope);
+        $rootScope.attr.$set('srcset', 'evil:foo()');
+        expect(element.attr('srcset')).toEqual('unsafe:evil:foo()');
+        expect($rootScope.attr.srcset).toEqual('unsafe:evil:foo()');
+      }));
+
+      it('should not accept trusted values for source[srcset]', inject(function ($compile, $rootScope, $sce) {
+        var trusted = $sce.trustAsMediaUrl('trustme:foo()');
+        element = $compile('<source></source>')($rootScope);
+        expect(function () {
           $rootScope.attr.$set('srcset', trusted);
         }).toThrowMinErr('$compile', 'srcset', 'Can\'t pass trusted values to `$set(\'srcset\', value)`: "trustme:foo()"');
       }));
@@ -11627,7 +11642,7 @@ describe('$compile', () => {
       });
     });
 
-    it('should sanitize all uris in srcset', angular.mock.inject(($rootScope, $compile) => {
+    it('should sanitize all uris in srcset', angular.mock.inject(($rootScope) => {
       element = compileForTest('<img srcset="{{testUrl}}"></img>');
       var testSet = {
         'http://example.com/image.png': 'http://example.com/image.png',
@@ -11664,10 +11679,46 @@ describe('$compile', () => {
       });
 
     }));
+
+    it('should respect imgSrcSanitizationTrustedUrlList for interpolated img[srcset]', () => {
+      angular.mock.module(function ($compileProvider) {
+        $compileProvider.imgSrcSanitizationTrustedUrlList(/^https:\/\/angularjs\.org\//);
+      });
+      angular.mock.inject(function ($rootScope) {
+        element = compileForTest('<img srcset="{{urls}}"></img>');
+        $rootScope.urls = 'https://angularjs.org/one.png 1x, https://evil.example/two.png 2x';
+        $rootScope.$apply();
+        expect(element.attr('srcset')).toEqual('https://angularjs.org/one.png 1x, unsafe:https://evil.example/two.png 2x');
+      });
+    });
+
+    it('should respect imgSrcSanitizationTrustedUrlList for interpolated source[srcset]', () => {
+      angular.mock.module(($compileProvider) => {
+        $compileProvider.imgSrcSanitizationTrustedUrlList(/^https:\/\/angularjs\.org\//);
+      });
+      angular.mock.inject(($rootScope) => {
+        element = compileForTest('<source srcset="{{urls}}"></source>');
+        $rootScope.urls = 'https://angularjs.org/a.png 1x, https://evil.example/b.png 2x';
+        $rootScope.$apply();
+        expect(element.attr('srcset')).toEqual('https://angularjs.org/a.png 1x, unsafe:https://evil.example/b.png 2x');
+      });
+    });
+
+    it('should respect imgSrcSanitizationTrustedUrlList for <source ng-attr-srcset>', () => {
+      angular.mock.module(($compileProvider) => {
+        $compileProvider.imgSrcSanitizationTrustedUrlList(/^https:\/\/angularjs\.org\//);
+      });
+      angular.mock.inject(($rootScope) => {
+        element = compileForTest('<source ng-attr-srcset="{{urls}}"></source>');
+        $rootScope.urls = 'https://evil.example/x.png 1x, https://angularjs.org/y.png 2x, javascript:alert(1) 3x';
+        $rootScope.$apply();
+        expect(element.attr('srcset')).toEqual('unsafe:https://evil.example/x.png 1x, https://angularjs.org/y.png 2x, unsafe:javascript:alert(1) 3x');
+      });
+    });
   });
 
   describe('a[href] sanitization', () => {
-    it('should NOT require trusted values for trusted URI values', angular.mock.inject(($rootScope, $compile) => {
+    it('should NOT require trusted values for trusted URI values', angular.mock.inject(($rootScope) => {
       $rootScope.testUrl = 'http://example.com/image.png'; // `http` is trusted
       element = compileForTest('<a href="{{testUrl}}"></a>');
       $rootScope.$digest();
@@ -11678,7 +11729,7 @@ describe('$compile', () => {
       expect(element.attr('ng-href')).toEqual('http://example.com/image.png');
     }));
 
-    it('should accept trusted values for non-trusted URI values', angular.mock.inject(($rootScope, $compile, $sce) => {
+    it('should accept trusted values for non-trusted URI values', angular.mock.inject(($rootScope, $sce) => {
       $rootScope.testUrl = $sce.trustAsUrl('javascript:foo()'); // `javascript` is not trusted
       element = compileForTest('<a href="{{testUrl}}"></a>');
       $rootScope.$digest();
@@ -11689,7 +11740,7 @@ describe('$compile', () => {
       expect(element.attr('ng-href')).toEqual('javascript:foo()');
     }));
 
-    it('should sanitize non-trusted values', angular.mock.inject(($rootScope, $compile) => {
+    it('should sanitize non-trusted values', angular.mock.inject(($rootScope) => {
       $rootScope.testUrl = 'javascript:foo()'; // `javascript` is not trusted
       element = compileForTest('<a href="{{testUrl}}"></a>');
       $rootScope.$digest();
@@ -11700,7 +11751,7 @@ describe('$compile', () => {
       expect(element.attr('href')).toEqual('unsafe:javascript:foo()');
     }));
 
-    it('should not sanitize href on elements other than anchor', angular.mock.inject(($compile, $rootScope) => {
+    it('should not sanitize href on elements other than anchor', angular.mock.inject(($rootScope) => {
       element = compileForTest('<div href="{{testUrl}}"></div>');
       $rootScope.testUrl = 'javascript:doEvilStuff()';
       $rootScope.$apply();
@@ -11708,7 +11759,7 @@ describe('$compile', () => {
       expect(element.attr('href')).toBe('javascript:doEvilStuff()');
     }));
 
-    it('should not sanitize attributes other than href/ng-href', angular.mock.inject(($compile, $rootScope) => {
+    it('should not sanitize attributes other than href/ng-href', angular.mock.inject(($rootScope) => {
       element = compileForTest('<a title="{{testUrl}}"></a>');
       $rootScope.testUrl = 'javascript:doEvilStuff()';
       $rootScope.$apply();
@@ -11721,7 +11772,7 @@ describe('$compile', () => {
       angular.mock.module($provide => {
         $provide.value('$$sanitizeUri', $$sanitizeUri);
       });
-      angular.mock.inject(($compile, $rootScope) => {
+      angular.mock.inject(($rootScope) => {
         element = compileForTest('<a href="{{testUrl}}"></a>');
         $rootScope.testUrl = 'someUrl';
         $rootScope.$apply();
@@ -11742,7 +11793,7 @@ describe('$compile', () => {
       angular.mock.module($provide => {
         $provide.value('$$sanitizeUri', $$sanitizeUri);
       });
-      angular.mock.inject(($compile, $rootScope) => {
+      angular.mock.inject(($rootScope) => {
         // This URL would fail the RESOURCE_URL trusted list, but that test shouldn't be run
         // because these interpolations will be resolved against the URL context instead
         $rootScope.testUrl = 'https://bad.example.org';
