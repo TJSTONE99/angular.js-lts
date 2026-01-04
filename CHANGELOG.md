@@ -4,6 +4,38 @@ and [read the end of life announcement](https://goo.gle/angularjs-end-of-life).*
 
 **Visit [angular.io](https://angular.io) for the actively supported Angular.**
 
+<a name="1.8.5"></a>
+# 1.8.5 security-hardening (2026-01-03)
+
+This security-focused release addresses multiple CVE vulnerabilities and officially drops Internet Explorer support.
+
+## Security Fixes
+- **CVE-2025-4690:** Fixed security vulnerability
+  ([028eeca2b](https://github.com/TJSTONE99/angular.js-lts/commit/028eeca2b))
+- **CVE-2025-2336:** Fixed improper sanitisation of href and xlink:href on SVG image elements when using ng-bind-html
+  ([26809d90d](https://github.com/TJSTONE99/angular.js-lts/commit/26809d90d))
+- **CVE-2025-0716:** Fixed improper sanitisation of href and xlink:href on SVG image elements
+  ([30c91a1ac](https://github.com/TJSTONE99/angular.js-lts/commit/30c91a1ac))
+- **CVE-2024-8373:** Fixed improper sanitisation of srcset and src on img and source elements
+  ([7ea8e0528](https://github.com/TJSTONE99/angular.js-lts/commit/7ea8e0528))
+- **CVE-2024-8372:** Fixed improper sanitisation of srcset and src on img and source elements
+  ([43445fa4e](https://github.com/TJSTONE99/angular.js-lts/commit/43445fa4e))
+- **CVE-2024-21490:** Fixed ReDoS vulnerability with ng-srcset
+  ([03609306e](https://github.com/TJSTONE99/angular.js-lts/commit/03609306e))
+- **CVE-2023-26118:** Fixed ReDos vulnerability with inputs of type URL
+  ([901317a35](https://github.com/TJSTONE99/angular.js-lts/commit/901317a35))
+- **CVE-2023-26117:** Fixed ReDoS vulnerability when stripping trailing slashes off a url
+  ([c6c975c5a](https://github.com/TJSTONE99/angular.js-lts/commit/c6c975c5a))
+- **CVE-2023-26116:** Fixed ReDos vulnerability with angular.copy and Regex source values
+  ([ae991ac12](https://github.com/TJSTONE99/angular.js-lts/commit/ae991ac12))
+- **CVE-2022-25869:** Fixed XSS vulnerability with IE remembering textarea values by removing all support for IE
+  ([b9f30db37](https://github.com/TJSTONE99/angular.js-lts/commit/b9f30db37))
+- **CVE-2022-25844:** Fixed ReDoS vulnerability with using the currency filter and edge case abused values
+  ([a2819f1d8](https://github.com/TJSTONE99/angular.js-lts/commit/a2819f1d8))
+
+## Breaking Changes
+- **Internet Explorer Support:** Internet Explorer support has been fully dropped. AngularJS now requires an ES2016 compatible browser.
+
 <a name="1.8.4"></a>
 # 1.8.4 lts-modernization (2025-12-29)
 
