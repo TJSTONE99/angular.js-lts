@@ -1,4 +1,4 @@
-AngularJS LTS [![Build Status](https://github.com/TJSTONE99/angular.js-lts/actions/workflows/ci.yml/badge.svg)](https://github.com/TJSTONE99/angular.js-lts/actions)
+AngularJS LTS
 =========
 
 **This is the Long Term Support (LTS) version of AngularJS with modernized build tools and Node.js v24 support.**
@@ -35,7 +35,8 @@ and [read the end of life announcement](https://goo.gle/angularjs-end-of-life).*
 
 Documentation
 --------------------
-Go to https://docs.angularjs.org
+- **Official AngularJS LTS Documentation**: https://tjstone99.github.io/angular-lts-docs/
+- **Original AngularJS Documentation**: https://docs.angularjs.org
 
 Contribute
 --------------------
@@ -82,6 +83,18 @@ npm run test:log
 npm run test:build
 ```
 
+### Playwright Tests
+
+Run Playwright-based tests for browser compatibility:
+
+```bash
+# Run Playwright tests
+npm run test:playwright
+
+# Run Playwright tests with detailed logging
+npm run test:playwright:log
+```
+
 ### End-to-End Tests
 
 E2E tests use Playwright for cross-browser testing:
@@ -98,6 +111,14 @@ npm run test:e2e:run
 
 # Serve the test application for manual testing
 npm run test:e2e:serve
+```
+
+### Run All Tests
+
+To run the complete test suite (unit, Playwright, and E2E):
+
+```bash
+npm run test:all
 ```
 
 ## Development Workflow
@@ -134,6 +155,16 @@ This will:
 - If you have 2FA enabled, you may need to use an automation token or provide OTP
 - The script checks for existing package versions to avoid duplicate publishes
 - Use `npm run deploy:skip-npm` to deploy only to bower repositories
+
+## Bower Repositories
+
+Individual bower builds are available as separate repositories:
+
+- **bower-angular-lts**: https://github.com/TJSTONE99/bower-angular-lts
+- **bower-angular-sanitize-lts**: https://github.com/TJSTONE99/bower-angular-sanitize-lts  
+- **bower-angular-resource-lts**: https://github.com/TJSTONE99/bower-angular-resource-lts
+
+These repositories contain the built distribution files optimized for bower package management.
 
 ## Build System
 

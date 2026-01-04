@@ -23,7 +23,7 @@
  * @param {string} url URL of the request.
  */
 function $xhrFactoryProvider() {
-  this.$get = function() {
+  this.$get = function () {
     return function createXhr() {
       return new window.XMLHttpRequest();
     };
@@ -49,19 +49,19 @@ function $xhrFactoryProvider() {
  * $httpBackend} which can be trained with responses.
  */
 function $HttpBackendProvider() {
-  this.$get = ['$browser', '$jsonpCallbacks', '$document', '$xhrFactory', function($browser, $jsonpCallbacks, $document, $xhrFactory) {
+  this.$get = ['$browser', '$jsonpCallbacks', '$document', '$xhrFactory', function ($browser, $jsonpCallbacks, $document, $xhrFactory) {
     return createHttpBackend($browser, $xhrFactory, $browser.defer, $jsonpCallbacks, $document[0]);
   }];
 }
 
 function createHttpBackend($browser, createXhr, $browserDefer, callbacks, rawDocument) {
   // TODO(vojta): fix the signature
-  return function(method, url, post, callback, headers, timeout, withCredentials, responseType, eventHandlers, uploadEventHandlers) {
+  return function (method, url, post, callback, headers, timeout, withCredentials, responseType, eventHandlers, uploadEventHandlers) {
     url = url || $browser.url();
 
     if (lowercase(method) === 'jsonp') {
       var callbackPath = callbacks.createCallback(url);
-      var jsonpDone = jsonpReq(url, callbackPath, function(status, text) {
+      var jsonpDone = jsonpReq(url, callbackPath, function (status, text) {
         // jsonpReq only ever sets status to 200 (OK), 404 (ERROR) or -1 (WAITING)
         var response = (status === 200) && callbacks.getResponse(callbackPath);
         completeRequest(callback, status, response, '', text, 'complete');
@@ -73,21 +73,17 @@ function createHttpBackend($browser, createXhr, $browserDefer, callbacks, rawDoc
       var abortedByTimeout = false;
 
       xhr.open(method, url, true);
-      forEach(headers, function(value, key) {
+      forEach(headers, function (value, key) {
         if (isDefined(value)) {
-            xhr.setRequestHeader(key, value);
+          xhr.setRequestHeader(key, value);
         }
       });
 
       xhr.onload = function requestLoaded() {
         var statusText = xhr.statusText || '';
 
-        // responseText is the old-school way of retrieving response (supported by IE9)
-        // response/responseType properties were introduced in XHR Level2 spec (supported by IE10)
         var response = ('response' in xhr) ? xhr.response : xhr.responseText;
-
-        // normalize IE9 bug (http://bugs.jquery.com/ticket/1450)
-        var status = xhr.status === 1223 ? 204 : xhr.status;
+        var status = xhr.status;
 
         // fix status code when it is 0 (0 status is undocumented).
         // Occurs when accessing file resources or on Android 4.1 stock browser
@@ -97,24 +93,24 @@ function createHttpBackend($browser, createXhr, $browserDefer, callbacks, rawDoc
         }
 
         completeRequest(callback,
-            status,
-            response,
-            xhr.getAllResponseHeaders(),
-            statusText,
-            'complete');
+          status,
+          response,
+          xhr.getAllResponseHeaders(),
+          statusText,
+          'complete');
       };
 
-      var requestError = function() {
+      var requestError = function () {
         // The response is always empty
         // See https://xhr.spec.whatwg.org/#request-error-steps and https://fetch.spec.whatwg.org/#concept-network-error
         completeRequest(callback, -1, null, null, '', 'error');
       };
 
-      var requestAborted = function() {
+      var requestAborted = function () {
         completeRequest(callback, -1, null, null, '', abortedByTimeout ? 'timeout' : 'abort');
       };
 
-      var requestTimeout = function() {
+      var requestTimeout = function () {
         // The response is always empty
         // See https://xhr.spec.whatwg.org/#request-error-steps and https://fetch.spec.whatwg.org/#concept-network-error
         completeRequest(callback, -1, null, null, '', 'timeout');
@@ -124,11 +120,11 @@ function createHttpBackend($browser, createXhr, $browserDefer, callbacks, rawDoc
       xhr.ontimeout = requestTimeout;
       xhr.onabort = requestAborted;
 
-      forEach(eventHandlers, function(value, key) {
+      forEach(eventHandlers, function (value, key) {
         xhr.addEventListener(key, value);
       });
 
-      forEach(uploadEventHandlers, function(value, key) {
+      forEach(uploadEventHandlers, function (value, key) {
         xhr.upload.addEventListener(key, value);
       });
 
@@ -165,11 +161,11 @@ function createHttpBackend($browser, createXhr, $browserDefer, callbacks, rawDoc
     // xhr.abort()                        abort (The xhr object is normally inaccessible, but
     //                                    can be exposed with the xhrFactory)
     if (timeout > 0) {
-      var timeoutId = $browserDefer(function() {
+      var timeoutId = $browserDefer(function () {
         timeoutRequest('timeout');
       }, timeout);
     } else if (isPromiseLike(timeout)) {
-      timeout.then(function() {
+      timeout.then(function () {
         timeoutRequest(isDefined(timeout.$$timeoutId) ? 'timeout' : 'abort');
       });
     }
@@ -205,7 +201,7 @@ function createHttpBackend($browser, createXhr, $browserDefer, callbacks, rawDoc
     script.src = url;
     script.async = true;
 
-    callback = function(event) {
+    callback = function (event) {
       script.removeEventListener('load', callback);
       script.removeEventListener('error', callback);
       rawDocument.body.removeChild(script);

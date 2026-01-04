@@ -797,27 +797,23 @@ describe('ngOptions', () => {
   });
 
 
-  if (window.MutationObserver) {
-    //IE9 and IE10 do not support MutationObserver
-    //Since the feature is only needed for a test, it's okay to skip these browsers
-    it('should render the initial options only one time', () => {
-      scope.value = 'black';
-      scope.values = ['black', 'white', 'red'];
-      // observe-child-list adds a MutationObserver that we will read out after ngOptions
-      // has been compiled
-      createSelect({
-        'ng-model': 'value',
-        'ng-options': 'value.name for value in values',
-        'observe-child-list': ''
-      });
-
-      const optionEls = element[0].querySelectorAll('option');
-      const records = childListMutationObserver.takeRecords();
-
-      expect(records.length).toBe(1);
-      expect(records[0].addedNodes).toEqual(optionEls);
+  it('should render the initial options only one time', () => {
+    scope.value = 'black';
+    scope.values = ['black', 'white', 'red'];
+    // observe-child-list adds a MutationObserver that we will read out after ngOptions
+    // has been compiled
+    createSelect({
+      'ng-model': 'value',
+      'ng-options': 'value.name for value in values',
+      'observe-child-list': ''
     });
-  }
+
+    const optionEls = element[0].querySelectorAll('option');
+    const records = childListMutationObserver.takeRecords();
+
+    expect(records.length).toBe(1);
+    expect(records[0].addedNodes).toEqual(optionEls);
+  });
 
   describe('disableWhen expression', () => {
 
@@ -3038,28 +3034,24 @@ describe('ngOptions', () => {
       });
     }
 
-    if (window.MutationObserver) {
-      //IE9 and IE10 do not support MutationObserver
-      //Since the feature is only needed for a test, it's okay to skip these browsers
-      it('should render the initial options only one time', () => {
-        scope.value = ['black'];
-        scope.values = ['black', 'white', 'red'];
-        // observe-child-list adds a MutationObserver that we will read out after ngOptions
-        // has been compiled
-        createSelect({
-          'ng-model': 'selected',
-          'ng-options': 'value.name for value in values',
-          'multiple': 'true',
-          'observe-child-list': ''
-        });
-
-        const optionEls = element[0].querySelectorAll('option');
-        const records = childListMutationObserver.takeRecords();
-
-        expect(records.length).toBe(1);
-        expect(records[0].addedNodes).toEqual(optionEls);
+    it('should render the initial options only one time', () => {
+      scope.value = ['black'];
+      scope.values = ['black', 'white', 'red'];
+      // observe-child-list adds a MutationObserver that we will read out after ngOptions
+      // has been compiled
+      createSelect({
+        'ng-model': 'selected',
+        'ng-options': 'value.name for value in values',
+        'multiple': 'true',
+        'observe-child-list': ''
       });
-    }
+
+      const optionEls = element[0].querySelectorAll('option');
+      const records = childListMutationObserver.takeRecords();
+
+      expect(records.length).toBe(1);
+      expect(records[0].addedNodes).toEqual(optionEls);
+    });
 
   });
 

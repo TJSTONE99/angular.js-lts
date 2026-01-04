@@ -34,7 +34,7 @@ describe('input', () => {
   });
 
 
-  it('should not set readonly or disabled property on ie7', () => {
+  it('should not set readonly or disabled property', () => {
     expect.extend({
       toBeOff: function (actual, attributeName) {
         const actualValue = actual.attr(attributeName);
@@ -3300,7 +3300,6 @@ describe('input', () => {
       expect(widget.$error.url).toBeTruthy();
     });
 
-
     describe('URL_REGEXP', () => {
       // See valid URLs in RFC3987 (http://tools.ietf.org/html/rfc3987)
       // Note: We are being more lenient, because browsers are too.
@@ -3411,6 +3410,45 @@ describe('input', () => {
 
         /* global URL_REGEXP: false */
         expect(ngInternals.URL_REGEXP.test(url)).toBe(valid);
+      });
+    });
+
+    // Test for CVE-2023-26118: ReDoS vulnerability in URL validation
+    describe('CVE-2023-26118 ReDoS vulnerability', function () {
+      it('should not cause ReDoS with malicious URL patterns', function () {
+        var startTime = Date.now();
+        var maliciousUrl = 'http:' + '/'.repeat(100000);
+
+        var result = ngInternals.URL_REGEXP.test(maliciousUrl);
+
+        var endTime = Date.now();
+        var executionTime = endTime - startTime;
+
+        // The test should complete within a reasonable time (e.g., 1000ms)
+        // If it takes longer, it indicates a ReDoS vulnerability
+        expect(executionTime).toBeLessThan(1000);
+        expect(result).toBe(false);
+      });
+
+      it('should handle multiple ReDoS patterns efficiently', function () {
+        var patterns = [
+          'http:' + '/'.repeat(1000),
+          'https:' + '/'.repeat(1000),
+          'ftp:' + '/'.repeat(1000),
+          'scheme:' + '/'.repeat(1000) + 'a'
+        ];
+
+        patterns.forEach(function (pattern) {
+          var startTime = Date.now();
+
+          var result = ngInternals.URL_REGEXP.test(pattern);
+
+          var endTime = Date.now();
+          var executionTime = endTime - startTime;
+
+          expect(executionTime).toBeLessThan(100);
+          expect(result).toBe(false);
+        });
       });
     });
   });

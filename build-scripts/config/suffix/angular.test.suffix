@@ -61,8 +61,6 @@
     'jqLiteDealoc': jqLiteDealoc,
     'setupModuleLoader': setupModuleLoader,
     'version': version,
-    'msie': msie,
-    'setMsie': setMsie,
     'toString': toString,
   };
 

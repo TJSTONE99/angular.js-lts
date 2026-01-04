@@ -2079,54 +2079,144 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
 
 
       function sanitizeSrcset(value, invokeType) {
-        if (!value) {
-          return value;
-        }
+        if (!value) return value;
+
         if (!isString(value)) {
-          throw $compileMinErr('srcset', 'Can\'t pass trusted values to `{0}`: "{1}"', invokeType, value.toString());
+          throw $compileMinErr(
+            'srcset',
+            'Can\'t pass trusted values to `{0}`: "{1}"',
+            invokeType,
+            value.toString()
+          );
         }
 
-        // Such values are a bit too complex to handle automatically inside $sce.
-        // Instead, we sanitize each of the URIs individually, which works, even dynamically.
+        const trimmed = trim(value);
+        if (!trimmed) return '';
 
-        // It's not possible to work around this using `$sce.trustAsMediaUrl`.
-        // If you want to programmatically set explicitly trusted unsafe URLs, you should use
-        // `$sce.trustAsHtml` on the whole `img` tag and inject it into the DOM using the
-        // `ng-bind-html` directive.
+        const entries = /\s/.test(trimmed)
+          ? splitSrcsetCandidates(trimmed)
+          : trimmed.split(',');
 
-        var result = '';
+        const descriptorPattern = /^\d+(?:\.\d+)?[xw]$/i;
 
-        // first check if there are spaces because it's not the same pattern
-        var trimmedSrcset = trim(value);
-        //                (   999x   ,|   999w   ,|   ,|,   )
-        var srcPattern = /(\s+\d+x\s*,|\s+\d+w\s*,|\s+,|,\s+)/;
-        var pattern = /\s/.test(trimmedSrcset) ? srcPattern : /(,)/;
+        return entries
+          .map(e => trim(e))
+          .filter(Boolean)
+          .map(candidate => {
+            let url = candidate;
+            let descriptor = '';
 
-        // split srcset into tuple of uri and descriptor except for the last item
-        var rawUris = trimmedSrcset.split(pattern);
+            const lastSpace = candidate.lastIndexOf(' ');
+            if (lastSpace !== -1) {
+              const maybeDescriptor = trim(candidate.slice(lastSpace + 1));
+              if (descriptorPattern.test(maybeDescriptor)) {
+                url = trim(candidate.slice(0, lastSpace));
+                descriptor = maybeDescriptor;
+              }
+            }
 
-        // for each tuples
-        var nbrUrisWith2parts = Math.floor(rawUris.length / 2);
-        for (var i = 0; i < nbrUrisWith2parts; i++) {
-          var innerIdx = i * 2;
-          // sanitize the uri
-          result += $sce.getTrustedMediaUrl(trim(rawUris[innerIdx]));
-          // add the descriptor
-          result += ' ' + trim(rawUris[innerIdx + 1]);
-        }
+            if (!url) return null;
 
-        // split the last item into uri and descriptor
-        var lastTuple = trim(rawUris[i * 2]).split(/\s/);
+            // Strip wrapping quotes around the URL candidate, if present
+            if (url.length >= 2) {
+              const first = url.charAt(0);
+              const last = url.charAt(url.length - 1);
+              if (
+                (first === '"' && last === '"') ||
+                (first === '\'' && last === '\'')
+              ) {
+                url = url.slice(1, -1);
+              }
+            }
 
-        // sanitize the last uri
-        result += $sce.getTrustedMediaUrl(trim(lastTuple[0]));
-
-        // and add the last descriptor if any
-        if (lastTuple.length === 2) {
-          result += (' ' + trim(lastTuple[1]));
-        }
-        return result;
+            const trustedUrl = $sce.getTrustedMediaUrl(url);
+            return descriptor ? `${trustedUrl} ${descriptor}` : trustedUrl;
+          })
+          .filter(Boolean)
+          .join(', ');
       }
+
+      /* ---------------- helpers ---------------- */
+
+      const isWhitespaceCode = code =>
+        code === 0x20 || code === 0x09 || code === 0x0A ||
+        code === 0x0C || code === 0x0D;
+
+      const isDigitCode = code => code >= 0x30 && code <= 0x39;
+
+      const splitSrcsetCandidates = str => {
+        const parts = [];
+        let start = 0;
+
+        for (let i = 0; i < str.length; i++) {
+          if (str.charCodeAt(i) === 0x2C && isSeparatorComma(str, i)) {
+            parts.push(str.slice(start, i));
+            start = i + 1;
+          }
+        }
+
+        parts.push(str.slice(start));
+        return parts;
+      };
+
+      const isSeparatorComma = (str, commaIdx) => {
+        const localDescriptorPattern = /^\d+(?:\.\d+)?[xw]$/i;
+
+        const prev = commaIdx > 0 ? str.charCodeAt(commaIdx - 1) : null;
+        const next = commaIdx + 1 < str.length ? str.charCodeAt(commaIdx + 1) : null;
+
+        if (isWhitespaceCode(prev) || isWhitespaceCode(next)) {
+          return true;
+        }
+
+        // Walk backwards to inspect token before comma
+        let pos = commaIdx - 1;
+        while (pos >= 0 && isWhitespaceCode(str.charCodeAt(pos))) pos--;
+
+        if (pos < 0) return false;
+
+        const unit = str.charCodeAt(pos);
+        if (![0x78, 0x58, 0x77, 0x57].includes(unit)) {
+          // Not x/w — check if this looks like a plain token separator
+          let spacePos = pos;
+          while (spacePos >= 0 && !isWhitespaceCode(str.charCodeAt(spacePos))) {
+            spacePos--;
+          }
+
+          if (spacePos >= 0) {
+            const token = trim(str.slice(spacePos + 1, commaIdx));
+            const looksLikeUrlFragment = /[:/?&=,]/.test(token);
+
+            if (token && !looksLikeUrlFragment && !localDescriptorPattern.test(token)) {
+              return true;
+            }
+          }
+
+          return false;
+        }
+
+        // Parse numeric descriptor
+        pos--;
+        let sawDigit = false;
+        let sawDot = false;
+
+        while (pos >= 0) {
+          const code = str.charCodeAt(pos);
+          if (isDigitCode(code)) {
+            sawDigit = true;
+            pos--;
+            continue;
+          }
+          if (!sawDot && code === 0x2E) {
+            sawDot = true;
+            pos--;
+            continue;
+          }
+          break;
+        }
+
+        return sawDigit && pos >= 0 && isWhitespaceCode(str.charCodeAt(pos));
+      };
 
 
       function Attributes(element, attributesToCopy) {
@@ -2264,8 +2354,11 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
 
           nodeName = nodeName_(this.$$element);
 
-          // Sanitize img[srcset] values.
-          if (nodeName === 'img' && key === 'srcset') {
+          // Sanitize img[srcset] and source[srcset] values.
+          // Required to prevent malformed srcset entries from bypassing URL sanitization
+          // when attributes are set programmatically (CVE-2024-8373).
+          // Sanitize img[srcset] + source[srcset] values.
+          if ((nodeName === 'img' || nodeName === 'source') && key === 'srcset') {
             this[key] = value = sanitizeSrcset(value, '$set(\'srcset\', value)');
           }
 
@@ -2519,20 +2612,11 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
       function compileNodes(nodeList, transcludeFn, $rootElement, maxPriority, ignoreDirective,
         previousCompileContext) {
         var linkFns = [],
-          // `nodeList` can be either an element's `.childNodes` (live NodeList)
-          // or a jqLite/jQuery collection or an array
-          notLiveList = isArray(nodeList) || (nodeList instanceof jqLite),
           attrs, directives, nodeLinkFn, childNodes, childLinkFn, linkFnFound, nodeLinkFnFound;
 
 
         for (var i = 0; i < nodeList.length; i++) {
           attrs = new Attributes();
-
-          // Support: IE 11 only
-          // Workaround for #11781 and #14924
-          if (msie === 11) {
-            mergeConsecutiveTextNodes(nodeList, i, notLiveList);
-          }
 
           // We must always refer to `nodeList[i]` hereafter,
           // since the nodes can be replaced underneath us.
@@ -2622,32 +2706,6 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
             } else if (childLinkFn) {
               childLinkFn(scope, node.childNodes, undefined, parentBoundTranscludeFn);
             }
-          }
-        }
-      }
-
-      function mergeConsecutiveTextNodes(nodeList, idx, notLiveList) {
-        var node = nodeList[idx];
-        var parent = node.parentNode;
-        var sibling;
-
-        if (node.nodeType !== NODE_TYPE_TEXT) {
-          return;
-        }
-
-        while (true) {
-          sibling = parent ? node.nextSibling : nodeList[idx + 1];
-          if (!sibling || sibling.nodeType !== NODE_TYPE_TEXT) {
-            break;
-          }
-
-          node.nodeValue = node.nodeValue + sibling.nodeValue;
-
-          if (sibling.parentNode) {
-            sibling.parentNode.removeChild(sibling);
-          }
-          if (notLiveList && sibling === nodeList[idx + 1]) {
-            nodeList.splice(idx + 1, 1);
           }
         }
       }
@@ -2809,18 +2867,12 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
       function collectCommentDirectives(node, directives, attrs, maxPriority, ignoreDirective) {
         // function created because of performance, try/catch disables
         // the optimization of the whole function #14848
-        try {
-          var match = COMMENT_DIRECTIVE_REGEXP.exec(node.nodeValue);
-          if (match) {
-            var nName = directiveNormalize(match[1]);
-            if (addDirective(directives, nName, 'M', maxPriority, ignoreDirective)) {
-              attrs[nName] = trim(match[2]);
-            }
+        var match = COMMENT_DIRECTIVE_REGEXP.exec(node.nodeValue);
+        if (match) {
+          var nName = directiveNormalize(match[1]);
+          if (addDirective(directives, nName, 'M', maxPriority, ignoreDirective)) {
+            attrs[nName] = trim(match[2]);
           }
-        } catch (e) {
-          // turns out that under some circumstances IE9 throws errors when one attempts to read
-          // comment's node value.
-          // Just ignore it and continue. (Can't seem to reproduce in test case.)
         }
       }
 
@@ -3822,11 +3874,15 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
             return $sce.RESOURCE_URL;
           }
           return $sce.MEDIA_URL;
-        } else if (attrNormalizedName === 'xlinkHref') {
-          // Some xlink:href are okay, most aren't
-          if (nodeName === 'image') return $sce.MEDIA_URL;
+        } else if (attrNormalizedName === 'xlinkHref' || attrNormalizedName === 'href') {
           if (nodeName === 'a') return $sce.URL;
-          return $sce.RESOURCE_URL;
+          // CVE-2025-0716: SVG image elements should use MEDIA_URL context for href attribute
+          // to ensure proper image source sanitization
+          if (nodeName === 'image') return $sce.MEDIA_URL;
+          // Only specific elements should have href sanitized
+          if (nodeName === 'base' || nodeName === 'link') return $sce.RESOURCE_URL;
+          // For xlink:href, all other elements should use RESOURCE_URL context
+          if (attrNormalizedName === 'xlinkHref') return $sce.RESOURCE_URL;
         } else if (
           // Formaction
           (nodeName === 'form' && attrNormalizedName === 'action') ||
@@ -3840,6 +3896,13 @@ function $CompileProvider($provide, $$sanitizeUriProvider) {
         } else if (nodeName === 'a' && (attrNormalizedName === 'href' ||
           attrNormalizedName === 'ngHref')) {
           return $sce.URL;
+        } else if (nodeName === 'image' && attrNormalizedName === 'ngHref') {
+          // CVE-2025-0716: SVG image elements should use MEDIA_URL context for ngHref attribute
+          // to ensure proper image source sanitization
+          return $sce.MEDIA_URL;
+        } else if ((nodeName === 'base' || nodeName === 'link') && attrNormalizedName === 'ngHref') {
+          // base and link elements should use RESOURCE_URL context for ngHref attribute
+          return $sce.RESOURCE_URL;
         }
       }
 

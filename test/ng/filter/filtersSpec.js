@@ -148,6 +148,76 @@ describe('filters', () => {
       num = ngInternals.formatNumber(879832749374983274928, pattern, ',', '.', 32);
       expect(num).toBe('879,832,749,374,983,200,000.00000000000000000000000000000000');
     });
+
+    // CVE-2022-25844: Test ReDoS vulnerability fix
+    it('should sanitize malicious pattern strings to prevent ReDoS attacks (CVE-2022-25844)', function () {
+      // Test malicious posPre with function calls
+      var maliciousPattern = {
+        minInt: 1,
+        minFrac: 0,
+        maxFrac: 3,
+        posPre: 'evil_repeat(999999)_prefix',
+        posSuf: '',
+        negPre: '-',
+        negSuf: '',
+        gSize: 3,
+        lgSize: 3
+      };
+
+      var start = Date.now();
+      var result = ngInternals.formatNumber(1234, maliciousPattern, ',', '.', 2);
+      var duration = Date.now() - start;
+
+      // Should complete quickly (not hang due to ReDoS)
+      expect(duration).toBeLessThan(100);
+      // Should not contain the original malicious pattern
+      expect(result.indexOf('repeat(999999)')).toBe(-1);
+      // Should still format the number correctly
+      expect(result).toContain('1,234');
+    });
+
+    it('should truncate extremely long pattern strings to prevent ReDoS attacks', function () {
+      var longPattern = {
+        minInt: 1,
+        minFrac: 0,
+        maxFrac: 3,
+        posPre: 'A'.repeat(1000), // Very long string
+        posSuf: '',
+        negPre: '-',
+        negSuf: '',
+        gSize: 3,
+        lgSize: 3
+      };
+
+      var start = Date.now();
+      var result = ngInternals.formatNumber(1234, longPattern, ',', '.', 2);
+      var duration = Date.now() - start;
+
+      // Should complete quickly
+      expect(duration).toBeLessThan(100);
+      // Result should not be excessively long
+      expect(result.length).toBeLessThan(200);
+    });
+
+    it('should handle non-string pattern values gracefully', function () {
+      var invalidPattern = {
+        minInt: 1,
+        minFrac: 0,
+        maxFrac: 3,
+        posPre: null,
+        posSuf: undefined,
+        negPre: 123,
+        negSuf: {},
+        gSize: 3,
+        lgSize: 3
+      };
+
+      // Should not throw error and should format number
+      expect(function () {
+        var result = ngInternals.formatNumber(1234, invalidPattern, ',', '.', 2);
+        expect(result).toContain('1,234');
+      }).not.toThrow();
+    });
   });
 
   describe('currency', () => {
@@ -197,6 +267,54 @@ describe('filters', () => {
         expect(currency(-1.07, '$')).toBe('  -  $  -  1.07  -  $  -  ');
         expect(currency(+1.07, '')).toBe('1.07');
         expect(currency(-1.07, '')).toBe('  --  1.07  --  ');
+      })
+    );
+
+    // CVE-2022-25844: ReDoS vulnerability test
+    it('should handle ReDoS vulnerability in currency symbol regex (CVE-2022-25844)',
+      inject(function ($locale) {
+        var pattern = $locale.NUMBER_FORMATS.PATTERNS[1];
+
+        // Save original patterns for restoration
+        var originalPosPre = pattern.posPre;
+        var originalPosSuf = pattern.posSuf;
+        var originalNegPre = pattern.negPre;
+        var originalNegSuf = pattern.negSuf;
+
+        try {
+          // Test case 1: Normal pattern with spaces around currency symbol
+          pattern.posPre = '   \u00A4   ';
+          pattern.posSuf = '';
+          pattern.negPre = '-   \u00A4   ';
+          pattern.negSuf = '';
+
+          var startTime = Date.now();
+          var result = currency(100, '', 2); // Empty currency symbol triggers the vulnerable regex
+          var endTime = Date.now();
+
+          expect(result).toBe('100.00');
+          expect(endTime - startTime).toBeLessThan(100); // Should complete quickly (less than 100ms)
+
+          // Test case 2: Pathological input that could trigger ReDoS
+          // Create a pattern with many spaces that could cause catastrophic backtracking
+          var manySpaces = Array(1000).join(' ');
+          pattern.posPre = manySpaces + '\u00A4' + manySpaces;
+          pattern.posSuf = '';
+
+          startTime = Date.now();
+          result = currency(100, '', 2); // This triggers the vulnerable regex /\s*\u00A4\s*/g
+          endTime = Date.now();
+
+          // Before fix, this could take extremely long time due to ReDoS
+          expect(endTime - startTime).toBeLessThan(1000); // Should not hang (less than 1 second)
+
+        } finally {
+          // Restore original patterns
+          pattern.posPre = originalPosPre;
+          pattern.posSuf = originalPosSuf;
+          pattern.negPre = originalNegPre;
+          pattern.negSuf = originalNegSuf;
+        }
       })
     );
   });

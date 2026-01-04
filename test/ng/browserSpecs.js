@@ -15,8 +15,6 @@ function MockWindow(options) {
   const committedHref = window.document.createElement('a');
   locationHref.href = committedHref.href = 'http://server/';
   const mockWindow = this;
-  const msie = options.msie;
-  let ieState;
 
   historyEntriesLength = 1;
 
@@ -101,23 +99,9 @@ function MockWindow(options) {
       committedHref.href = locationHref.href;
     }
   };
-  // IE 10-11 deserialize history.state on each read making subsequent reads
-  // different object.
-  if (!msie) {
-    this.history.state = null;
-  } else {
-    ieState = null;
-    Object.defineProperty(this.history, 'state', {
-      get: function () {
-        return angular.copy(ieState);
-      },
-      set: function (value) {
-        ieState = value;
-      },
-      configurable: true,
-      enumerable: true
-    });
-  }
+
+
+  this.history.state = null;
 }
 
 function MockDocument() {
@@ -193,25 +177,18 @@ describe('browser', () => {
       });
     });
 
-    describe('in IE', runTests({ msie: true }));
-    describe('not in IE', runTests({ msie: false }));
+    describe('in a supported browser', runTests());
 
-    function runTests(options) {
+    function runTests() {
       return () => {
         it('should return the same state object on every read', () => {
-          const msie = options.msie;
 
-          fakeWindow = new MockWindow({ msie: msie });
+          fakeWindow = new MockWindow();
           fakeWindow.location.state = { prop: 'val' };
           browser = new ngInternals.Browser(fakeWindow, fakeDocument, fakeLog, sniffer, taskTrackerFactory);
 
           browser.url(fakeWindow.location.href, false, { prop: 'val' });
-          if (msie) {
-            expect(fakeWindow.history.state).not.toBe(fakeWindow.history.state);
-            expect(fakeWindow.history.state).toEqual(fakeWindow.history.state);
-          } else {
-            expect(fakeWindow.history.state).toBe(fakeWindow.history.state);
-          }
+          expect(fakeWindow.history.state).toBe(fakeWindow.history.state);
         });
       };
     }
@@ -559,55 +536,20 @@ describe('browser', () => {
 
   });
 
-  describe('url (with ie 11 weirdnesses)', () => {
-
-    it('url() should actually set the url, even if IE 11 is weird and replaces HTML entities in the URL', () => {
-      // this test can not be expressed with the Jasmine spies in the previous describe block, because $browser.url()
-      // needs to observe the change to location.href during its invocation to enter the failing code path, but the spies
-      // are not callThrough
-
-      sniffer.history = true;
-      const originalReplace = fakeWindow.location.replace;
-      fakeWindow.location.replace = function (url) {
-        url = url.replace('&not', '¬');
-        // I really don't know why IE 11 (sometimes) does this, but I am not the only one to notice:
-        // https://connect.microsoft.com/IE/feedback/details/1040980/bug-in-ie-which-interprets-document-location-href-as-html
-        originalReplace.call(this, url);
-      };
-
-      // the initial URL contains a lengthy oauth token in the hash
-      const initialUrl = 'http://test.com/oauthcallback#state=xxx%3D&not-before-policy=0';
-      fakeWindow.location.href = initialUrl;
-      browser = new ngInternals.Browser(fakeWindow, fakeDocument, fakeLog, sniffer, taskTrackerFactory);
-
-      // somehow, $location gets a version of this url where the = is no longer escaped, and tells the browser:
-      const initialUrlFixedByLocation = initialUrl.replace('%3D', '=');
-      browser.url(initialUrlFixedByLocation, true, null);
-      expect(browser.url()).toEqual(initialUrlFixedByLocation);
-
-      // a little later (but in the same digest cycle) the view asks $location to replace the url, which tells $browser
-      const secondUrl = 'http://test.com/otherView';
-      browser.url(secondUrl, true, null);
-      expect(browser.url()).toEqual(secondUrl);
-    });
-
-  });
-
   describe('url (when state passed)', () => {
     let currentHref, pushState, replaceState, locationReplace;
 
     beforeEach(() => {
     });
 
-    describe('in IE', runTests({ msie: true }));
-    describe('not in IE', runTests({ msie: false }));
+    describe('in a supported browser', runTests());
 
-    function runTests(options) {
+    function runTests() {
       return () => {
         beforeEach(() => {
           sniffer = { history: true };
 
-          fakeWindow = new MockWindow({ msie: options.msie });
+          fakeWindow = new MockWindow();
           currentHref = fakeWindow.location.href;
           pushState = jest.spyOn(fakeWindow.history, 'pushState');
           replaceState = jest.spyOn(fakeWindow.history, 'replaceState');
@@ -784,14 +726,13 @@ describe('browser', () => {
       expect(historyStateAccessed).toBe(false);
     });
 
-    describe('in IE', runTests({ msie: true }));
-    describe('not in IE', runTests({ msie: false }));
+    describe('in a supported browser', runTests());
 
 
-    function runTests(options) {
+    function runTests() {
       return () => {
         beforeEach(() => {
-          fakeWindow = new MockWindow({ msie: options.msie });
+          fakeWindow = new MockWindow();
           browser = new ngInternals.Browser(fakeWindow, fakeDocument, fakeLog, sniffer, taskTrackerFactory);
         });
 
@@ -888,13 +829,12 @@ describe('browser', () => {
         currentHref = fakeWindow.location.href;
       });
 
-      describe('in IE', runTests({ msie: true }));
-      describe('not in IE', runTests({ msie: false }));
+      describe('in a supported browser', runTests());
 
       function runTests(options) {
         return () => {
           beforeEach(() => {
-            fakeWindow = new MockWindow({ msie: options.msie });
+            fakeWindow = new MockWindow();
             browser = new ngInternals.Browser(fakeWindow, fakeDocument, fakeLog, sniffer, taskTrackerFactory);
           });
 

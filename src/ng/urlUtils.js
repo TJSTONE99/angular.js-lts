@@ -12,8 +12,8 @@ var baseUrlParsingNode;
 
 urlParsingNode.href = 'http://[::1]';
 
-// Support: IE 9-11 only, Edge 16-17 only (fixed in 18 Preview)
-// IE/Edge don't wrap IPv6 addresses' hostnames in square brackets
+// Support: Edge 16-17 only (fixed in 18 Preview)
+// Edge don't wrap IPv6 addresses' hostnames in square brackets
 // when parsed out of an anchor element.
 var ipv6InBrackets = urlParsingNode.hostname === '[::1]';
 
@@ -67,14 +67,6 @@ function urlResolve(url) {
   if (!isString(url)) return url;
 
   var href = url;
-
-  // Support: IE 9-11 only
-  if (msie) {
-    // Normalize before parse.  Refer Implementation Notes on why this is
-    // done in two steps on IE.
-    urlParsingNode.setAttribute('href', href);
-    href = urlParsingNode.href;
-  }
 
   urlParsingNode.setAttribute('href', href);
 

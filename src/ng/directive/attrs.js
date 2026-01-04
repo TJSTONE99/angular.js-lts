@@ -314,10 +314,6 @@
  * A special directive is necessary because we cannot use interpolation inside the `open`
  * attribute. See the {@link guide/interpolation interpolation guide} for more info.
  *
- * ## A note about browser compatibility
- *
- * Internet Explorer and Edge do not support the `details` element, it is
- * recommended to use {@link ng.ngShow} and {@link ng.ngHide} instead.
  *
  * @example
      <example name="ng-open">
@@ -421,9 +417,15 @@ forEach(['src', 'srcset', 'href'], function(attrName) {
           propName = null;
         }
 
+        // CVE-2024-8372 FIX: For srcset, don't use getTrustedMediaUrl() as it doesn't
+        // properly parse multiple URLs. Let $set() handle it via sanitizeSrcset().
         // We need to sanitize the url at least once, in case it is a constant
         // non-interpolated attribute.
-        attr.$set(normalized, $sce.getTrustedMediaUrl(attr[normalized]));
+        if (attrName === 'srcset') {
+          attr.$set(normalized, attr[normalized]);
+        } else {
+          attr.$set(normalized, $sce.getTrustedMediaUrl(attr[normalized]));
+        }
 
         attr.$observe(normalized, function(value) {
           if (!value) {
@@ -435,12 +437,6 @@ forEach(['src', 'srcset', 'href'], function(attrName) {
 
           attr.$set(name, value);
 
-          // Support: IE 9-11 only
-          // On IE, if "ng:src" directive declaration is used and "src" attribute doesn't exist
-          // then calling element.setAttribute('src', 'foo') doesn't do anything, so we need
-          // to set the property as well to achieve the desired effect.
-          // We use attr[attrName] value since $set might have sanitized the url.
-          if (msie && propName) element.prop(propName, attr[name]);
         });
       }
     };
