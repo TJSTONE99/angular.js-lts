@@ -1,34 +1,116 @@
 #!/usr/bin/env node
 
 import { execSync } from 'child_process';
-import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'fs';
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  copyFileSync,
+  readdirSync
+} from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+/* -------------------------------------------------------------------------- */
+/*  Paths & Globals                                                            */
+/* -------------------------------------------------------------------------- */
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const ROOT_DIR = dirname(__dirname);
 
-// Configuration for bower repositories
+/* -------------------------------------------------------------------------- */
+/*  Configuration                                                              */
+/* -------------------------------------------------------------------------- */
+
 const BOWER_REPOS = [
   {
     name: 'bower-angular-lts',
+    packageName: 'angular-lts',
     distPath: 'angular',
     files: ['angular.js', 'angular.min.js', 'angular.min.js.map'],
-    additionalFiles: ['angular-csp.css'] // This file might exist in the bower repo
+    additionalFiles: ['angular-csp.css']
+  },
+  {
+    name: 'bower-angular-animate-lts',
+    packageName: 'angular-animate-lts',
+    distPath: 'angular-animate',
+    files: ['angular-animate.js', 'angular-animate.min.js', 'angular-animate.min.js.map']
+  },
+  {
+    name: 'bower-angular-aria-lts',
+    packageName: 'angular-aria-lts',
+    distPath: 'angular-aria',
+    files: ['angular-aria.js', 'angular-aria.min.js', 'angular-aria.min.js.map']
+  },
+  {
+    name: 'bower-angular-cookies-lts',
+    packageName: 'angular-cookies-lts',
+    distPath: 'angular-cookies',
+    files: ['angular-cookies.js', 'angular-cookies.min.js', 'angular-cookies.min.js.map']
+  },
+  {
+    name: 'bower-angular-i18n-lts',
+    pacageName: 'angular-i18n-lts',
+    distPath: 'angular-i18n',
+    files: ['*.js']
+  },
+  {
+    name: 'bower-angular-loader-lts',
+    packageName: 'angular-loader-lts',
+    distPath: 'angular-loader',
+    files: ['angular-loader.js', 'angular-loader.min.js', 'angular-loader.min.js.map']
+  },
+  {
+    name: 'bower-angular-message-format-lts',
+    packageName: 'angular-message-format-lts',
+    distPath: 'angular-message-format',
+    files: ['angular-message-format.js', 'angular-message-format.min.js', 'angular-message-format.min.js.map']
+  },
+  {
+    name: 'bower-angular-messages-lts',
+    packageName: 'angular-messages-lts',
+    distPath: 'angular-messages',
+    files: ['angular-messages.js', 'angular-messages.min.js', 'angular-messages.min.js.map']
+  },
+  {
+    name: 'bower-angular-mocks-lts',
+    packageName: 'angular-mocks-lts',
+    distPath: 'angular-mocks',
+    files: ['angular-mocks.js', 'angular-mocks.min.js', 'angular-mocks.min.js.map']
+  },
+  {
+    name: 'bower-angular-parse-ext-lts',
+    packageName: 'angular-parse-ext-lts',
+    distPath: 'angular-parse-ext',
+    files: ['angular-parse-ext.js', 'angular-parse-ext.min.js', 'angular-parse-ext.min.js.map']
+  },
+  {
+    name: 'bower-angular-resource-lts',
+    pacageName: 'angular-resource-lts',
+    distPath: 'angular-resource',
+    files: ['angular-resource.js', 'angular-resource.min.js', 'angular-resource.min.js.map']
+  },
+  {
+    name: 'bower-angular-route-lts',
+    packageName: 'bower-angular-route-lts',
+    distPath: 'angular-route',
+    files: ['angular-route.js', 'angular-route.min.js', 'angular-route.min.js.map']
   },
   {
     name: 'bower-angular-sanitize-lts',
+    packageName: 'angular-sanitize-lts',
     distPath: 'angular-sanitize',
     files: ['angular-sanitize.js', 'angular-sanitize.min.js', 'angular-sanitize.min.js.map']
   },
   {
-    name: 'bower-angular-resource-lts',
-    distPath: 'angular-resource',
-    files: ['angular-resource.js', 'angular-resource.min.js', 'angular-resource.min.js.map']
+    name: 'bower-angular-touch-lts',
+    pacageName: 'angular-touch-lts',
+    distPath: 'angular-touch',
+    files: ['angular-touch.js', 'angular-touch.min.js', 'angular-touch.min.js.map']
   }
 ];
 
-// Configuration for npm packages
 const NPM_PACKAGES = [
   {
     name: 'angular-lts',
@@ -36,431 +118,361 @@ const NPM_PACKAGES = [
     description: 'AngularJS LTS (Long Term Support) - HTML enhanced for web apps'
   },
   {
-    name: 'angular-sanitize-lts',
-    bowerRepoName: 'bower-angular-sanitize-lts',
-    description: 'AngularJS Sanitize LTS (Long Term Support) - AngularJS module for sanitizing HTML'
+    name: 'angular-animate-lts',
+    bowerRepoName: 'bower-angular-animate-lts',
+    description: 'AngularJS Animate LTS (Long Term Support) - AngularJS module for animations'
+  },
+  {
+    name: 'angular-aria-lts',
+    bowerRepoName: 'bower-angular-aria-lts',
+    description: 'AngularJS Aria LTS (Long Term Support) - AngularJS module for accessibility'
+  },
+  {
+    name: 'angular-cookies-lts',
+    bowerRepoName: 'bower-angular-cookies-lts',
+    description: 'AngularJS Cookies LTS (Long Term Support) - AngularJS module for cookie management'
+  },
+  {
+    name: 'angular-i18n-lts',
+    bowerRepoName: 'bower-angular-i18n-lts',
+    description: 'AngularJS i18n LTS (Long Term Support) - AngularJS internationalization files'
+  },
+  {
+    name: 'angular-loader-lts',
+    bowerRepoName: 'bower-angular-loader-lts',
+    description: 'AngularJS Loader LTS (Long Term Support) - AngularJS module loader'
+  },
+  {
+    name: 'angular-message-format-lts',
+    bowerRepoName: 'bower-angular-message-format-lts',
+    description: 'AngularJS Message Format LTS (Long Term Support) - AngularJS module for message formatting'
+  },
+  {
+    name: 'angular-messages-lts',
+    bowerRepoName: 'bower-angular-messages-lts',
+    description: 'AngularJS Messages LTS (Long Term Support) - AngularJS module for form validation messages'
+  },
+  {
+    name: 'angular-mocks-lts',
+    bowerRepoName: 'bower-angular-mocks-lts',
+    description: 'AngularJS Mocks LTS (Long Term Support) - AngularJS module for testing'
+  },
+  {
+    name: 'angular-parse-ext-lts',
+    bowerRepoName: 'bower-angular-parse-ext-lts',
+    description: 'AngularJS Parse Extensions LTS (Long Term Support) - AngularJS parser extensions'
   },
   {
     name: 'angular-resource-lts',
     bowerRepoName: 'bower-angular-resource-lts',
     description: 'AngularJS Resource LTS (Long Term Support) - AngularJS module for interacting with RESTful server-side data sources'
+  },
+  {
+    name: 'angular-route-lts',
+    bowerRepoName: 'bower-angular-route-lts',
+    description: 'AngularJS Route LTS (Long Term Support) - AngularJS module for routing'
+  },
+  {
+    name: 'angular-sanitize-lts',
+    bowerRepoName: 'bower-angular-sanitize-lts',
+    description: 'AngularJS Sanitize LTS (Long Term Support) - AngularJS module for sanitizing HTML'
+  },
+  {
+    name: 'angular-touch-lts',
+    bowerRepoName: 'bower-angular-touch-lts',
+    description: 'AngularJS Touch LTS (Long Term Support) - AngularJS module for touch events'
   }
 ];
 
-const log = (message) => {
-  console.log(`[DEPLOY] ${message}`);
+/* -------------------------------------------------------------------------- */
+/*  Utilities                                                                  */
+/* -------------------------------------------------------------------------- */
+
+const log = msg => console.log(`[DEPLOY] ${msg}`);
+
+const execCommand = (cmd, opts = {}) => {
+  log(`Executing: ${cmd}`);
+  return execSync(cmd, {
+    stdio: opts.stdio ?? 'inherit',
+    cwd: opts.cwd ?? ROOT_DIR,
+    ...opts
+  });
 };
 
-const execCommand = (command, options = {}) => {
-  log(`Executing: ${command}`);
-  try {
-    return execSync(command, {
-      stdio: 'inherit',
-      cwd: options.cwd || dirname(__dirname),
-      ...options
-    });
-  } catch (error) {
-    log(`Error executing command: ${command}`);
-    throw error;
-  }
+const readJson = path => JSON.parse(readFileSync(path, 'utf8'));
+
+const writeJson = (path, data) => {
+  writeFileSync(path, JSON.stringify(data, null, 2) + '\n');
+  log(`Updated ${path}`);
 };
 
-const readPackageJson = (path) => {
-  try {
-    return JSON.parse(readFileSync(path, 'utf8'));
-  } catch (error) {
-    log(`Error reading package.json at ${path}: ${error.message}`);
-    throw error;
-  }
-};
+/* -------------------------------------------------------------------------- */
+/*  File Copy                                                                  */
+/* -------------------------------------------------------------------------- */
 
-const writePackageJson = (path, data) => {
-  try {
-    writeFileSync(path, JSON.stringify(data, null, 2) + '\n');
-    log(`Updated ${path}`);
-  } catch (error) {
-    log(`Error writing package.json at ${path}: ${error.message}`);
-    throw error;
-  }
-};
-
-const copyFiles = (sourceDir, targetDir, files) => {
-  let copiedCount = 0;
+const copyFiles = (srcDir, destDir, files) => {
+  let copied = 0;
 
   for (const file of files) {
-    const sourcePath = join(sourceDir, file);
-    const targetPath = join(targetDir, file);
-
-    if (existsSync(sourcePath)) {
+    if (file === '*.js') {
       try {
-        copyFileSync(sourcePath, targetPath);
-        log(`Copied ${file} to ${targetDir}`);
-        copiedCount++;
-      } catch (error) {
-        log(`Warning: Failed to copy ${file}: ${error.message}`);
+        const jsFiles = readdirSync(srcDir).filter(f => f.endsWith('.js'));
+        for (const f of jsFiles) {
+          copyFileSync(join(srcDir, f), join(destDir, f));
+          copied++;
+        }
+        if (jsFiles.length) {
+          log(`Copied ${jsFiles.length} i18n files to ${destDir}`);
+        }
+      } catch (err) {
+        log(`Warning: Failed reading ${srcDir}: ${err.message}`);
       }
-    } else {
-      log(`Warning: Source file ${sourcePath} does not exist`);
+      continue;
+    }
+
+    const src = join(srcDir, file);
+    const dest = join(destDir, file);
+
+    if (!existsSync(src)) {
+      log(`Warning: Source file ${src} does not exist`);
+      continue;
+    }
+
+    try {
+      copyFileSync(src, dest);
+      log(`Copied ${file} to ${destDir}`);
+      copied++;
+    } catch (err) {
+      log(`Warning: Failed to copy ${file}: ${err.message}`);
     }
   }
 
-  return copiedCount;
+  return copied;
 };
 
-const updateBowerVersion = (bowerRepoPath, version) => {
-  const bowerJsonPath = join(bowerRepoPath, 'bower.json');
+/* -------------------------------------------------------------------------- */
+/*  Versioning                                                                 */
+/* -------------------------------------------------------------------------- */
 
-  if (!existsSync(bowerJsonPath)) {
-    log(`Warning: bower.json not found at ${bowerJsonPath}`);
-    return false;
+const compareVersions = (a, b) => {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  const len = Math.max(pa.length, pb.length);
+
+  while (pa.length < len) pa.push(0);
+  while (pb.length < len) pb.push(0);
+
+  for (let i = 0; i < len; i++) {
+    if (pa[i] > pb[i]) return 1;
+    if (pa[i] < pb[i]) return -1;
   }
+  return 0;
+};
+
+const checkDeployedVersion = (repoPath, version) => {
+  if (!existsSync(repoPath)) return false;
 
   try {
-    const bowerJson = JSON.parse(readFileSync(bowerJsonPath, 'utf8'));
-    bowerJson.version = version;
+    const tags = execCommand('git tag --sort=-version:refname', {
+      cwd: repoPath,
+      stdio: 'pipe'
+    })
+      .toString()
+      .split('\n')
+      .filter(t => t.startsWith('v'));
 
-    // Update angular dependency version for angular-sanitize and angular-resource
-    if (bowerJson.dependencies && bowerJson.dependencies.angular) {
-      bowerJson.dependencies.angular = version;
+    if (!tags.length) return false;
+
+    const latest = tags[0].slice(1);
+    const cmp = compareVersions(latest, version);
+
+    if (cmp >= 0) {
+      log(`Deployed version ${latest} >= ${version}, skipping`);
+      return true;
     }
-
-    writePackageJson(bowerJsonPath, bowerJson);
-    return true;
-  } catch (error) {
-    log(`Error updating bower.json at ${bowerJsonPath}: ${error.message}`);
+    return false;
+  } catch {
     return false;
   }
 };
 
-const createNpmPackageJson = (bowerRepoPath, packageName, version, description) => {
-  const packageJsonPath = join(bowerRepoPath, 'package.json');
-  
-  // Create npm-specific package.json
-  const packageJson = {
-    name: packageName,
-    version: version,
-    description: description,
-    license: 'MIT',
-    author: 'Angular Core Team <angular-core+npm@google.com>',
-    contributors: ['Thomas Stone <stone.tj.99@hotmail.co.uk>'],
-    repository: {
-      type: 'git',
-      url: 'https://github.com/TJSTONE99/angular.js-lts.git'
-    },
-    keywords: ['lts', 'angularjs', 'angular']
-  };
-  
-  // Set main file to index.js for all packages
-  packageJson.main = 'index.js';
-  
-  // Set peer dependencies for non-core packages
-  if (packageName === 'angular-sanitize-lts') {
-    packageJson.peerDependencies = {
-      'angular-lts': version
-    };
-  } else if (packageName === 'angular-resource-lts') {
-    packageJson.peerDependencies = {
-      'angular-lts': version
-    };
+/* -------------------------------------------------------------------------- */
+/*  JSON Updates                                                               */
+/* -------------------------------------------------------------------------- */
+
+const updateBowerVersion = (repoPath, name, version) => {
+  const path = join(repoPath, 'bower.json');
+  if (!existsSync(path)) return false;
+
+  try {
+    const json = readJson(path);
+    json.version = version;
+    json.name = name;
+
+    if (json.dependencies?.angular) {
+      json.dependencies.angular = version;
+    }
+
+    writeJson(path, json);
+    return true;
+  } catch {
+    return false;
   }
-  
-  // Write package.json
-  writePackageJson(packageJsonPath, packageJson);
-  log(`Created package.json for ${packageName} in ${bowerRepoPath}`);
-  
+};
+
+const updateNpmPackageJson = (repoPath, name, version, description) => {
+  const path = join(repoPath, 'package.json');
+  if (!existsSync(path)) return false;
+
+  const pkg = readJson(path);
+  pkg.name = name;
+  pkg.version = version;
+  pkg.description = description;
+
+  pkg.license ??= 'MIT';
+  pkg.author ??= 'Angular Core Team <angular-core+npm@google.com>';
+  pkg.contributors ??= ['Thomas Stone <stone.tj.99@hotmail.co.uk>'];
+  pkg.repository ??= {
+    type: 'git',
+    url: 'https://github.com/TJSTONE99/angular.js-lts.git'
+  };
+  pkg.keywords ??= ['lts', 'angularjs', 'angular'];
+
+  if (name !== 'angular-lts') {
+    pkg.peerDependencies = { 'angular-lts': version };
+  }
+
+  writeJson(path, pkg);
   return true;
 };
 
-const commitAndTag = (repoPath, version, repoName) => {
-  try {
-    // Don't change process.cwd, instead pass cwd to execCommand
-    log(`Working in directory: ${repoPath}`);
+/* -------------------------------------------------------------------------- */
+/*  Git                                                                        */
+/* -------------------------------------------------------------------------- */
 
-    // Check if tag already exists remotely
-    const tagName = `v${version}`;
-    try {
-      const remoteTagResult = execCommand(`git ls-remote --tags origin ${tagName}`, { stdio: 'pipe', cwd: repoPath });
-      if (remoteTagResult && remoteTagResult.toString().trim()) {
-        log(`Tag ${tagName} already exists remotely in ${repoName}, skipping commit and tag operations`);
-        return false; // Tag already exists, consider this as not successful for npm publishing
-      }
-    } catch (error) {
-      // Error checking remote tags, continue with normal flow
-      log(`Could not check remote tags for ${repoName}: ${error.message}`);
-    }
-
-    // Check if there are any changes to commit (both staged and unstaged)
-    let hasChanges = false;
-
-    try {
-      // Check for unstaged changes by getting the list of modified files
-      const unstagedResult = execCommand('git diff --name-only', { stdio: 'pipe', cwd: repoPath });
-      const unstagedFiles = unstagedResult ? unstagedResult.toString().trim() : '';
-      if (unstagedFiles.length > 0) {
-        log(`Unstaged changes detected in ${repoName}: ${unstagedFiles.split('\n').join(', ')}`);
-        hasChanges = true;
-      } else {
-        log(`No unstaged changes in ${repoName}`);
-      }
-    } catch (error) {
-      log(`Error checking unstaged changes in ${repoName}: ${error.message}`);
-    }
-
-    try {
-      // Check for staged changes
-      const stagedResult = execCommand('git diff --cached --name-only', { stdio: 'pipe', cwd: repoPath });
-      const stagedFiles = stagedResult ? stagedResult.toString().trim() : '';
-      if (stagedFiles.length > 0) {
-        log(`Staged changes detected in ${repoName}: ${stagedFiles.split('\n').join(', ')}`);
-        hasChanges = true;
-      } else {
-        log(`No staged changes in ${repoName}`);
-      }
-    } catch (error) {
-      log(`Error checking staged changes in ${repoName}: ${error.message}`);
-    }
-
-    try {
-      // Check for untracked files
-      const result = execCommand('git ls-files --others --exclude-standard', { stdio: 'pipe', cwd: repoPath });
-      const untrackedFiles = result ? result.toString().trim() : '';
-      if (untrackedFiles.length > 0) {
-        log(`Untracked files detected in ${repoName}: ${untrackedFiles.split('\n').join(', ')}`);
-        hasChanges = true;
-      } else {
-        log(`No untracked files in ${repoName}`);
-      }
-    } catch (error) {
-      log(`Error checking untracked files in ${repoName}: ${error.message}`);
-    }
-
-    if (!hasChanges) {
-      log(`No changes to commit in ${repoName}`);
-      return false; // No changes to commit, don't proceed with npm publishing
-    }
-
-    log(`Changes detected in ${repoName}, proceeding with commit and tag`);
-
-    // Add all changes
-    execCommand('git add .', { cwd: repoPath });
-
-    // Commit changes
-    execCommand(`git commit -m "Release version ${version}"`, { cwd: repoPath });
-    log(`Committed changes in ${repoName}`);
-
-    // Create tag
-    try {
-      execCommand(`git tag -d ${tagName}`, { stdio: 'pipe', cwd: repoPath });
-      log(`Removed existing tag ${tagName} in ${repoName}`);
-    } catch (error) {
-      // Tag doesn't exist, that's fine
-    }
-
-    execCommand(`git tag ${tagName}`, { cwd: repoPath });
-    log(`Created tag ${tagName} in ${repoName}`);
-
-    // Push changes and tags
-    execCommand('git push origin HEAD', { cwd: repoPath });
-    log(`Pushed changes for ${repoName}`);
-
-    execCommand(`git push origin ${tagName}`, { cwd: repoPath });
-    log(`Pushed tag ${tagName} for ${repoName}`);
-
-    return true; // Successfully committed and tagged
-
-  } catch (error) {
-    log(`Error in git operations for ${repoName}: ${error.message}`);
-    return false; // Failed to commit and tag
-  }
-};
-
-const publishToNpm = (packageConfig, version) => {
-  const bowerRepoPath = join(dirname(__dirname), '..', packageConfig.bowerRepoName);
-  const packageJsonPath = join(bowerRepoPath, 'package.json');
-
-  if (!existsSync(bowerRepoPath)) {
-    log(`Warning: Bower repository ${packageConfig.bowerRepoName} does not exist at ${bowerRepoPath}, skipping npm publish for ${packageConfig.name}`);
-    return false;
-  }
+const commitAndTag = (repoPath, version, name) => {
+  const tag = `v${version}`;
 
   try {
-    // package.json should already exist from the bower processing phase
-    if (!existsSync(packageJsonPath)) {
-      log(`Warning: package.json not found at ${packageJsonPath}, skipping npm publish for ${packageConfig.name}`);
+    const remoteTag = execCommand(`git ls-remote --tags origin ${tag}`, {
+      cwd: repoPath,
+      stdio: 'pipe'
+    }).toString().trim();
+
+    if (remoteTag) {
+      log(`Tag ${tag} already exists remotely for ${name}`);
       return false;
     }
 
-    // Check if user is logged in to npm
+    const hasChanges =
+      execCommand('git diff --name-only', { cwd: repoPath, stdio: 'pipe' }).toString().trim() ||
+      execCommand('git diff --cached --name-only', { cwd: repoPath, stdio: 'pipe' }).toString().trim() ||
+      execCommand('git ls-files --others --exclude-standard', { cwd: repoPath, stdio: 'pipe' }).toString().trim();
+
+    if (!hasChanges) return false;
+
+    execCommand('git add .', { cwd: repoPath });
+    execCommand(`git commit -m "Release version ${version}"`, { cwd: repoPath });
+
     try {
-      const whoamiResult = execCommand('npm whoami', { stdio: 'pipe', cwd: bowerRepoPath });
-      const npmUser = whoamiResult ? whoamiResult.toString().trim() : '';
-      log(`NPM user authenticated: ${npmUser}`);
-    } catch (error) {
-      log(`Not logged in to npm. Attempting to login...`);
+      execCommand(`git tag -d ${tag}`, { cwd: repoPath, stdio: 'pipe' });
+    } catch { }
 
-      // Attempt npm login - this will be interactive
-      try {
-        log(`Please complete the npm login process for ${packageConfig.name}:`);
-        execCommand('npm login', { cwd: bowerRepoPath, stdio: 'inherit' });
-
-        // Verify login was successful
-        const whoamiResult = execCommand('npm whoami', { stdio: 'pipe', cwd: bowerRepoPath });
-        const npmUser = whoamiResult ? whoamiResult.toString().trim() : '';
-        log(`NPM login successful: ${npmUser}`);
-      } catch (loginError) {
-        log(`NPM login failed for ${packageConfig.name}: ${loginError.message}`);
-        log(`Please run 'npm login' manually and try again`);
-        return false;
-      }
-    }
-
-    // Check if package already exists at this version
-    try {
-      const viewResult = execCommand(`npm view ${packageConfig.name}@${version} version`, { stdio: 'pipe', cwd: bowerRepoPath });
-      if (viewResult && viewResult.toString().trim() === version) {
-        log(`Package ${packageConfig.name}@${version} already exists on npm, skipping publish`);
-        return false;
-      }
-    } catch (error) {
-      // Package doesn't exist or other error, continue with publish
-      log(`Package ${packageConfig.name}@${version} not found on npm, proceeding with publish`);
-    }
-
-    // Create .npmignore if it doesn't exist to control what gets published
-    const npmIgnorePath = join(bowerRepoPath, '.npmignore');
-    if (!existsSync(npmIgnorePath)) {
-      const npmIgnoreContent = `# Ignore bower-specific files
-bower.json
-.bower.json
-.git/
-.gitignore
-*.md
-!README.md
-`;
-      writeFileSync(npmIgnorePath, npmIgnoreContent);
-      log(`Created .npmignore for ${packageConfig.name}`);
-    }
-
-    // Publish to npm
-    log(`Publishing ${packageConfig.name}@${version} to npm from ${bowerRepoPath}...`);
-    execCommand('npm publish --access public', { cwd: bowerRepoPath });
-    log(`Successfully published ${packageConfig.name}@${version} to npm`);
+    execCommand(`git tag ${tag}`, { cwd: repoPath });
+    execCommand('git push origin HEAD', { cwd: repoPath });
+    execCommand(`git push origin ${tag}`, { cwd: repoPath });
 
     return true;
-  } catch (error) {
-    log(`Error publishing ${packageConfig.name} to npm: ${error.message}`);
-
-    // Check if it's a 2FA error and provide helpful message
-    if (error.message.includes('Two-factor authentication') || error.message.includes('E403')) {
-      log(`Tip: If you have 2FA enabled, you may need to:`);
-      log(`  1. Use 'npm login' with an OTP token`);
-      log(`  2. Or create an automation token with 'npm token create --type=automation'`);
-      log(`  3. Or use 'npm publish --otp=<your-otp-code>'`);
-    }
-
+  } catch {
     return false;
   }
 };
 
-const main = async () => {
+/* -------------------------------------------------------------------------- */
+/*  NPM                                                                        */
+/* -------------------------------------------------------------------------- */
+
+const publishToNpm = (pkg, version) => {
+  const repoPath = join(ROOT_DIR, '..', pkg.bowerRepoName);
+  if (!existsSync(repoPath)) return false;
+
   try {
-    log('Starting deployment process...');
-
-    // Check for command line arguments
-    const args = process.argv.slice(2);
-    const skipNpm = args.includes('--skip-npm');
-
-    if (skipNpm) {
-      log('Skipping npm publishing (--skip-npm flag provided)');
+    try {
+      execCommand('npm whoami', { cwd: repoPath, stdio: 'pipe' });
+    } catch {
+      execCommand('npm login', { cwd: repoPath });
     }
 
-    // Step 1: Read version from main package.json
-    const mainPackageJson = readPackageJson(join(dirname(__dirname), 'package.json'));
-    const version = mainPackageJson.version;
-    log(`Current version: ${version}`);
+    try {
+      const existing = execCommand(`npm view ${pkg.name}@${version} version`, {
+        cwd: repoPath,
+        stdio: 'pipe'
+      }).toString().trim();
 
-    // Step 2: Run build
-    log('Building project...');
-    execCommand('npm run build');
+      if (existing === version) return false;
+    } catch { }
 
-    // Step 3: Process each bower repository
-    const successfulRepos = []; // Track repositories that were successfully committed and tagged
-    
-    for (const repo of BOWER_REPOS) {
-      const bowerRepoPath = join(dirname(__dirname), '..', repo.name);
-
-      if (!existsSync(bowerRepoPath)) {
-        log(`Warning: Bower repository ${repo.name} does not exist at ${bowerRepoPath}, skipping...`);
-        continue;
-      }
-
-      log(`Processing ${repo.name}...`);
-
-      // Copy files from dist
-      const distSourcePath = join(dirname(__dirname), 'dist', repo.distPath);
-      const copiedCount = copyFiles(distSourcePath, bowerRepoPath, repo.files);
-
-      if (copiedCount === 0) {
-        log(`Warning: No files were copied to ${repo.name}`);
-        continue;
-      }
-
-      // Update bower.json version
-      const versionUpdated = updateBowerVersion(bowerRepoPath, version);
-
-      // Create npm package.json for this bower repository
-      const npmPackage = NPM_PACKAGES.find(pkg => pkg.bowerRepoName === repo.name);
-      if (npmPackage) {
-        createNpmPackageJson(bowerRepoPath, npmPackage.name, version, npmPackage.description);
-      }
-
-      if (versionUpdated) {
-        // Commit and tag
-        const commitSuccess = commitAndTag(bowerRepoPath, version, repo.name);
-        if (commitSuccess) {
-          successfulRepos.push(repo.name);
-          log(`Successfully processed ${repo.name} for deployment`);
-        } else {
-          log(`Failed to commit and tag ${repo.name}, will skip npm publishing for this package`);
-        }
-      } else {
-        log(`Skipping git operations for ${repo.name} due to bower.json update failure`);
-      }
+    const ignorePath = join(repoPath, '.npmignore');
+    if (!existsSync(ignorePath)) {
+      writeFileSync(
+        ignorePath,
+        `bower.json\n.bower.json\n.git/\n.gitignore\n*.md\n!README.md\n`
+      );
     }
 
-    // Step 4: Publish npm packages (unless skipped)
-    if (!skipNpm) {
-      log('Publishing npm packages...');
-      let npmPublishCount = 0;
-
-      for (const packageConfig of NPM_PACKAGES) {
-        // Only publish if the corresponding bower repository was successfully committed and tagged
-        if (!successfulRepos.includes(packageConfig.bowerRepoName)) {
-          log(`Skipping npm publish for ${packageConfig.name} because ${packageConfig.bowerRepoName} was not successfully committed and tagged`);
-          continue;
-        }
-
-        log(`Processing npm package ${packageConfig.name}...`);
-        const published = publishToNpm(packageConfig, version);
-        if (published) {
-          npmPublishCount++;
-        }
-      }
-
-      if (npmPublishCount > 0) {
-        log(`Successfully published ${npmPublishCount} npm package(s)`);
-      } else {
-        log('No npm packages were published');
-      }
-    }
-
-    log('Deployment completed successfully!');
-
-  } catch (error) {
-    log(`Deployment failed: ${error.message}`);
-    process.exit(1);
+    execCommand('npm publish --access public', { cwd: repoPath });
+    return true;
+  } catch {
+    return false;
   }
 };
 
-// Run the deployment
+/* -------------------------------------------------------------------------- */
+/*  Main                                                                       */
+/* -------------------------------------------------------------------------- */
+
+const main = async () => {
+  log('Starting deployment process');
+
+  const skipNpm = process.argv.includes('--skip-npm');
+
+  const { version } = readJson(join(ROOT_DIR, 'package.json'));
+  log(`Current version: ${version}`);
+
+  execCommand('npm run build');
+
+  const successful = [];
+
+  for (const repo of BOWER_REPOS) {
+    const repoPath = join(ROOT_DIR, '..', repo.name);
+
+    if (checkDeployedVersion(repoPath, version)) continue;
+    if (!existsSync(repoPath)) continue;
+
+    const distPath = join(ROOT_DIR, 'dist', repo.distPath);
+    if (!copyFiles(distPath, repoPath, repo.files)) continue;
+
+    if (!updateBowerVersion(repoPath, repo.packageName, version)) continue;
+
+    const npmCfg = NPM_PACKAGES.find(p => p.bowerRepoName === repo.name);
+    if (npmCfg) {
+      updateNpmPackageJson(repoPath, npmCfg.name, version, npmCfg.description);
+    }
+
+    if (commitAndTag(repoPath, version, repo.name)) {
+      successful.push(repo.name);
+    }
+  }
+
+  if (!skipNpm) {
+    for (const pkg of NPM_PACKAGES) {
+      if (successful.includes(pkg.bowerRepoName)) {
+        publishToNpm(pkg, version);
+      }
+    }
+  }
+
+  log('Deployment completed successfully');
+};
+
 main();
